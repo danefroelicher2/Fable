@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ThisDayInHistory from "@/components/ThisDayInHistory";
+import FanArticles from "@/components/FanArticles";
 
 // Mock data for testing - featured posts
 const featuredPosts = [
@@ -66,6 +67,9 @@ export default function Home() {
 
       {/* This Day in History Widget */}
       <ThisDayInHistory />
+
+      {/* Fan Articles Section */}
+      <FanArticles />
 
       {/* Featured Posts */}
       <section className="mb-16">
