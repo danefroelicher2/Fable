@@ -46,25 +46,6 @@ const historicalEras = [
 export default function Home() {
   return (
     <div className="container mx-auto px-4">
-      {/* Hero Section */}
-      <section className="bg-blue-900 text-white py-16 px-4 mb-12 rounded-lg">
-        <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-5xl font-bold mb-6">
-            Uncovering the Past, One Story at a Time
-          </h1>
-          <p className="text-xl mb-8">
-            Explore fascinating historical events, figures, and eras through
-            in-depth articles, timelines, and analyses.
-          </p>
-          <Link
-            href="/blog"
-            className="inline-block bg-white text-blue-900 px-6 py-3 rounded-md font-semibold hover:bg-blue-100 transition-colors"
-          >
-            Explore Articles
-          </Link>
-        </div>
-      </section>
-
       {/* This Day in History Widget */}
       <ThisDayInHistory />
 
@@ -84,7 +65,7 @@ export default function Home() {
           {featuredPosts.map((post) => (
             <div
               key={post.id}
-              className="bg-white rounded-lg shadow-md overflow-hidden p-4"
+              className="bg-white rounded-lg shadow-md overflow-hidden p-4 article-card"
             >
               <div className="h-48 bg-slate-200 mb-4 rounded overflow-hidden">
                 <div className="w-full h-full flex items-center justify-center text-slate-500">
