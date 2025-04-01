@@ -57,9 +57,7 @@ export default function ProfileDropdown() {
         <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-700 border border-gray-600">
           {user.email ? user.email.charAt(0).toUpperCase() : "U"}
         </div>
-        <span className="hidden md:inline-block text-sm font-medium">
-          {user.email?.split("@")[0]}
-        </span>
+        {/* Removed the username display */}
       </button>
 
       {isOpen && (
