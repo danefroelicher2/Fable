@@ -11,6 +11,7 @@ export default function SignIn() {
   const { user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -69,6 +70,13 @@ export default function SignIn() {
       }
 
       if (data?.user) {
+        // If remember me is checked, store a flag in localStorage
+        if (rememberMe) {
+          localStorage.setItem("rememberSession", "true");
+        } else {
+          localStorage.removeItem("rememberSession");
+        }
+
         setMessage("Sign in successful! Redirecting...");
         // Add a slight delay before redirecting to show the success message
         setTimeout(() => {
@@ -158,6 +166,19 @@ export default function SignIn() {
             />
           </div>
 
+          <div className="flex items-center mb-4">
+            <input
+              type="checkbox"
+              id="rememberMe"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="rememberMe" className="ml-2 block text-gray-700">
+              Remember me
+            </label>
+          </div>
+
           <div className="flex space-x-4">
             <button
               type="submit"
@@ -177,6 +198,15 @@ export default function SignIn() {
             </button>
           </div>
         </form>
+
+        <div className="mt-4 text-center">
+          <Link
+            href="/password-reset"
+            className="text-blue-600 hover:text-blue-800"
+          >
+            Forgot your password?
+          </Link>
+        </div>
 
         <div className="mt-6 text-center">
           <Link href="/" className="text-blue-600 hover:text-blue-800">
