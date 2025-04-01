@@ -1,9 +1,9 @@
 // src/components/ProtectedRoute.tsx
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function ProtectedRoute({
   children,
@@ -14,23 +14,21 @@ export default function ProtectedRoute({
   const router = useRouter();
 
   useEffect(() => {
+    // Only redirect if we've finished loading and there's no user
     if (!isLoading && !user) {
-      router.push("/auth");
+      router.push("/signin");
     }
   }, [user, isLoading, router]);
 
+  // Show loading state while checking authentication
   if (isLoading) {
     return (
-      <div className="container mx-auto py-20 text-center">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-        <p className="mt-4 text-gray-600">Loading...</p>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-800"></div>
       </div>
     );
   }
 
-  if (!user) {
-    return null; // Will redirect in the useEffect
-  }
-
-  return <>{children}</>;
+  // Show children only when authenticated
+  return user ? <>{children}</> : null;
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
 export default function SignIn() {
@@ -16,44 +16,15 @@ export default function SignIn() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  // If already logged in, show different UI
-  if (user) {
-    return (
-      <div className="container mx-auto py-10">
-        <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
-          <h1 className="text-3xl font-bold text-center mb-6">
-            Already Signed In
-          </h1>
-          <p className="text-center mb-6">
-            You are already signed in as {user.email}
-          </p>
-          <div className="flex justify-center space-x-4">
-            <Link
-              href="/"
-              className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
-            >
-              Go to Home
-            </Link>
-            <Link
-              href="/profile"
-              className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700"
-            >
-              Go to Profile
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      router.push("/profile");
+    }
+  }, [user, router]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!email || !password) {
-      setError("Please enter both email and password");
-      return;
-    }
-
     setLoading(true);
     setError("");
     setMessage("");
@@ -65,25 +36,10 @@ export default function SignIn() {
           password,
         });
 
-      if (signInError) {
-        throw signInError;
-      }
+      if (signInError) throw signInError;
 
-      if (data?.user) {
-        // If remember me is checked, store a flag in localStorage
-        if (rememberMe) {
-          localStorage.setItem("rememberSession", "true");
-        } else {
-          localStorage.removeItem("rememberSession");
-        }
-
-        setMessage("Sign in successful! Redirecting...");
-        // Add a slight delay before redirecting to show the success message
-        setTimeout(() => {
-          router.push("/");
-          router.refresh();
-        }, 1000);
-      }
+      // Session is automatically handled by Supabase
+      router.push("/");
     } catch (error: any) {
       console.error("Sign in error:", error);
       setError(error.message || "An error occurred during sign in");
@@ -94,12 +50,6 @@ export default function SignIn() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!email || !password) {
-      setError("Please enter both email and password");
-      return;
-    }
-
     setLoading(true);
     setError("");
     setMessage("");
@@ -113,9 +63,7 @@ export default function SignIn() {
         },
       });
 
-      if (signUpError) {
-        throw signUpError;
-      }
+      if (signUpError) throw signUpError;
 
       setMessage("Check your email for the confirmation link");
     } catch (error: any) {
@@ -127,9 +75,9 @@ export default function SignIn() {
   };
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="container mx-auto py-10 px-4">
       <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-3xl font-bold text-center mb-6">Account Access</h1>
+        <h1 className="text-3xl font-bold text-center mb-6">ACCOUNT ACCESS</h1>
 
         {message && (
           <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
@@ -145,71 +93,80 @@ export default function SignIn() {
 
         <form onSubmit={handleSignIn} className="space-y-4">
           <div>
-            <label className="block text-gray-700 mb-2">Email</label>
+            <label className="block text-gray-700 mb-2" htmlFor="email">
+              Email
+            </label>
             <input
+              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-gray-600"
               required
             />
           </div>
 
           <div>
-            <label className="block text-gray-700 mb-2">Password</label>
+            <label className="block text-gray-700 mb-2" htmlFor="password">
+              Password
+            </label>
             <input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-gray-600"
               required
             />
           </div>
 
-          <div className="flex items-center mb-4">
+          <div className="flex items-center">
             <input
-              type="checkbox"
               id="rememberMe"
+              type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-gray-800 focus:ring-gray-500 border-gray-300 rounded"
             />
-            <label htmlFor="rememberMe" className="ml-2 block text-gray-700">
+            <label
+              htmlFor="rememberMe"
+              className="ml-2 block text-sm text-gray-700"
+            >
               Remember me
             </label>
           </div>
 
-          <div className="flex space-x-4">
+          <div className="grid grid-cols-2 gap-4">
             <button
               type="submit"
               disabled={loading}
-              className="w-1/2 bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+              className="bg-gray-800 text-white py-2 px-4 rounded hover:bg-gray-700 transition"
             >
-              {loading ? "Loading..." : "Sign In"}
+              {loading ? "Loading..." : "SIGN IN"}
             </button>
 
             <button
               type="button"
               onClick={handleSignUp}
               disabled={loading}
-              className="w-1/2 bg-green-600 text-white py-2 rounded hover:bg-green-700"
+              className="bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-500 transition"
             >
-              {loading ? "Loading..." : "Sign Up"}
+              {loading ? "Loading..." : "CREATE ACCOUNT"}
             </button>
           </div>
         </form>
 
-        <div className="mt-4 text-center">
+        <div className="mt-6 text-center">
           <Link
             href="/password-reset"
-            className="text-blue-600 hover:text-blue-800"
+            className="text-gray-800 hover:text-gray-600"
           >
             Forgot your password?
           </Link>
         </div>
 
-        <div className="mt-6 text-center">
-          <Link href="/" className="text-blue-600 hover:text-blue-800">
+        <div className="mt-8 text-center">
+          <Link href="/" className="text-gray-800 hover:text-gray-600">
             Back to Home
           </Link>
         </div>

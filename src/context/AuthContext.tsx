@@ -1,88 +1,87 @@
 // src/context/AuthContext.tsx
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import { supabase } from "@/lib/supabase";
-import { User, Session } from "@supabase/supabase-js";
+import { Session, User } from "@supabase/supabase-js";
 
-type AuthContextType = {
+interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  signOut: () => Promise<void>;
-  refreshSession: () => Promise<void>;
-};
+}
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   isLoading: true,
-  signOut: async () => {},
-  refreshSession: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Function to refresh the session
-  const refreshSession = async () => {
-    try {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        throw error;
-      }
-      setSession(data.session);
-      setUser(data.session?.user || null);
-    } catch (error) {
-      console.error("Error refreshing session:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Function to sign out
-  const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      setUser(null);
-      setSession(null);
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
-
   useEffect(() => {
-    refreshSession();
+    let mounted = true;
 
-    // Set up auth state listener
+    async function getInitialSession() {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error) {
+          throw error;
+        }
+
+        // Only update the state if the component is still mounted
+        if (mounted) {
+          if (data.session) {
+            setSession(data.session);
+            setUser(data.session.user);
+          }
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Error getting initial session:", error);
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    getInitialSession();
+
+    // Set up the auth state change listener
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user || null);
-        setIsLoading(false);
+      async (event, session) => {
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setIsLoading(false);
+        }
       }
     );
 
     return () => {
+      mounted = false;
+      // Clean up subscription
       authListener.subscription.unsubscribe();
     };
   }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        isLoading,
-        signOut,
-        refreshSession,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = {
+    user,
+    session,
+    isLoading,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

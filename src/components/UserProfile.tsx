@@ -1,103 +1,140 @@
+// src/components/UserProfile.tsx
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
+
+interface Profile {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  website: string | null;
+}
 
 export default function UserProfile() {
-  const { user, signOut, isLoading } = useAuth();
-  const [username, setUsername] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [bio, setBio] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
-  const router = useRouter();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [username, setUsername] = useState<string>("");
+  const [fullName, setFullName] = useState<string>("");
+  const [website, setWebsite] = useState<string>("");
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      // Redirect to signin if not authenticated
-      router.push("/signin");
-      return;
-    }
+    async function getProfile() {
+      try {
+        setLoading(true);
 
-    // Load user profile data if user is logged in
-    if (user) {
-      const fetchProfile = async () => {
+        if (!user) throw new Error("No user");
+
         const { data, error } = await supabase
           .from("profiles")
-          .select("username, full_name, bio")
+          .select("username, full_name, website, avatar_url")
           .eq("id", user.id)
           .single();
 
-        if (error) {
-          console.error("Error fetching profile:", error);
-        } else if (data) {
+        if (error) throw error;
+
+        if (data) {
           setUsername(data.username || "");
           setFullName(data.full_name || "");
-          setBio(data.bio || "");
+          setWebsite(data.website || "");
+          setAvatarUrl(data.avatar_url || "");
         }
-      };
-
-      fetchProfile();
+      } catch (error) {
+        console.error("Error loading profile:", error);
+      } finally {
+        setLoading(false);
+      }
     }
-  }, [user, isLoading, router]);
 
-  const updateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
+    getProfile();
+  }, [user]);
 
-    setSaving(true);
-    setMessage("");
-
+  async function updateProfile() {
     try {
-      const { error } = await supabase.from("profiles").upsert({
+      setLoading(true);
+      setUpdateSuccess(false);
+      setUpdateError(null);
+
+      if (!user) throw new Error("No user");
+
+      const updates = {
         id: user.id,
         username,
         full_name: fullName,
-        bio,
+        website,
+        avatar_url: avatarUrl,
         updated_at: new Date().toISOString(),
-      });
+      };
+
+      const { error } = await supabase.from("profiles").upsert(updates);
 
       if (error) throw error;
-      setMessage("Profile updated successfully!");
+
+      setUpdateSuccess(true);
     } catch (error: any) {
-      setMessage(`Error updating profile: ${error.message}`);
+      console.error("Error updating profile:", error);
+      setUpdateError(error.message);
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center">
-        <p>Loading profile...</p>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null; // Redirect will happen in useEffect
   }
 
   return (
-    <div className="max-w-xl mx-auto bg-white p-8 rounded-lg shadow-md">
-      <div className="mb-6">
-        <p className="text-gray-600">
-          <strong>Email:</strong> {user.email}
-        </p>
-      </div>
-
-      {message && (
-        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6">
-          {message}
+    <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
+      {updateSuccess && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+          Profile updated successfully!
         </div>
       )}
 
-      <form onSubmit={updateProfile} className="space-y-4">
-        <div>
-          <label className="block text-gray-700 mb-2">Username</label>
+      {updateError && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {updateError}
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <div className="flex justify-center">
+          <div className="h-24 w-24 rounded-full bg-blue-600 flex items-center justify-center text-white text-3xl">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Avatar"
+                className="h-24 w-24 rounded-full object-cover"
+              />
+            ) : (
+              user?.email?.charAt(0).toUpperCase() || "U"
+            )}
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2" htmlFor="email">
+            Email
+          </label>
           <input
+            id="email"
+            type="text"
+            value={user?.email || ""}
+            disabled
+            className="w-full p-2 border rounded bg-gray-100"
+          />
+          <p className="text-sm text-gray-500 mt-1">
+            You cannot change your email address
+          </p>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2" htmlFor="username">
+            Username
+          </label>
+          <input
+            id="username"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -105,9 +142,12 @@ export default function UserProfile() {
           />
         </div>
 
-        <div>
-          <label className="block text-gray-700 mb-2">Full Name</label>
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2" htmlFor="fullName">
+            Full Name
+          </label>
           <input
+            id="fullName"
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
@@ -115,33 +155,43 @@ export default function UserProfile() {
           />
         </div>
 
-        <div>
-          <label className="block text-gray-700 mb-2">Bio</label>
-          <textarea
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            className="w-full p-2 border rounded h-32"
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2" htmlFor="website">
+            Website
+          </label>
+          <input
+            id="website"
+            type="url"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            className="w-full p-2 border rounded"
           />
         </div>
 
-        <div className="flex space-x-4">
-          <button
-            type="submit"
-            disabled={saving}
-            className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
-          >
-            {saving ? "Saving..." : "Update Profile"}
-          </button>
-
-          <button
-            type="button"
-            onClick={signOut}
-            className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700"
-          >
-            Sign Out
-          </button>
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2" htmlFor="avatarUrl">
+            Avatar URL
+          </label>
+          <input
+            id="avatarUrl"
+            type="url"
+            value={avatarUrl}
+            onChange={(e) => setAvatarUrl(e.target.value)}
+            className="w-full p-2 border rounded"
+          />
+          <p className="text-sm text-gray-500 mt-1">
+            Enter a URL for your avatar image
+          </p>
         </div>
-      </form>
+
+        <button
+          onClick={updateProfile}
+          disabled={loading}
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+        >
+          {loading ? "Loading..." : "Update Profile"}
+        </button>
+      </div>
     </div>
   );
 }
