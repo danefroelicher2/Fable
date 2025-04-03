@@ -58,6 +58,12 @@ export default function Navigation() {
 
             {/* Auth and Search on the right */}
             <div className="flex items-center space-x-4">
+              <Link
+                href="/write"
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+              >
+                Write
+              </Link>
               <ProfileDropdown />
 
               <button
