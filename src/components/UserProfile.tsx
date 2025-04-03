@@ -30,19 +30,36 @@ export default function UserProfile() {
 
         if (!user) throw new Error("No user");
 
+        // First check if profile exists
         const { data, error } = await supabase
           .from("profiles")
           .select("username, full_name, website, avatar_url")
-          .eq("id", user.id)
-          .single();
+          .eq("id", user.id);
 
         if (error) throw error;
 
-        if (data) {
-          setUsername(data.username || "");
-          setFullName(data.full_name || "");
-          setWebsite(data.website || "");
-          setAvatarUrl(data.avatar_url || "");
+        // If profile exists, use it
+        if (data && data.length > 0) {
+          setUsername(data[0].username || "");
+          setFullName(data[0].full_name || "");
+          setWebsite(data[0].website || "");
+          setAvatarUrl(data[0].avatar_url || "");
+        } else {
+          // If profile doesn't exist, create one
+          const { error: insertError } = await supabase
+            .from("profiles")
+            .insert({
+              id: user.id,
+              username: "",
+              full_name: "",
+              website: "",
+              avatar_url: "",
+              updated_at: new Date().toISOString(),
+            });
+
+          if (insertError) throw insertError;
+
+          // Keep default empty values for form fields
         }
       } catch (error) {
         console.error("Error loading profile:", error);
