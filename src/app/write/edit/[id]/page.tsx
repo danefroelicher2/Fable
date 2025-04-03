@@ -1,34 +1,85 @@
-// src/app/write/page.tsx
+// src/app/write/edit/[id]/page.tsx
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-import { saveDraft, Draft } from "@/lib/draftUtils";
+import { getDraftById, saveDraft, Draft } from "@/lib/draftUtils";
 
-export default function WritePage() {
+export default function EditDraftPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const params = useParams();
+  const draftId = params.id as string;
 
+  const [draft, setDraft] = useState<Draft | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [category, setCategory] = useState("");
+  const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchDraft = async () => {
+      if (!user || !draftId) return;
+
+      try {
+        // Try to get draft from localStorage first (if coming from drafts list)
+        const storedDraft = localStorage.getItem("editDraft");
+        if (storedDraft) {
+          const parsedDraft = JSON.parse(storedDraft);
+          setDraft(parsedDraft);
+          setTitle(parsedDraft.title || "");
+          setContent(parsedDraft.content || "");
+          setExcerpt(parsedDraft.excerpt || "");
+          setCategory(parsedDraft.category || "");
+
+          // Clear localStorage after loading
+          localStorage.removeItem("editDraft");
+          setLoading(false);
+          return;
+        }
+
+        // Otherwise fetch from API
+        const fetchedDraft = await getDraftById(draftId);
+
+        if (fetchedDraft) {
+          setDraft(fetchedDraft);
+          setTitle(fetchedDraft.title || "");
+          setContent(fetchedDraft.content || "");
+          setExcerpt(fetchedDraft.excerpt || "");
+          setCategory(fetchedDraft.category || "");
+        } else {
+          setError("Draft not found or you don't have permission to edit it");
+        }
+      } catch (err) {
+        console.error("Error fetching draft:", err);
+        setError("An error occurred while loading the draft");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDraft();
+  }, [user, draftId]);
 
   // If user is not signed in, show sign-in prompt
   if (!user) {
     return (
       <div className="container mx-auto py-16 px-4">
         <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md text-center">
-          <h1 className="text-3xl font-bold mb-6">Write an Article</h1>
+          <h1 className="text-3xl font-bold mb-6">Edit Draft</h1>
           <p className="mb-6">
-            You need to sign in to write articles on LOSTLIBRARY.
+            You need to sign in to edit drafts on LOSTLIBRARY.
           </p>
           <Link
-            href={`/signin?redirect=${encodeURIComponent("/write")}`}
+            href={`/signin?redirect=${encodeURIComponent(
+              `/write/edit/${draftId}`
+            )}`}
             className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700"
           >
             Sign In to Continue
@@ -38,7 +89,7 @@ export default function WritePage() {
     );
   }
 
-  const handleSaveDraft = async () => {
+  const handleUpdateDraft = async () => {
     if (!title.trim()) {
       setSaveMessage("Please enter a title before saving");
       return;
@@ -48,30 +99,34 @@ export default function WritePage() {
     setSaveMessage("");
 
     try {
-      const draftData: Draft = {
+      if (!draft || !draft.id) {
+        throw new Error("Draft not found");
+      }
+
+      const updatedDraft: Draft = {
+        ...draft,
         title,
         content,
         excerpt,
         category,
       };
 
-      const savedDraft = await saveDraft(draftData);
+      const savedDraft = await saveDraft(updatedDraft);
 
       if (savedDraft) {
-        setSaveMessage("Draft saved successfully!");
+        setSaveMessage("Draft updated successfully!");
+        setDraft(savedDraft);
 
-        // Optionally, redirect to drafts page after a delay
+        // Clear message after a delay
         setTimeout(() => {
           setSaveMessage("");
-          // Uncomment the line below if you want to redirect after saving
-          // router.push("/profile/drafts");
         }, 3000);
       } else {
-        setSaveMessage("Failed to save draft. Please try again.");
+        setSaveMessage("Failed to update draft. Please try again.");
       }
     } catch (error) {
-      console.error("Error saving draft:", error);
-      setSaveMessage("An error occurred while saving draft.");
+      console.error("Error updating draft:", error);
+      setSaveMessage("An error occurred while updating draft.");
     } finally {
       setIsSaving(false);
     }
@@ -82,10 +137,46 @@ export default function WritePage() {
     alert("Publishing functionality will be implemented soon!");
   };
 
+  if (loading) {
+    return (
+      <div className="container mx-auto py-16 px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+          <p className="mt-2">Loading draft...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-16 px-4">
+        <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md text-center">
+          <h1 className="text-3xl font-bold mb-6">Error</h1>
+          <p className="text-red-600 mb-6">{error}</p>
+          <Link
+            href="/profile/drafts"
+            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+          >
+            Back to Drafts
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-10 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Write a New Article</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Edit Draft</h1>
+          <Link
+            href="/profile/drafts"
+            className="text-blue-600 hover:text-blue-800"
+          >
+            Back to Drafts
+          </Link>
+        </div>
 
         {saveMessage && (
           <div
@@ -188,11 +279,11 @@ export default function WritePage() {
           <div className="flex justify-end space-x-4">
             <button
               type="button"
-              onClick={handleSaveDraft}
+              onClick={handleUpdateDraft}
               disabled={isSaving}
-              className="px-6 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 disabled:opacity-50"
+              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
             >
-              {isSaving ? "Saving..." : "Save as Draft"}
+              {isSaving ? "Saving..." : "Update Draft"}
             </button>
 
             <button
