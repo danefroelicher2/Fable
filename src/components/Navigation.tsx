@@ -11,37 +11,25 @@ export default function Navigation() {
   return (
     <header>
       {/* Single unified header with navy background - extra large */}
-      <div className="bg-gray-800 text-white py-20">
+      <div className="bg-gray-900 text-white py-20">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center">
-            {/* Social media icons and premium on the left */}
-            <div className="flex items-center space-x-4">
+            {/* Social media icons on the left - moved X logo slightly to the right */}
+            <div className="flex items-center ml-60">
               <Link
                 href="https://x.com/historiafiles"
                 className="hover:text-gray-300"
               >
                 <span className="sr-only">X (Twitter)</span>
                 <svg
-                  className="h-5 w-5"
+                  className="h-7 w-7"
                   viewBox="0 0 24 24"
                   fill="currentColor"
                 >
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                 </svg>
               </Link>
-              <Link
-                href="/premium"
-                className="hover:text-gray-300 flex items-center"
-              >
-                <svg
-                  className="h-5 w-5 mr-1 text-yellow-400"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-                </svg>
-                <span className="font-medium">PREMIUM</span>
-              </Link>
+              {/* Premium link removed from here */}
             </div>
 
             {/* Logo in center - doubled size */}
@@ -50,7 +38,7 @@ export default function Navigation() {
               className="text-white absolute left-1/2 transform -translate-x-1/2"
             >
               <div className="bg-red-600 px-12 py-6">
-                <span className="text-5xl font-bold tracking-wide">
+                <span className="text-6xl font-bold tracking-wide">
                   LOSTLIBRARY
                 </span>
               </div>
@@ -323,20 +311,7 @@ export default function Navigation() {
             >
               PODCASTS
             </Link>
-            <Link
-              href="/premium"
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50 flex items-center"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <svg
-                className="h-5 w-5 mr-2 text-yellow-400"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-              </svg>
-              PREMIUM
-            </Link>
+            {/* Also removed from mobile menu */}
           </div>
         </div>
       )}
