@@ -4,9 +4,94 @@
 import { useState } from "react";
 import Link from "next/link";
 import ProfileDropdown from "./ProfileDropdown";
+import NavDropdown from "./NavDropdown"; // Import the new component
 
 export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Define dropdown items for Eras
+  const erasDropdownItems = [
+    {
+      label: "Early Civilizations (3000 BCE - 1200 BCE)",
+      href: "/eras/early-civilizations",
+    },
+    {
+      label: "Rise of Empires (1200 BCE - 500 BCE)",
+      href: "/eras/rise-of-empires",
+    },
+    {
+      label: "Classical Empires (500 BCE - 500 CE)",
+      href: "/eras/classical-empires",
+    },
+    {
+      label: "Rise of Religion (300 CE - 800 CE)",
+      href: "/eras/rise-of-religion",
+    },
+    {
+      label: "Renaissance (1400 - 1700 CE)",
+      href: "/eras/renaissance",
+    },
+    {
+      label: "Era of Revolutions (1700 - 1900 CE)",
+      href: "/eras/era-of-revolutions",
+    },
+    {
+      label: "Common Era (1900 - Present)",
+      href: "/eras/common-era",
+    },
+  ];
+
+  // Define dropdown items for Wars & Events (you can fill these in later)
+  const warsEventsDropdownItems = [
+    {
+      label: "World War I",
+      href: "/wars-events/world-war-i",
+    },
+    {
+      label: "World War II",
+      href: "/wars-events/world-war-ii",
+    },
+    // Add more items as needed
+  ];
+
+  // Define dropdown items for Famous People (you can fill these in later)
+  const famousPeopleDropdownItems = [
+    {
+      label: "Political Leaders",
+      href: "/famous-people/political-leaders",
+    },
+    {
+      label: "Military Figures",
+      href: "/famous-people/military-figures",
+    },
+    // Add more items as needed
+  ];
+
+  // Define dropdown items for Topics (you can fill these in later)
+  const topicsDropdownItems = [
+    {
+      label: "Military History",
+      href: "/topics/military-history",
+    },
+    {
+      label: "Cultural History",
+      href: "/topics/cultural-history",
+    },
+    // Add more items as needed
+  ];
+
+  // Define dropdown items for Magazines (you can fill these in later)
+  const magazinesDropdownItems = [
+    {
+      label: "Historical Quarterly",
+      href: "/magazines/historical-quarterly",
+    },
+    {
+      label: "Ancient Times",
+      href: "/magazines/ancient-times",
+    },
+    // Add more items as needed
+  ];
 
   return (
     <header>
@@ -145,6 +230,7 @@ export default function Navigation() {
                     ></path>
                   </svg>
                 </Link>
+                <NavDropdown items={warsEventsDropdownItems} />
               </li>
               <li className="relative group">
                 <Link
@@ -166,6 +252,7 @@ export default function Navigation() {
                     ></path>
                   </svg>
                 </Link>
+                <NavDropdown items={famousPeopleDropdownItems} />
               </li>
               <li className="relative group">
                 <Link
@@ -187,53 +274,7 @@ export default function Navigation() {
                     ></path>
                   </svg>
                 </Link>
-                {/* Dropdown for Eras */}
-                <div className="hidden group-hover:block absolute z-50 left-0 mt-2 w-64 bg-white shadow-lg rounded-lg overflow-hidden">
-                  <div className="py-1">
-                    <Link
-                      href="/eras/early-civilizations"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Early Civilizations (3000 BCE - 1200 BCE)
-                    </Link>
-                    <Link
-                      href="/eras/rise-of-empires"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Rise of Empires (1200 BCE - 500 BCE)
-                    </Link>
-                    <Link
-                      href="/eras/classical-empires"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Classical Empires (500 BCE - 500 CE)
-                    </Link>
-                    <Link
-                      href="/eras/rise-of-religion"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Rise of Religion (300 CE - 800 CE)
-                    </Link>
-                    <Link
-                      href="/eras/renaissance"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Renaissance (1400 - 1700 CE)
-                    </Link>
-                    <Link
-                      href="/eras/era-of-revolutions"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Era of Revolutions (1700 - 1900 CE)
-                    </Link>
-                    <Link
-                      href="/eras/common-era"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Common Era (1900 - Present)
-                    </Link>
-                  </div>
-                </div>
+                <NavDropdown items={erasDropdownItems} />
               </li>
 
               <li className="relative group">
@@ -256,6 +297,7 @@ export default function Navigation() {
                     ></path>
                   </svg>
                 </Link>
+                <NavDropdown items={topicsDropdownItems} />
               </li>
               <li className="relative group">
                 <Link
@@ -277,6 +319,7 @@ export default function Navigation() {
                     ></path>
                   </svg>
                 </Link>
+                <NavDropdown items={magazinesDropdownItems} />
               </li>
               <li>
                 <Link

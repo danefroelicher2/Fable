@@ -121,3 +121,20 @@ body {
   visibility: visible;
   transform: translateY(0);
 }
+.era-dropdown {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  visibility: hidden;
+  /* Add a small delay before hiding */
+  transition-delay: 0s;
+}
+
+.group:hover .era-dropdown,
+.era-dropdown:hover {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  /* Add a small delay before showing */
+  transition-delay: 0.1s;
+}
