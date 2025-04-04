@@ -187,7 +187,55 @@ export default function Navigation() {
                     ></path>
                   </svg>
                 </Link>
+                {/* Dropdown for Eras */}
+                <div className="hidden group-hover:block absolute z-50 left-0 mt-2 w-64 bg-white shadow-lg rounded-lg overflow-hidden">
+                  <div className="py-1">
+                    <Link
+                      href="/eras/early-civilizations"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Early Civilizations (3000 BCE - 1200 BCE)
+                    </Link>
+                    <Link
+                      href="/eras/rise-of-empires"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Rise of Empires (1200 BCE - 500 BCE)
+                    </Link>
+                    <Link
+                      href="/eras/classical-empires"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Classical Empires (500 BCE - 500 CE)
+                    </Link>
+                    <Link
+                      href="/eras/rise-of-religion"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Rise of Religion (300 CE - 800 CE)
+                    </Link>
+                    <Link
+                      href="/eras/renaissance"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Renaissance (1400 - 1700 CE)
+                    </Link>
+                    <Link
+                      href="/eras/era-of-revolutions"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Era of Revolutions (1700 - 1900 CE)
+                    </Link>
+                    <Link
+                      href="/eras/common-era"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Common Era (1900 - Present)
+                    </Link>
+                  </div>
+                </div>
               </li>
+
               <li className="relative group">
                 <Link
                   href="/topics"
