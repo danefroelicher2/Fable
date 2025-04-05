@@ -1,0 +1,188 @@
+/* History navigation styles */
+
+/* Base styles */
+.history-nav {
+  width: 100%;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Header styles */
+.history-header {
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Logo styles */
+.history-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem 0;
+}
+
+.history-logo img {
+  height: 60px;
+}
+
+/* Navigation bar */
+.history-navbar {
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.history-navbar-container {
+  display: flex;
+  justify-content: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Navigation items */
+.history-nav-item {
+  position: relative;
+}
+
+.history-nav-link {
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  color: #1a202c;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.history-nav-link:hover {
+  color: #3182ce;
+}
+
+.history-nav-link svg {
+  margin-left: 0.25rem;
+  width: 16px;
+  height: 16px;
+}
+
+/* Dropdown styles */
+.history-dropdown {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  background-color: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 10;
+  padding: 1.5rem 2rem 2rem;
+  display: none;
+}
+
+.history-nav-item:hover .history-dropdown {
+  display: block;
+}
+
+.history-dropdown-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  font-family: Georgia, serif;
+  margin-bottom: 0.75rem;
+}
+
+.history-dropdown-description {
+  color: #4a5568;
+  margin-bottom: 1.5rem;
+  max-width: 80%;
+}
+
+.history-dropdown-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.history-dropdown-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.history-dropdown-link {
+  color: #4a5568;
+  transition: color 0.2s ease;
+}
+
+.history-dropdown-link:hover {
+  color: #3182ce;
+}
+
+/* Utilities */
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stream-button {
+  background-color: #000;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+}
+
+.stream-button:hover {
+  background-color: #1a1a1a;
+}
+
+/* Mobile menu */
+.mobile-menu-button {
+  display: none;
+}
+
+.mobile-menu {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .history-navbar-container {
+    display: none;
+  }
+
+  .mobile-menu-button {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    color: #1a202c;
+  }
+
+  .mobile-menu.active {
+    display: block;
+    padding: 1rem;
+  }
+
+  .mobile-menu-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .mobile-menu-link {
+    display: block;
+    font-weight: 500;
+    color: #1a202c;
+  }
+
+  .mobile-submenu {
+    padding-left: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .mobile-submenu-link {
+    display: block;
+    padding: 0.5rem 0;
+    color: #4a5568;
+  }
+}
+
+/* Example expanded US History dropdown for reference */
+.us-history-dropdown {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}

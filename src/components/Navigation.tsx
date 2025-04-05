@@ -24,7 +24,7 @@ export default function Navigation() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Define dropdown items for Eras
+  // Define dropdown items for Eras & Ages
   const erasDropdownItems = [
     {
       label: "Early Civilizations (3000 BCE - 1200 BCE)",
@@ -56,119 +56,107 @@ export default function Navigation() {
     },
   ];
 
-  // Define dropdown items for Wars & Events
-  const warsEventsDropdownItems = [
+  // Define dropdown items for Wars
+  const warsDropdownItems = [
     {
       label: "World War I",
-      href: "/wars-events/world-war-i",
+      href: "/wars/world-war-i",
     },
     {
       label: "World War II",
-      href: "/wars-events/world-war-ii",
+      href: "/wars/world-war-ii",
     },
     {
       label: "Cold War",
-      href: "/wars-events/cold-war",
+      href: "/wars/cold-war",
     },
     {
       label: "American Civil War",
-      href: "/wars-events/american-civil-war",
+      href: "/wars/american-civil-war",
     },
     {
       label: "Napoleonic Wars",
-      href: "/wars-events/napoleonic-wars",
+      href: "/wars/napoleonic-wars",
     },
     {
       label: "All Wars & Conflicts",
-      href: "/wars-events/all",
+      href: "/wars/all",
     },
   ];
 
-  // Define dropdown items for Famous People
-  const famousPeopleDropdownItems = [
+  // Define dropdown items for Science & Innovation
+  const scienceInnovationDropdownItems = [
     {
-      label: "Political Leaders",
-      href: "/famous-people/political-leaders",
+      label: "Scientific Discoveries",
+      href: "/science-innovation/discoveries",
     },
     {
-      label: "Military Figures",
-      href: "/famous-people/military-figures",
+      label: "Inventions",
+      href: "/science-innovation/inventions",
     },
     {
-      label: "Philosophers & Thinkers",
-      href: "/famous-people/philosophers",
+      label: "Technology",
+      href: "/science-innovation/technology",
     },
     {
-      label: "Scientists & Inventors",
-      href: "/famous-people/scientists",
+      label: "Medicine",
+      href: "/science-innovation/medicine",
     },
     {
-      label: "Artists & Writers",
-      href: "/famous-people/artists",
+      label: "Space Exploration",
+      href: "/science-innovation/space",
     },
     {
-      label: "Explorers & Adventurers",
-      href: "/famous-people/explorers",
-    },
-  ];
-
-  // Define dropdown items for Topics
-  const topicsDropdownItems = [
-    {
-      label: "Military History",
-      href: "/topics/military-history",
-    },
-    {
-      label: "Cultural History",
-      href: "/topics/cultural-history",
-    },
-    {
-      label: "Science & Technology",
-      href: "/topics/science-technology",
-    },
-    {
-      label: "Art & Architecture",
-      href: "/topics/art-architecture",
-    },
-    {
-      label: "Religion & Philosophy",
-      href: "/topics/religion-philosophy",
-    },
-    {
-      label: "Politics & Government",
-      href: "/topics/politics-government",
-    },
-    {
-      label: "Economics & Trade",
-      href: "/topics/economics-trade",
+      label: "Important Scientists",
+      href: "/science-innovation/scientists",
     },
   ];
 
-  // Define dropdown items for Magazines
-  const magazinesDropdownItems = [
+  // Define dropdown items for U.S.
+  const usDropdownItems = [
     {
-      label: "Historical Quarterly",
-      href: "/magazines/historical-quarterly",
+      label: "Civil War",
+      href: "/us/civil-war",
     },
     {
-      label: "Ancient Times",
-      href: "/magazines/ancient-times",
+      label: "Westward Expansion",
+      href: "/us/westward-expansion",
     },
     {
-      label: "Modern History Review",
-      href: "/magazines/modern-history-review",
+      label: "American Revolution",
+      href: "/us/revolution",
     },
     {
-      label: "War Chronicles",
-      href: "/magazines/war-chronicles",
+      label: "Great Depression",
+      href: "/us/great-depression",
     },
     {
-      label: "Cultural Heritage",
-      href: "/magazines/cultural-heritage",
+      label: "U.S. Presidents",
+      href: "/us/presidents",
+    },
+  ];
+
+  // Define dropdown items for World
+  const worldDropdownItems = [
+    {
+      label: "Ancient Civilizations",
+      href: "/world/ancient",
     },
     {
-      label: "All Publications",
-      href: "/magazines/all",
+      label: "European History",
+      href: "/world/europe",
+    },
+    {
+      label: "Asian History",
+      href: "/world/asia",
+    },
+    {
+      label: "African History",
+      href: "/world/africa",
+    },
+    {
+      label: "Latin American History",
+      href: "/world/latin-america",
     },
   ];
 
@@ -307,20 +295,12 @@ export default function Navigation() {
           {/* Desktop Navigation */}
           <div className={`${isMobileMenuOpen ? "block" : "hidden"} md:block`}>
             <ul className="md:flex md:justify-center md:space-x-8 space-y-2 md:space-y-0">
-              <li>
-                <Link
-                  href="/today-in-history"
-                  className="block text-gray-800 hover:text-red-600 font-medium transition-colors"
-                >
-                  TODAY IN HISTORY
-                </Link>
-              </li>
               <li className="relative group">
                 <Link
-                  href="/wars-events"
+                  href="/us"
                   className="block text-gray-800 hover:text-red-600 font-medium flex items-center transition-colors"
                 >
-                  WARS & EVENTS
+                  U.S.
                   <svg
                     className="ml-1 w-4 h-4"
                     fill="none"
@@ -335,14 +315,14 @@ export default function Navigation() {
                     ></path>
                   </svg>
                 </Link>
-                <NavDropdown items={warsEventsDropdownItems} />
+                <NavDropdown items={usDropdownItems} />
               </li>
               <li className="relative group">
                 <Link
-                  href="/famous-people"
+                  href="/world"
                   className="block text-gray-800 hover:text-red-600 font-medium flex items-center transition-colors"
                 >
-                  FAMOUS PEOPLE
+                  WORLD
                   <svg
                     className="ml-1 w-4 h-4"
                     fill="none"
@@ -357,14 +337,14 @@ export default function Navigation() {
                     ></path>
                   </svg>
                 </Link>
-                <NavDropdown items={famousPeopleDropdownItems} />
+                <NavDropdown items={worldDropdownItems} />
               </li>
               <li className="relative group">
                 <Link
                   href="/eras"
                   className="block text-gray-800 hover:text-red-600 font-medium flex items-center transition-colors"
                 >
-                  ERAS
+                  ERAS & AGES
                   <svg
                     className="ml-1 w-4 h-4"
                     fill="none"
@@ -381,13 +361,12 @@ export default function Navigation() {
                 </Link>
                 <NavDropdown items={erasDropdownItems} />
               </li>
-
               <li className="relative group">
                 <Link
-                  href="/topics"
+                  href="/wars"
                   className="block text-gray-800 hover:text-red-600 font-medium flex items-center transition-colors"
                 >
-                  TOPICS
+                  WARS
                   <svg
                     className="ml-1 w-4 h-4"
                     fill="none"
@@ -402,14 +381,14 @@ export default function Navigation() {
                     ></path>
                   </svg>
                 </Link>
-                <NavDropdown items={topicsDropdownItems} />
+                <NavDropdown items={warsDropdownItems} />
               </li>
               <li className="relative group">
                 <Link
-                  href="/magazines"
+                  href="/science-innovation"
                   className="block text-gray-800 hover:text-red-600 font-medium flex items-center transition-colors"
                 >
-                  MAGAZINES
+                  SCIENCE & INNOVATION
                   <svg
                     className="ml-1 w-4 h-4"
                     fill="none"
@@ -424,23 +403,7 @@ export default function Navigation() {
                     ></path>
                   </svg>
                 </Link>
-                <NavDropdown items={magazinesDropdownItems} />
-              </li>
-              <li>
-                <Link
-                  href="/newsletters"
-                  className="block text-gray-800 hover:text-red-600 font-medium transition-colors"
-                >
-                  NEWSLETTERS
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/podcasts"
-                  className="block text-gray-800 hover:text-red-600 font-medium transition-colors"
-                >
-                  PODCASTS
-                </Link>
+                <NavDropdown items={scienceInnovationDropdownItems} />
               </li>
             </ul>
           </div>
@@ -451,24 +414,16 @@ export default function Navigation() {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white shadow-lg">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <Link
-              href="/today-in-history"
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              TODAY IN HISTORY
-            </Link>
-
-            {/* Mobile dropdown for Wars & Events */}
+            {/* Mobile dropdown for U.S. */}
             <div className="border-l-4 border-red-600 pl-2">
               <Link
-                href="/wars-events"
+                href="/us"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                WARS & EVENTS
+                U.S.
               </Link>
-              {warsEventsDropdownItems.map((item) => (
+              {usDropdownItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -480,16 +435,16 @@ export default function Navigation() {
               ))}
             </div>
 
-            {/* Mobile dropdown for Famous People */}
+            {/* Mobile dropdown for World */}
             <div className="border-l-4 border-red-600 pl-2">
               <Link
-                href="/famous-people"
+                href="/world"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                FAMOUS PEOPLE
+                WORLD
               </Link>
-              {famousPeopleDropdownItems.map((item) => (
+              {worldDropdownItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -501,14 +456,14 @@ export default function Navigation() {
               ))}
             </div>
 
-            {/* Mobile dropdown for Eras */}
+            {/* Mobile dropdown for Eras & Ages */}
             <div className="border-l-4 border-red-600 pl-2">
               <Link
                 href="/eras"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                ERAS
+                ERAS & AGES
               </Link>
               {erasDropdownItems.map((item) => (
                 <Link
@@ -522,16 +477,16 @@ export default function Navigation() {
               ))}
             </div>
 
-            {/* Mobile dropdown for Topics */}
+            {/* Mobile dropdown for Wars */}
             <div className="border-l-4 border-red-600 pl-2">
               <Link
-                href="/topics"
+                href="/wars"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                TOPICS
+                WARS
               </Link>
-              {topicsDropdownItems.map((item) => (
+              {warsDropdownItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -543,16 +498,16 @@ export default function Navigation() {
               ))}
             </div>
 
-            {/* Mobile dropdown for Magazines */}
+            {/* Mobile dropdown for Science & Innovation */}
             <div className="border-l-4 border-red-600 pl-2">
               <Link
-                href="/magazines"
+                href="/science-innovation"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                MAGAZINES
+                SCIENCE & INNOVATION
               </Link>
-              {magazinesDropdownItems.map((item) => (
+              {scienceInnovationDropdownItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -563,21 +518,6 @@ export default function Navigation() {
                 </Link>
               ))}
             </div>
-
-            <Link
-              href="/newsletters"
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              NEWSLETTERS
-            </Link>
-            <Link
-              href="/podcasts"
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              PODCASTS
-            </Link>
           </div>
         </div>
       )}
