@@ -102,27 +102,27 @@ export default function Navigation() {
         "Explore history organized by distinct time periods and major historical transformations.",
       links: [
         {
-          label: "Early Civilizations (3000 BCE - 1200 BCE)",
+          label: "Early Civilizations",
           href: "/eras/early-civilizations",
         },
         {
-          label: "Rise of Empires (1200 BCE - 500 BCE)",
+          label: "Rise of Empires",
           href: "/eras/rise-of-empires",
         },
         {
-          label: "Classical Empires (500 BCE - 500 CE)",
+          label: "Classical Empires",
           href: "/eras/classical-empires",
         },
         {
-          label: "Rise of Religion (300 CE - 800 CE)",
+          label: "Rise of Religion",
           href: "/eras/rise-of-religion",
         },
-        { label: "Renaissance (1400 - 1700 CE)", href: "/eras/renaissance" },
+        { label: "Renaissance", href: "/eras/renaissance" },
         {
-          label: "Era of Revolutions (1700 - 1900 CE)",
+          label: "Era of Revolutions",
           href: "/eras/era-of-revolutions",
         },
-        { label: "Common Era (1900 - Present)", href: "/eras/common-era" },
+        { label: "Common Era", href: "/eras/common-era" },
         { label: "Industrial Revolution", href: "/eras/industrial-revolution" },
         { label: "Information Age", href: "/eras/information-age" },
       ],
