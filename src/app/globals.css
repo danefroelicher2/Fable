@@ -101,113 +101,169 @@ body {
 /* Main Navigation Styles */
 .main-nav {
   position: relative;
+  z-index: 40;
 }
 
+/* Updated margin to approximately 1 inch (96px) */
 .nav-item {
   position: relative;
+  margin-right: 56px; /* Increased spacing to 1 inch between items */
+}
+
+/* Remove margin from the last nav item */
+.nav-item:last-child {
+  margin-right: 0;
 }
 
 .nav-link {
   display: inline-flex;
   align-items: center;
+  justify-content: center; /* Center the contents including arrow */
   padding: 0.5rem 0;
   font-weight: 500;
   color: #333;
   transition: color 0.2s ease;
 }
 
-.nav-link:hover {
-  color: var(--historynet-red);
+/* Make sure the arrow is properly centered */
+.nav-link svg {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 4px;
+  margin-top: 1px; /* Slight adjustment to visually center */
 }
 
-/* Mega Dropdown Styles */
-.mega-dropdown {
+.nav-link:hover {
+  color: #ff0000;
+}
+
+/* Update dropdown style for horizontal layout */
+.nav-item:hover > div {
+  display: block;
+}
+
+.nav-item > div {
   position: absolute;
-  top: 100%;
   left: 0;
-  width: 100%;
-  background-color: white;
-  border-top: 1px solid #eaeaea;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  width: 100%; /* Will be updated to have a narrower width */
+  max-width: 1000px; /* Make dropdown width narrower */
+  margin: 0 auto;
+  right: 0; /* Add right: 0 to help center the dropdown */
   z-index: 50;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-10px);
-  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
   animation: fadeIn 0.3s ease forwards;
 }
 
-.nav-item:hover .mega-dropdown {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
+/* Prevent text wrapping in the horizontal menu items */
+.nav-item > a {
+  white-space: nowrap;
 }
 
-.mega-dropdown-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+/* This allows the mega dropdown to be positioned relative to the parent container */
+.nav-item {
+  position: static;
 }
 
-.mega-dropdown-header {
-  margin-bottom: 1.5rem;
+.main-nav {
+  position: relative;
 }
 
-.mega-dropdown-columns {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 2rem;
-}
-
-.mega-dropdown-column a {
-  display: block;
+/* Horizontal dropdown styles */
+.container a {
   padding: 0.5rem 0;
   color: #555;
   transition: color 0.2s ease;
+  display: block;
+  text-align: left;
+  font-size: 0.875rem; /* text-sm equivalent */
 }
 
-.mega-dropdown-column a:hover {
-  color: var(--historynet-red);
+.container a:hover {
+  color: #ff0000;
+  text-decoration: none;
 }
 
-/* Legacy Navigation Dropdown Styles */
-.nav-dropdown {
+/* Make the dropdown more compact and reduced width */
+.nav-item > div {
   position: absolute;
-  top: 100%;
   left: 0;
-  z-index: 10;
-  width: 200px;
-  background-color: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.375rem;
+  right: 0;
+  margin: 0 auto; /* Center the dropdown */
+  width: 80%; /* Reduce width to 80% of the viewport */
+  max-width: 1000px; /* Maximum width */
+  z-index: 50;
+  animation: fadeIn 0.2s ease forwards;
+  border-top: 1px solid #e5e7eb;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
     0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(10px);
-  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
 }
 
-.group:hover .nav-dropdown {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
+.nav-item > div .container {
+  max-width: 1000px; /* Reduce from 1200px */
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
 }
 
-.era-dropdown {
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  visibility: hidden;
-  /* Add a small delay before hiding */
-  transition-delay: 0s;
+/* Layout for the two-column dropdown design */
+.nav-item > div .flex > div:first-child {
+  padding-right: 2rem;
+  border-right: 1px solid #f0f0f0;
 }
 
-.group:hover .era-dropdown,
-.era-dropdown:hover {
-  opacity: 1;
-  transform: translateY(0);
-  visibility: visible;
-  /* Add a small delay before showing */
-  transition-delay: 0.1s;
+.nav-item > div .flex > div:last-child {
+  padding-left: 1rem;
+}
+
+/* Make links more compact */
+.nav-item > div .grid a {
+  padding: 0.5rem 0;
+  line-height: 1.25;
+}
+
+/* Add subtle hover effect to the navigation items */
+.nav-link {
+  position: relative;
+}
+
+.nav-link:after {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: #ff0000;
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover:after {
+  width: 100%;
+}
+
+/* Profile dropdown container and its dropdown */
+.profile-dropdown-container {
+  position: relative;
+  z-index: 101; /* Higher than everything */
+}
+
+.profile-dropdown-container > div {
+  z-index: 100; /* Higher than nav dropdowns */
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .nav-item > div {
+    position: static;
+    width: 100%;
+    display: none;
+  }
+
+  .nav-item {
+    position: relative;
+    margin-right: 0; /* Remove margin on mobile */
+  }
+
+  .profile-dropdown-container,
+  .profile-dropdown-container > div {
+    z-index: 101;
+  }
 }

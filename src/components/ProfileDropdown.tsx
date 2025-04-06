@@ -54,7 +54,11 @@ export default function ProfileDropdown() {
   }
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div
+      className="relative profile-dropdown-container"
+      ref={dropdownRef}
+      style={{ zIndex: 101 }}
+    >
       <button
         onClick={toggleDropdown}
         className="flex items-center space-x-1 text-white focus:outline-none"
@@ -80,7 +84,10 @@ export default function ProfileDropdown() {
       </button>
 
       {isDropdownOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+        <div
+          className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1"
+          style={{ zIndex: 100 }}
+        >
           <div className="px-4 py-2 border-b text-sm font-medium text-gray-700 truncate">
             {user.email}
           </div>

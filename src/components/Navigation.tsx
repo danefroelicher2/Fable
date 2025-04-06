@@ -4,7 +4,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import ProfileDropdown from "./ProfileDropdown";
-import NavDropdown from "./NavDropdown";
 
 export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -25,196 +24,174 @@ export default function Navigation() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Define dropdown items for Eras & Ages
-  const erasDropdownItems = [
-    {
-      label: "Early Civilizations (3000 BCE - 1200 BCE)",
-      href: "/eras/early-civilizations",
-    },
-    {
-      label: "Rise of Empires (1200 BCE - 500 BCE)",
-      href: "/eras/rise-of-empires",
-    },
-    {
-      label: "Classical Empires (500 BCE - 500 CE)",
-      href: "/eras/classical-empires",
-    },
-    {
-      label: "Rise of Religion (300 CE - 800 CE)",
-      href: "/eras/rise-of-religion",
-    },
-    {
-      label: "Renaissance (1400 - 1700 CE)",
-      href: "/eras/renaissance",
-    },
-    {
-      label: "Era of Revolutions (1700 - 1900 CE)",
-      href: "/eras/era-of-revolutions",
-    },
-    {
-      label: "Common Era (1900 - Present)",
-      href: "/eras/common-era",
-    },
-  ];
-
-  // Define dropdown items for Wars
-  const warsDropdownItems = [
-    {
-      label: "World War I",
-      href: "/wars/world-war-i",
-    },
-    {
-      label: "World War II",
-      href: "/wars/world-war-ii",
-    },
-    {
-      label: "Cold War",
-      href: "/wars/cold-war",
-    },
-    {
-      label: "American Civil War",
-      href: "/wars/american-civil-war",
-    },
-    {
-      label: "Napoleonic Wars",
-      href: "/wars/napoleonic-wars",
-    },
-    {
-      label: "All Wars & Conflicts",
-      href: "/wars/all",
-    },
-  ];
-
-  // Define dropdown items for Science & Innovation
-  const scienceInnovationDropdownItems = [
-    {
-      label: "Scientific Discoveries",
-      href: "/science-innovation/discoveries",
-    },
-    {
-      label: "Inventions",
-      href: "/science-innovation/inventions",
-    },
-    {
-      label: "Technology",
-      href: "/science-innovation/technology",
-    },
-    {
-      label: "Medicine",
-      href: "/science-innovation/medicine",
-    },
-    {
-      label: "Space Exploration",
-      href: "/science-innovation/space",
-    },
-    {
-      label: "Important Scientists",
-      href: "/science-innovation/scientists",
-    },
-  ];
-
-  // Define dropdown items for U.S.
-  const usDropdownItems = [
-    {
-      label: "Colonial America",
-      href: "/us/colonial-america",
-    },
-    {
-      label: "American Revolution",
-      href: "/us/revolution",
-    },
-    {
-      label: "Early U.S.",
-      href: "/us/early-us",
-    },
-    {
-      label: "Slavery",
-      href: "/us/slavery",
-    },
-    {
-      label: "Civil War",
-      href: "/us/civil-war",
-    },
-    {
-      label: "Immigration",
-      href: "/us/immigration",
-    },
-    {
-      label: "Great Depression",
-      href: "/us/great-depression",
-    },
-    {
-      label: "Black History",
-      href: "/us/black-history",
-    },
-    {
-      label: "Hispanic History",
-      href: "/us/hispanic-history",
-    },
-    {
-      label: "Women's History",
-      href: "/us/womens-history",
-    },
-    {
-      label: "LGBTQ+ History",
-      href: "/us/lgbtq-history",
-    },
-    {
-      label: "Native American History",
-      href: "/us/native-american-history",
-    },
-    {
-      label: "Asian American & Pacific Islander History",
-      href: "/us/asian-american-history",
-    },
-    {
-      label: "U.S. Presidents",
-      href: "/us/presidents",
-    },
-    {
-      label: "U.S. Government and Politics",
-      href: "/us/government-politics",
-    },
-    {
-      label: "U.S. States",
-      href: "/us/states",
-    },
-    {
-      label: "Crime",
-      href: "/us/crime",
-    },
-  ];
-
-  // Define dropdown items for World
-  const worldDropdownItems = [
-    {
-      label: "Ancient Civilizations",
-      href: "/world/ancient",
-    },
-    {
-      label: "European History",
-      href: "/world/europe",
-    },
-    {
-      label: "Asian History",
-      href: "/world/asia",
-    },
-    {
-      label: "African History",
-      href: "/world/africa",
-    },
-    {
-      label: "Latin American History",
-      href: "/world/latin-america",
-    },
-  ];
-
   const handleMouseEnter = (dropdown: string) => {
     setActiveDropdown(dropdown);
   };
 
   const handleMouseLeave = () => {
     setActiveDropdown(null);
+  };
+
+  // Navigation category data
+  const navCategories = [
+    {
+      id: "us",
+      title: "U.S.",
+      href: "/us",
+      description:
+        "All the major chapters in the American story, from Indigenous beginnings to the present day.",
+      links: [
+        { label: "Colonial America", href: "/us/colonial-america" },
+        { label: "American Revolution", href: "/us/revolution" },
+        { label: "Early U.S.", href: "/us/early-us" },
+        { label: "Slavery", href: "/us/slavery" },
+        { label: "Civil War", href: "/us/civil-war" },
+        { label: "Great Depression", href: "/us/great-depression" },
+        { label: "Black History", href: "/us/black-history" },
+        { label: "LGBTQ+ History", href: "/us/lgbtq-history" },
+        { label: "Women's History", href: "/us/womens-history" },
+        { label: "Hispanic History", href: "/us/hispanic-history" },
+        {
+          label: "Native American History",
+          href: "/us/native-american-history",
+        },
+        {
+          label: "Asian American & Pacific Islander History",
+          href: "/us/asian-american-history",
+        },
+        { label: "U.S. Presidents", href: "/us/presidents" },
+        {
+          label: "U.S. Government and Politics",
+          href: "/us/government-politics",
+        },
+        { label: "U.S. Constitution", href: "/us/constitution" },
+        { label: "U.S. States", href: "/us/states" },
+        { label: "Immigration", href: "/us/immigration" },
+        { label: "Crime", href: "/us/crime" },
+      ],
+    },
+    {
+      id: "world",
+      title: "World",
+      href: "/world",
+      description:
+        "History from countries and communities across the globe, including the world's major wars.",
+      links: [
+        { label: "Ancient Civilizations", href: "/world/ancient" },
+        { label: "European History", href: "/world/europe" },
+        { label: "Asian History", href: "/world/asia" },
+        { label: "African History", href: "/world/africa" },
+        { label: "Latin American History", href: "/world/latin-america" },
+        { label: "Middle Eastern History", href: "/world/middle-east" },
+        { label: "World War I", href: "/world/ww1" },
+        { label: "World War II", href: "/world/ww2" },
+        { label: "Cold War", href: "/world/cold-war" },
+        { label: "Holocaust", href: "/world/holocaust" },
+        { label: "Exploration", href: "/world/exploration" },
+        {
+          label: "Industrial Revolution",
+          href: "/world/industrial-revolution",
+        },
+      ],
+    },
+    {
+      id: "eras",
+      title: "Eras & Ages",
+      href: "/eras",
+      description:
+        "Explore history organized by distinct time periods and major historical transformations.",
+      links: [
+        {
+          label: "Early Civilizations (3000 BCE - 1200 BCE)",
+          href: "/eras/early-civilizations",
+        },
+        {
+          label: "Rise of Empires (1200 BCE - 500 BCE)",
+          href: "/eras/rise-of-empires",
+        },
+        {
+          label: "Classical Empires (500 BCE - 500 CE)",
+          href: "/eras/classical-empires",
+        },
+        {
+          label: "Rise of Religion (300 CE - 800 CE)",
+          href: "/eras/rise-of-religion",
+        },
+        { label: "Renaissance (1400 - 1700 CE)", href: "/eras/renaissance" },
+        {
+          label: "Era of Revolutions (1700 - 1900 CE)",
+          href: "/eras/era-of-revolutions",
+        },
+        { label: "Common Era (1900 - Present)", href: "/eras/common-era" },
+        { label: "Industrial Revolution", href: "/eras/industrial-revolution" },
+        { label: "Information Age", href: "/eras/information-age" },
+      ],
+    },
+    {
+      id: "wars",
+      title: "Wars",
+      href: "/wars",
+      description:
+        "Military conflicts that shaped nations and changed the course of history.",
+      links: [
+        { label: "World War I", href: "/wars/world-war-i" },
+        { label: "World War II", href: "/wars/world-war-ii" },
+        { label: "Cold War", href: "/wars/cold-war" },
+        { label: "American Civil War", href: "/wars/american-civil-war" },
+        { label: "Napoleonic Wars", href: "/wars/napoleonic-wars" },
+        { label: "Vietnam War", href: "/wars/vietnam-war" },
+        { label: "Korean War", href: "/wars/korean-war" },
+        { label: "Ancient Warfare", href: "/wars/ancient-warfare" },
+        { label: "All Wars & Conflicts", href: "/wars/all" },
+      ],
+    },
+    {
+      id: "science",
+      title: "Science & Innovation",
+      href: "/science-innovation",
+      description:
+        "The evolution of human knowledge and technological breakthroughs throughout history.",
+      links: [
+        {
+          label: "Scientific Discoveries",
+          href: "/science-innovation/discoveries",
+        },
+        { label: "Inventions", href: "/science-innovation/inventions" },
+        { label: "Technology", href: "/science-innovation/technology" },
+        { label: "Medicine", href: "/science-innovation/medicine" },
+        { label: "Space Exploration", href: "/science-innovation/space" },
+        {
+          label: "Industrial Revolution",
+          href: "/science-innovation/industrial-revolution",
+        },
+        { label: "Famous Scientists", href: "/science-innovation/scientists" },
+        {
+          label: "Digital Revolution",
+          href: "/science-innovation/digital-revolution",
+        },
+        {
+          label: "Engineering Marvels",
+          href: "/science-innovation/engineering",
+        },
+      ],
+    },
+  ];
+
+  // Function to create a grid layout from a flat list of links
+  const createGrid = (
+    links: { label: string; href: string }[],
+    columns: number = 3
+  ) => {
+    const columnSize = Math.ceil(links.length / columns);
+    const grid = [];
+
+    for (let i = 0; i < columns; i++) {
+      const startIdx = i * columnSize;
+      const columnLinks = links.slice(startIdx, startIdx + columnSize);
+      grid.push(columnLinks);
+    }
+
+    return grid;
   };
 
   return (
@@ -352,147 +329,79 @@ export default function Navigation() {
           {/* Desktop Navigation */}
           <div className={`${isMobileMenuOpen ? "block" : "hidden"} md:block`}>
             <ul className="main-nav md:flex md:justify-center md:space-x-8 space-y-2 md:space-y-0">
-              <li
-                className="nav-item"
-                onMouseEnter={() => handleMouseEnter("us")}
-                onMouseLeave={handleMouseLeave}
-              >
-                <a href="/us" className="nav-link flex items-center">
-                  U.S.
-                  <svg
-                    className="ml-1 w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    ></path>
-                  </svg>
-                </a>
-                {activeDropdown === "us" && (
-                  <NavDropdown items={usDropdownItems} title="U.S. History" />
-                )}
-              </li>
-
-              <li
-                className="nav-item"
-                onMouseEnter={() => handleMouseEnter("world")}
-                onMouseLeave={handleMouseLeave}
-              >
-                <a href="/world" className="nav-link flex items-center">
-                  World
-                  <svg
-                    className="ml-1 w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    ></path>
-                  </svg>
-                </a>
-                {activeDropdown === "world" && (
-                  <NavDropdown
-                    items={worldDropdownItems}
-                    title="World History"
-                  />
-                )}
-              </li>
-
-              <li
-                className="nav-item"
-                onMouseEnter={() => handleMouseEnter("eras")}
-                onMouseLeave={handleMouseLeave}
-              >
-                <a href="/eras" className="nav-link flex items-center">
-                  Eras & Ages
-                  <svg
-                    className="ml-1 w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    ></path>
-                  </svg>
-                </a>
-                {activeDropdown === "eras" && (
-                  <NavDropdown items={erasDropdownItems} title="Eras & Ages" />
-                )}
-              </li>
-
-              <li
-                className="nav-item"
-                onMouseEnter={() => handleMouseEnter("wars")}
-                onMouseLeave={handleMouseLeave}
-              >
-                <a href="/wars" className="nav-link flex items-center">
-                  Wars
-                  <svg
-                    className="ml-1 w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    ></path>
-                  </svg>
-                </a>
-                {activeDropdown === "wars" && (
-                  <NavDropdown
-                    items={warsDropdownItems}
-                    title="Wars & Military History"
-                  />
-                )}
-              </li>
-
-              <li
-                className="nav-item"
-                onMouseEnter={() => handleMouseEnter("science")}
-                onMouseLeave={handleMouseLeave}
-              >
-                <a
-                  href="/science-innovation"
-                  className="nav-link flex items-center"
+              {navCategories.map((category) => (
+                <li
+                  key={category.id}
+                  className="nav-item relative"
+                  onMouseEnter={() => handleMouseEnter(category.id)}
+                  onMouseLeave={handleMouseLeave}
                 >
-                  Science & Innovation
-                  <svg
-                    className="ml-1 w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                  <a
+                    href={category.href}
+                    className="nav-link flex items-center"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    ></path>
-                  </svg>
-                </a>
-                {activeDropdown === "science" && (
-                  <NavDropdown
-                    items={scienceInnovationDropdownItems}
-                    title="Science & Innovation"
-                  />
-                )}
-              </li>
+                    {category.title}
+                    <svg
+                      className="ml-1 w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      ></path>
+                    </svg>
+                  </a>
+
+                  {activeDropdown === category.id && (
+                    <div className="absolute left-0 w-full bg-white shadow-lg z-50 border-t border-gray-200">
+                      <div
+                        className="container mx-auto py-6"
+                        style={{ maxWidth: "1200px" }}
+                      >
+                        <div className="flex">
+                          {/* Left side with title and description */}
+                          <div className="w-1/4 pr-8">
+                            <h2 className="text-xl font-bold text-gray-800">
+                              {category.title}
+                              {category.id !== "science" ? " History" : ""}
+                            </h2>
+                            {category.description && (
+                              <p className="text-sm text-gray-600 mt-2">
+                                {category.description}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Right side with links in a grid */}
+                          <div className="w-3/4">
+                            <div className="grid grid-cols-3 gap-x-8 gap-y-0">
+                              {createGrid(category.links).map(
+                                (column, colIndex) => (
+                                  <div key={colIndex} className="space-y-1">
+                                    {column.map((item, itemIndex) => (
+                                      <a
+                                        key={itemIndex}
+                                        href={item.href}
+                                        className="block py-1 text-gray-700 hover:text-red-600 transition-colors text-sm"
+                                      >
+                                        {item.label}
+                                      </a>
+                                    ))}
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              ))}
             </ul>
           </div>
         </div>
@@ -502,110 +411,28 @@ export default function Navigation() {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white shadow-lg">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            {/* Mobile dropdown for U.S. */}
-            <div className="border-l-4 border-red-600 pl-2">
-              <Link
-                href="/us"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                U.S.
-              </Link>
-              {usDropdownItems.map((item) => (
+            {navCategories.map((category) => (
+              <div key={category.id} className="border-l-4 border-red-600 pl-2">
                 <Link
-                  key={item.href}
-                  href={item.href}
-                  className="block px-6 py-1 text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  href={category.href}
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  • {item.label}
+                  {category.title.toUpperCase()}
                 </Link>
-              ))}
-            </div>
 
-            {/* Mobile dropdown for World */}
-            <div className="border-l-4 border-red-600 pl-2">
-              <Link
-                href="/world"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                WORLD
-              </Link>
-              {worldDropdownItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="block px-6 py-1 text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  • {item.label}
-                </Link>
-              ))}
-            </div>
-
-            {/* Mobile dropdown for Eras & Ages */}
-            <div className="border-l-4 border-red-600 pl-2">
-              <Link
-                href="/eras"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                ERAS & AGES
-              </Link>
-              {erasDropdownItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="block px-6 py-1 text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  • {item.label}
-                </Link>
-              ))}
-            </div>
-
-            {/* Mobile dropdown for Wars */}
-            <div className="border-l-4 border-red-600 pl-2">
-              <Link
-                href="/wars"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                WARS
-              </Link>
-              {warsDropdownItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="block px-6 py-1 text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  • {item.label}
-                </Link>
-              ))}
-            </div>
-
-            {/* Mobile dropdown for Science & Innovation */}
-            <div className="border-l-4 border-red-600 pl-2">
-              <Link
-                href="/science-innovation"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                SCIENCE & INNOVATION
-              </Link>
-              {scienceInnovationDropdownItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="block px-6 py-1 text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  • {item.label}
-                </Link>
-              ))}
-            </div>
+                {category.links.slice(0, 6).map((item, itemIndex) => (
+                  <Link
+                    key={`${category.id}-${itemIndex}`}
+                    href={item.href}
+                    className="block px-6 py-1 text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    • {item.label}
+                  </Link>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
       )}
