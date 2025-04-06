@@ -9,28 +9,57 @@ interface DropdownItem {
 
 interface NavDropdownProps {
   items: DropdownItem[];
+  title: string;
 }
 
-export default function NavDropdown({ items }: NavDropdownProps) {
-  return (
-    <div className="absolute z-50 left-0 era-dropdown">
-      {/* Added invisible padding area for mouse movement */}
-      <div className="h-3 invisible"></div>
+export default function NavDropdown({ items, title }: NavDropdownProps) {
+  // Function to split items into columns (default 2)
+  const splitIntoColumns = (
+    items: DropdownItem[],
+    columnsCount: number = 2
+  ) => {
+    const result = [];
+    const itemsPerColumn = Math.ceil(items.length / columnsCount);
 
-      {/* Actual dropdown content */}
-      <div className="bg-white shadow-lg rounded-lg overflow-hidden mt-2 w-64">
-        <div className="py-1">
-          {items.map((item, index) => (
-            <Link
-              key={index}
-              href={item.href}
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            >
-              <div className="font-medium">{item.label}</div>
-              {item.description && (
-                <div className="text-xs text-gray-500">{item.description}</div>
-              )}
-            </Link>
+    for (let i = 0; i < columnsCount; i++) {
+      const startIndex = i * itemsPerColumn;
+      const columnItems = items.slice(startIndex, startIndex + itemsPerColumn);
+      if (columnItems.length > 0) {
+        result.push(columnItems);
+      }
+    }
+
+    return result;
+  };
+
+  const columns = splitIntoColumns(items);
+
+  return (
+    <div className="mega-dropdown">
+      <div className="mega-dropdown-content bg-white">
+        <div className="mega-dropdown-header border-b pb-3 mb-4">
+          <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+          {title === "U.S. History" && (
+            <p className="text-sm text-gray-600 mt-1">
+              All the major chapters in the American story, from Indigenous
+              beginnings to the present day.
+            </p>
+          )}
+        </div>
+
+        <div className="mega-dropdown-columns">
+          {columns.map((column, colIndex) => (
+            <div key={colIndex} className="mega-dropdown-column">
+              {column.map((item, index) => (
+                <Link
+                  key={index}
+                  href={item.href}
+                  className="block py-2 text-gray-700 hover:text-red-600 transition-colors"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           ))}
         </div>
       </div>

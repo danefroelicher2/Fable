@@ -9,6 +9,7 @@ import NavDropdown from "./NavDropdown";
 export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   // Handle scroll events to apply styling changes
   useEffect(() => {
@@ -115,24 +116,72 @@ export default function Navigation() {
   // Define dropdown items for U.S.
   const usDropdownItems = [
     {
-      label: "Civil War",
-      href: "/us/civil-war",
-    },
-    {
-      label: "Westward Expansion",
-      href: "/us/westward-expansion",
+      label: "Colonial America",
+      href: "/us/colonial-america",
     },
     {
       label: "American Revolution",
       href: "/us/revolution",
     },
     {
+      label: "Early U.S.",
+      href: "/us/early-us",
+    },
+    {
+      label: "Slavery",
+      href: "/us/slavery",
+    },
+    {
+      label: "Civil War",
+      href: "/us/civil-war",
+    },
+    {
+      label: "Immigration",
+      href: "/us/immigration",
+    },
+    {
       label: "Great Depression",
       href: "/us/great-depression",
     },
     {
+      label: "Black History",
+      href: "/us/black-history",
+    },
+    {
+      label: "Hispanic History",
+      href: "/us/hispanic-history",
+    },
+    {
+      label: "Women's History",
+      href: "/us/womens-history",
+    },
+    {
+      label: "LGBTQ+ History",
+      href: "/us/lgbtq-history",
+    },
+    {
+      label: "Native American History",
+      href: "/us/native-american-history",
+    },
+    {
+      label: "Asian American & Pacific Islander History",
+      href: "/us/asian-american-history",
+    },
+    {
       label: "U.S. Presidents",
       href: "/us/presidents",
+    },
+    {
+      label: "U.S. Government and Politics",
+      href: "/us/government-politics",
+    },
+    {
+      label: "U.S. States",
+      href: "/us/states",
+    },
+    {
+      label: "Crime",
+      href: "/us/crime",
     },
   ];
 
@@ -159,6 +208,14 @@ export default function Navigation() {
       href: "/world/latin-america",
     },
   ];
+
+  const handleMouseEnter = (dropdown: string) => {
+    setActiveDropdown(dropdown);
+  };
+
+  const handleMouseLeave = () => {
+    setActiveDropdown(null);
+  };
 
   return (
     <header
@@ -256,7 +313,7 @@ export default function Navigation() {
       </div>
 
       {/* Main navigation */}
-      <nav className="bg-gray-100 py-3 sticky top-0 z-50">
+      <nav className="bg-white border-b border-gray-200 py-3 sticky top-0 z-50">
         <div className="container mx-auto px-4">
           {/* Mobile menu button */}
           <div className="md:hidden">
@@ -294,12 +351,13 @@ export default function Navigation() {
 
           {/* Desktop Navigation */}
           <div className={`${isMobileMenuOpen ? "block" : "hidden"} md:block`}>
-            <ul className="md:flex md:justify-center md:space-x-8 space-y-2 md:space-y-0">
-              <li className="relative group">
-                <Link
-                  href="/us"
-                  className="block text-gray-800 hover:text-red-600 font-medium flex items-center transition-colors"
-                >
+            <ul className="main-nav md:flex md:justify-center md:space-x-8 space-y-2 md:space-y-0">
+              <li
+                className="nav-item"
+                onMouseEnter={() => handleMouseEnter("us")}
+                onMouseLeave={handleMouseLeave}
+              >
+                <a href="/us" className="nav-link flex items-center">
                   U.S.
                   <svg
                     className="ml-1 w-4 h-4"
@@ -314,15 +372,19 @@ export default function Navigation() {
                       d="M19 9l-7 7-7-7"
                     ></path>
                   </svg>
-                </Link>
-                <NavDropdown items={usDropdownItems} />
+                </a>
+                {activeDropdown === "us" && (
+                  <NavDropdown items={usDropdownItems} title="U.S. History" />
+                )}
               </li>
-              <li className="relative group">
-                <Link
-                  href="/world"
-                  className="block text-gray-800 hover:text-red-600 font-medium flex items-center transition-colors"
-                >
-                  WORLD
+
+              <li
+                className="nav-item"
+                onMouseEnter={() => handleMouseEnter("world")}
+                onMouseLeave={handleMouseLeave}
+              >
+                <a href="/world" className="nav-link flex items-center">
+                  World
                   <svg
                     className="ml-1 w-4 h-4"
                     fill="none"
@@ -336,15 +398,22 @@ export default function Navigation() {
                       d="M19 9l-7 7-7-7"
                     ></path>
                   </svg>
-                </Link>
-                <NavDropdown items={worldDropdownItems} />
+                </a>
+                {activeDropdown === "world" && (
+                  <NavDropdown
+                    items={worldDropdownItems}
+                    title="World History"
+                  />
+                )}
               </li>
-              <li className="relative group">
-                <Link
-                  href="/eras"
-                  className="block text-gray-800 hover:text-red-600 font-medium flex items-center transition-colors"
-                >
-                  ERAS & AGES
+
+              <li
+                className="nav-item"
+                onMouseEnter={() => handleMouseEnter("eras")}
+                onMouseLeave={handleMouseLeave}
+              >
+                <a href="/eras" className="nav-link flex items-center">
+                  Eras & Ages
                   <svg
                     className="ml-1 w-4 h-4"
                     fill="none"
@@ -358,15 +427,19 @@ export default function Navigation() {
                       d="M19 9l-7 7-7-7"
                     ></path>
                   </svg>
-                </Link>
-                <NavDropdown items={erasDropdownItems} />
+                </a>
+                {activeDropdown === "eras" && (
+                  <NavDropdown items={erasDropdownItems} title="Eras & Ages" />
+                )}
               </li>
-              <li className="relative group">
-                <Link
-                  href="/wars"
-                  className="block text-gray-800 hover:text-red-600 font-medium flex items-center transition-colors"
-                >
-                  WARS
+
+              <li
+                className="nav-item"
+                onMouseEnter={() => handleMouseEnter("wars")}
+                onMouseLeave={handleMouseLeave}
+              >
+                <a href="/wars" className="nav-link flex items-center">
+                  Wars
                   <svg
                     className="ml-1 w-4 h-4"
                     fill="none"
@@ -380,15 +453,25 @@ export default function Navigation() {
                       d="M19 9l-7 7-7-7"
                     ></path>
                   </svg>
-                </Link>
-                <NavDropdown items={warsDropdownItems} />
+                </a>
+                {activeDropdown === "wars" && (
+                  <NavDropdown
+                    items={warsDropdownItems}
+                    title="Wars & Military History"
+                  />
+                )}
               </li>
-              <li className="relative group">
-                <Link
+
+              <li
+                className="nav-item"
+                onMouseEnter={() => handleMouseEnter("science")}
+                onMouseLeave={handleMouseLeave}
+              >
+                <a
                   href="/science-innovation"
-                  className="block text-gray-800 hover:text-red-600 font-medium flex items-center transition-colors"
+                  className="nav-link flex items-center"
                 >
-                  SCIENCE & INNOVATION
+                  Science & Innovation
                   <svg
                     className="ml-1 w-4 h-4"
                     fill="none"
@@ -402,8 +485,13 @@ export default function Navigation() {
                       d="M19 9l-7 7-7-7"
                     ></path>
                   </svg>
-                </Link>
-                <NavDropdown items={scienceInnovationDropdownItems} />
+                </a>
+                {activeDropdown === "science" && (
+                  <NavDropdown
+                    items={scienceInnovationDropdownItems}
+                    title="Science & Innovation"
+                  />
+                )}
               </li>
             </ul>
           </div>

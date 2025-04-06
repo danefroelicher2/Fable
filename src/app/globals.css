@@ -98,7 +98,79 @@ body {
     0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
-/* Navigation dropdown styles */
+/* Main Navigation Styles */
+.main-nav {
+  position: relative;
+}
+
+.nav-item {
+  position: relative;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0;
+  font-weight: 500;
+  color: #333;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--historynet-red);
+}
+
+/* Mega Dropdown Styles */
+.mega-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background-color: white;
+  border-top: 1px solid #eaeaea;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.nav-item:hover .mega-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.mega-dropdown-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.mega-dropdown-header {
+  margin-bottom: 1.5rem;
+}
+
+.mega-dropdown-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 2rem;
+}
+
+.mega-dropdown-column a {
+  display: block;
+  padding: 0.5rem 0;
+  color: #555;
+  transition: color 0.2s ease;
+}
+
+.mega-dropdown-column a:hover {
+  color: var(--historynet-red);
+}
+
+/* Legacy Navigation Dropdown Styles */
 .nav-dropdown {
   position: absolute;
   top: 100%;
@@ -121,6 +193,7 @@ body {
   visibility: visible;
   transform: translateY(0);
 }
+
 .era-dropdown {
   opacity: 0;
   transform: translateY(-10px);
