@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { saveDraft, Draft } from "@/lib/draftUtils";
+import { supabase } from "@/lib/supabase";
 
 export default function WritePage() {
   const { user } = useAuth();
@@ -16,6 +17,7 @@ export default function WritePage() {
   const [excerpt, setExcerpt] = useState("");
   const [category, setCategory] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
 
   // If user is not signed in, show sign-in prompt
@@ -78,8 +80,71 @@ export default function WritePage() {
   };
 
   const handlePublish = async () => {
-    // This would handle publishing logic
-    alert("Publishing functionality will be implemented soon!");
+    if (!title.trim() || !content.trim() || !category) {
+      setSaveMessage(
+        "Please fill in title, content, and select a category before publishing"
+      );
+      return;
+    }
+
+    setIsPublishing(true);
+    setSaveMessage("");
+
+    try {
+      // Generate a URL-friendly slug from the title
+      const slug = title
+        .toLowerCase()
+        .replace(/[^\w\s]/gi, "")
+        .replace(/\s+/g, "-");
+
+      // Use excerpt or generate one from content if not provided
+      const finalExcerpt =
+        excerpt ||
+        (content.length > 150 ? content.substring(0, 150) + "..." : content);
+
+      console.log("Publishing article with data:", {
+        user_id: user.id,
+        title,
+        slug,
+        category,
+        is_published: true,
+      });
+
+      // Insert the article into the public_articles table
+      const { data, error } = await (supabase as any)
+        .from("public_articles")
+        .insert({
+          user_id: user.id,
+          title,
+          content,
+          excerpt: finalExcerpt,
+          category,
+          slug,
+          is_published: true,
+          published_at: new Date().toISOString(),
+          view_count: 0,
+        });
+
+      if (error) {
+        console.error("Database error during publish:", error);
+        throw error;
+      }
+
+      console.log("Published article:", data);
+      setSaveMessage("Article published successfully!");
+
+      // Redirect to the feed page
+      setTimeout(() => {
+        router.push("/feed");
+      }, 1500);
+    } catch (error) {
+      console.error("Error publishing article:", error);
+      setSaveMessage(
+        "An error occurred while publishing your article. Please try again."
+      );
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   return (
@@ -132,8 +197,11 @@ export default function WritePage() {
               className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
               rows={3}
               placeholder="Provide a brief summary of your article (will appear in previews)"
-              required
             />
+            <p className="text-gray-500 text-sm mt-1">
+              If left empty, an excerpt will be automatically generated from the
+              first part of your content.
+            </p>
           </div>
 
           <div className="mb-6">
@@ -198,9 +266,10 @@ export default function WritePage() {
             <button
               type="button"
               onClick={handlePublish}
-              className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              disabled={isPublishing}
+              className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
             >
-              Publish Article
+              {isPublishing ? "Publishing..." : "Publish Article"}
             </button>
           </div>
         </form>
