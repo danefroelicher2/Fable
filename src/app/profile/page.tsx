@@ -11,8 +11,6 @@ interface Profile {
   username: string | null;
   full_name: string | null;
   avatar_url: string | null;
-  bio: string | null;
-  website: string | null;
 }
 
 export default function ProfilePage() {
@@ -22,7 +20,6 @@ export default function ProfilePage() {
   const [username, setUsername] = useState<string>("");
   const [fullName, setFullName] = useState<string>("");
   const [bio, setBio] = useState<string>("");
-  const [website, setWebsite] = useState<string>("");
   const [avatarUrl, setAvatarUrl] = useState<string>("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,42 +32,56 @@ export default function ProfilePage() {
     async function loadProfile() {
       try {
         setLoading(true);
+        setError(null);
 
         if (!user) return;
 
+        // Check if profile exists - only query for columns we know exist
         const { data, error } = await supabase
           .from("profiles")
-          .select(
-            "id, username, full_name, avatar_url, website, bio, created_at, updated_at"
-          )
+          .select("id, username, full_name, avatar_url")
           .eq("id", user.id)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          // If error is not 'not found', throw it
+          if (error.code !== "PGRST116") {
+            throw error;
+          }
 
-        if (data) {
-          // Cast the data to any type to resolve TypeScript issues temporarily
-          const profileData = data as any;
+          // Create a new profile if one doesn't exist
+          const { error: createError } = await supabase
+            .from("profiles")
+            .insert({
+              id: user.id,
+              username: "",
+              full_name: "",
+              avatar_url: "",
+            });
 
-          // Now create our Profile object
-          setProfile({
-            id: profileData.id,
-            username: profileData.username,
-            full_name: profileData.full_name,
-            avatar_url: profileData.avatar_url,
-            bio: profileData.bio,
-            website: profileData.website,
-          });
+          if (createError) throw createError;
 
-          setUsername(profileData.username || "");
-          setFullName(profileData.full_name || "");
-          setBio(profileData.bio || "");
-          setWebsite(profileData.website || "");
-          setAvatarUrl(profileData.avatar_url || "");
+          // Set default values
+          const defaultProfile: Profile = {
+            id: user.id,
+            username: null,
+            full_name: null,
+            avatar_url: null,
+          };
+
+          setProfile(defaultProfile);
+        } else if (data) {
+          // Profile exists, set the data
+          setProfile(data);
+          setUsername(data.username || "");
+          setFullName(data.full_name || "");
+          // We'll maintain bio in state only since it may not exist in DB yet
+          setBio("");
+          setAvatarUrl(data.avatar_url || "");
         }
       } catch (error: any) {
         console.error("Error loading profile:", error.message);
-        setError("Failed to load profile data");
+        setError("Failed to load profile data: " + error.message);
       } finally {
         setLoading(false);
       }
@@ -110,29 +121,44 @@ export default function ProfilePage() {
         newAvatarUrl = urlData.publicUrl;
       }
 
-      // Update profile information
+      // Only update fields we know exist in the database
       const updates = {
-        id: user.id,
         username,
         full_name: fullName,
-        bio,
-        website,
         avatar_url: newAvatarUrl,
-        updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase.from("profiles").upsert(updates);
+      const { error } = await supabase
+        .from("profiles")
+        .update(updates)
+        .eq("id", user.id);
 
       if (error) throw error;
 
+      // Refresh the profile data
+      const { data, error: refreshError } = await supabase
+        .from("profiles")
+        .select("id, username, full_name, avatar_url")
+        .eq("id", user.id)
+        .single();
+
+      if (refreshError) throw refreshError;
+
+      if (data) {
+        setProfile(data);
+        setUsername(data.username || "");
+        setFullName(data.full_name || "");
+        // Keep bio in state only
+        setAvatarUrl(data.avatar_url || "");
+      }
+
       setMessage("Profile updated successfully!");
-      setAvatarUrl(newAvatarUrl);
       setIsEditing(false);
       setAvatarFile(null);
       setAvatarPreview(null);
     } catch (error: any) {
       console.error("Error updating profile:", error.message);
-      setError(error.message);
+      setError("Error updating profile: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -163,7 +189,25 @@ export default function ProfilePage() {
   return (
     <ProtectedRoute>
       <div className="container mx-auto px-4 py-8">
-        {!isEditing ? (
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+            <strong className="font-bold">Error: </strong>
+            <span className="block sm:inline">{error}</span>
+          </div>
+        )}
+
+        {message && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {message}
+          </div>
+        )}
+
+        {loading && !isEditing ? (
+          <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            <span className="ml-3">Loading profile...</span>
+          </div>
+        ) : !isEditing ? (
           // Profile View Mode
           <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md">
             <div className="flex justify-between items-center mb-6">
@@ -212,24 +256,6 @@ export default function ProfilePage() {
                   <h3 className="text-lg font-semibold mb-2">Email</h3>
                   <p className="text-gray-700">{user?.email}</p>
                 </div>
-
-                {website && (
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-2">Website</h3>
-                    <a
-                      href={
-                        website.startsWith("http")
-                          ? website
-                          : `https://${website}`
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      {website}
-                    </a>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -245,18 +271,6 @@ export default function ProfilePage() {
                 Cancel
               </button>
             </div>
-
-            {message && (
-              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-                {message}
-              </div>
-            )}
-
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                {error}
-              </div>
-            )}
 
             <div className="flex flex-col md:flex-row">
               <div className="md:w-1/3 mb-6 md:mb-0 flex flex-col items-center">
@@ -341,7 +355,7 @@ export default function ProfilePage() {
                     className="block text-gray-700 font-bold mb-2"
                     htmlFor="bio"
                   >
-                    Bio
+                    Bio (Saved locally only)
                   </label>
                   <textarea
                     id="bio"
@@ -351,23 +365,9 @@ export default function ProfilePage() {
                     rows={4}
                     placeholder="Tell us about yourself"
                   />
-                </div>
-
-                <div>
-                  <label
-                    className="block text-gray-700 font-bold mb-2"
-                    htmlFor="website"
-                  >
-                    Website
-                  </label>
-                  <input
-                    id="website"
-                    type="url"
-                    value={website}
-                    onChange={(e) => setWebsite(e.target.value)}
-                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    placeholder="https://yourwebsite.com"
-                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Note: Bio is only saved in your browser for now
+                  </p>
                 </div>
 
                 <div>
@@ -395,7 +395,14 @@ export default function ProfilePage() {
                     disabled={loading}
                     className="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700 transition disabled:opacity-50"
                   >
-                    {loading ? "Saving..." : "Save Profile"}
+                    {loading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
+                        <span>Saving...</span>
+                      </div>
+                    ) : (
+                      "Save Profile"
+                    )}
                   </button>
                 </div>
               </div>
