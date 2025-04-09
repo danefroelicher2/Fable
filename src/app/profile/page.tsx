@@ -11,6 +11,7 @@ interface Profile {
   username: string | null;
   full_name: string | null;
   avatar_url: string | null;
+  bio?: string | null;
 }
 
 export default function ProfilePage() {
@@ -26,6 +27,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"articles" | "stats">("articles");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -56,6 +58,7 @@ export default function ProfilePage() {
               id: user.id,
               username: "",
               full_name: "",
+              bio: "",
               avatar_url: "",
             });
 
@@ -66,6 +69,7 @@ export default function ProfilePage() {
             id: user.id,
             username: null,
             full_name: null,
+            bio: null,
             avatar_url: null,
           };
 
@@ -125,6 +129,7 @@ export default function ProfilePage() {
       const updates = {
         username,
         full_name: fullName,
+        bio,
         avatar_url: newAvatarUrl,
       };
 
