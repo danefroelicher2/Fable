@@ -50,7 +50,6 @@ export interface Database {
           }
         ];
       };
-      // Add any other tables in your database here
       profiles: {
         Row: {
           id: string;
@@ -58,6 +57,7 @@ export interface Database {
           username: string | null;
           full_name: string | null;
           avatar_url: string | null;
+          bio: string | null; // Added bio field
           website: string | null;
           created_at: string | null;
         };
@@ -67,6 +67,7 @@ export interface Database {
           username?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
+          bio?: string | null; // Added bio field
           website?: string | null;
           created_at?: string | null;
         };
@@ -76,6 +77,7 @@ export interface Database {
           username?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
+          bio?: string | null; // Added bio field
           website?: string | null;
           created_at?: string | null;
         };
