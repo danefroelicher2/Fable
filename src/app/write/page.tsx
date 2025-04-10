@@ -8,6 +8,64 @@ import Link from "next/link";
 import { saveDraft, Draft } from "@/lib/draftUtils";
 import { supabase } from "@/lib/supabase";
 
+async function publishArticle(article: any) {
+  try {
+    // Get the current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userData.user) {
+      throw new Error("You must be logged in to publish an article");
+    }
+
+    // Generate a slug from the title
+    const slug = article.title
+      .toLowerCase()
+      .replace(/[^\w\s]/gi, "")
+      .replace(/\s+/g, "-");
+
+    // Create an excerpt if not provided
+    const excerpt =
+      article.excerpt ||
+      (article.content.length > 150
+        ? article.content.substring(0, 150) + "..."
+        : article.content);
+
+    console.log("Publishing article with data:", {
+      user_id: userData.user.id,
+      title: article.title,
+      slug,
+      category: article.category,
+      is_published: true,
+    });
+
+    // Insert into public_articles table
+    const { data, error } = await (supabase as any)
+      .from("public_articles")
+      .insert({
+        user_id: userData.user.id,
+        title: article.title,
+        content: article.content,
+        excerpt: excerpt,
+        category: article.category || "general",
+        slug,
+        is_published: true,
+        published_at: new Date().toISOString(),
+        view_count: 0,
+      });
+
+    if (error) {
+      console.error("Database error during publish:", error);
+      throw error;
+    }
+
+    console.log("Published article:", data);
+    return { success: true, data };
+  } catch (err) {
+    console.error("Error in publishArticle:", err);
+    throw err;
+  }
+}
+
 export default function WritePage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -65,8 +123,6 @@ export default function WritePage() {
         // Optionally, redirect to drafts page after a delay
         setTimeout(() => {
           setSaveMessage("");
-          // Uncomment the line below if you want to redirect after saving
-          // router.push("/profile/drafts");
         }, 3000);
       } else {
         setSaveMessage("Failed to save draft. Please try again.");
@@ -78,6 +134,9 @@ export default function WritePage() {
       setIsSaving(false);
     }
   };
+
+  // For your handlePublish function in write/page.tsx
+  // Uses type casting to avoid TypeScript errors
 
   const handlePublish = async () => {
     if (!title.trim() || !content.trim() || !category) {
@@ -103,18 +162,18 @@ export default function WritePage() {
         (content.length > 150 ? content.substring(0, 150) + "..." : content);
 
       console.log("Publishing article with data:", {
-        user_id: user.id,
+        user_id: user?.id,
         title,
         slug,
         category,
         is_published: true,
       });
 
-      // Insert the article into the public_articles table
+      // Use type assertion with 'any' to bypass TypeScript checking
       const { data, error } = await (supabase as any)
         .from("public_articles")
         .insert({
-          user_id: user.id,
+          user_id: user?.id,
           title,
           content,
           excerpt: finalExcerpt,
@@ -137,10 +196,11 @@ export default function WritePage() {
       setTimeout(() => {
         router.push("/feed");
       }, 1500);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error publishing article:", error);
       setSaveMessage(
-        "An error occurred while publishing your article. Please try again."
+        "An error occurred while publishing your article: " +
+          (error.message || "Please try again.")
       );
     } finally {
       setIsPublishing(false);

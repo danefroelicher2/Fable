@@ -5,13 +5,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-
-interface Profile {
-  id: string;
-  username: string | null;
-  full_name: string | null;
-  avatar_url: string | null;
-}
+import { useAuth } from "@/context/AuthContext";
 
 interface Article {
   id: string;
@@ -28,46 +22,82 @@ interface Article {
 export default function UserArticlesPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
 
-  // Type assertion to ensure userId is a string
-  const userId = params.userId as string;
+  // Safely access userId from params
+  const userId = typeof params?.userId === "string" ? params.userId : null;
 
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [articles, setArticles] = useState<Article[]>([]);
   const [totalArticles, setTotalArticles] = useState(0);
   const [error, setError] = useState("");
   const [displayType, setDisplayType] = useState<"grid" | "list">("grid");
 
+  // Add console logging for debugging
   useEffect(() => {
-    // Add a guard to ensure userId is a valid string
-    if (userId && typeof userId === "string") {
-      fetchProfile();
-      fetchArticles();
-    } else {
+    console.log("Articles page mounted with userId:", userId);
+    console.log("Current authenticated user:", user?.id);
+
+    if (!userId) {
+      console.error("No userId provided in URL params");
       router.push("/not-found");
+      return;
     }
-  }, [userId, router]);
+
+    fetchData();
+  }, [userId, router, user]);
+
+  async function fetchData() {
+    try {
+      setLoading(true);
+      console.log("Fetching data for userId:", userId);
+
+      if (!userId) return;
+
+      // Fetch profile first
+      await fetchProfile();
+
+      // Then fetch articles
+      await fetchArticles();
+    } catch (err) {
+      console.error("Error in fetchData:", err);
+      setError("Failed to load page data");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function fetchProfile() {
     try {
+      if (!userId) return;
+
+      console.log("Fetching profile for userId:", userId);
+
       const { data, error } = await supabase
         .from("profiles")
         .select("id, username, full_name, avatar_url")
         .eq("id", userId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching profile:", error);
+        throw error;
+      }
+
+      console.log("Profile fetched:", data);
       setProfile(data);
     } catch (err) {
-      console.error("Error fetching profile:", err);
+      console.error("Error in fetchProfile:", err);
       setError("Failed to load user profile");
     }
   }
 
   async function fetchArticles() {
     try {
-      setLoading(true);
+      if (!userId) return;
+
+      console.log("Fetching articles for userId:", userId);
 
       // Get count of total articles
       const { count, error: countError } = await (supabase as any)
@@ -76,72 +106,151 @@ export default function UserArticlesPage() {
         .eq("user_id", userId)
         .eq("is_published", true);
 
-      if (countError) throw countError;
+      if (countError) {
+        console.error("Error fetching article count:", countError);
+        throw countError;
+      }
+
+      console.log(`Total articles found: ${count}`);
       setTotalArticles(count || 0);
 
-      // Fetch articles
-      const { data, error } = await (supabase as any)
-        .from("public_articles")
-        .select(
+      // Fetch articles with retry logic
+      let articlesData = null;
+      let fetchError = null;
+
+      try {
+        const { data, error } = await (supabase as any)
+          .from("public_articles")
+          .select(
+            `
+            id, 
+            title, 
+            slug, 
+            excerpt, 
+            category, 
+            published_at, 
+            view_count,
+            image_url
           `
-          id, 
-          title, 
-          slug, 
-          excerpt, 
-          category, 
-          published_at, 
-          view_count,
-          image_url
-        `
-        )
-        .eq("user_id", userId)
-        .eq("is_published", true)
-        .order("published_at", { ascending: false });
+          )
+          .eq("user_id", userId)
+          .eq("is_published", true)
+          .order("published_at", { ascending: false });
 
-      if (error) throw error;
+        if (error) throw error;
+        articlesData = data;
+      } catch (err) {
+        console.error("First attempt to fetch articles failed:", err);
+        fetchError = err;
 
-      // For each article, get the like count
-      const articlesWithLikes = await Promise.all(
-        (data || []).map(async (article: Article) => {
-          try {
-            const { count, error: likesError } = await (supabase as any)
-              .from("likes")
-              .select("id", { count: "exact" })
-              .eq("article_id", article.id);
+        // Try a simplified query as fallback
+        try {
+          const { data, error } = await (supabase as any)
+            .from("public_articles")
+            .select("id, title, slug, published_at, view_count")
+            .eq("user_id", userId)
+            .eq("is_published", true);
 
-            if (likesError) throw likesError;
+          if (error) throw error;
+          articlesData = data;
+          fetchError = null;
+        } catch (fallbackErr) {
+          console.error("Fallback attempt also failed:", fallbackErr);
+          throw fetchError || fallbackErr;
+        }
+      }
 
-            return {
-              ...article,
-              like_count: count || 0,
-            };
-          } catch (err) {
-            console.error("Error fetching like count:", err);
-            return {
-              ...article,
-              like_count: 0,
-            };
-          }
-        })
-      );
+      // Process articles to add like counts if possible
+      let processedArticles = articlesData || [];
+      console.log(`Articles fetched: ${processedArticles.length}`);
 
-      setArticles(articlesWithLikes);
+      try {
+        // Add placeholder like counts to avoid errors
+        processedArticles = processedArticles.map((article: Article) => ({
+          ...article,
+          like_count: 0,
+        }));
+
+        // Try to fetch real like counts if the table exists
+        const { data: tableCheck } = await (supabase as any)
+          .from("likes")
+          .select("count(*)", { count: "exact", head: true });
+
+        // If we can access the likes table, get the real counts
+        if (tableCheck !== null) {
+          processedArticles = await Promise.all(
+            processedArticles.map(async (article: Article) => {
+              try {
+                const { count, error } = await (supabase as any)
+                  .from("likes")
+                  .select("id", { count: "exact" })
+                  .eq("article_id", article.id);
+
+                return {
+                  ...article,
+                  like_count: count || 0,
+                };
+              } catch (err) {
+                console.warn(
+                  `Couldn't get like count for article ${article.id}:`,
+                  err
+                );
+                return article;
+              }
+            })
+          );
+        }
+      } catch (err) {
+        console.warn("Error getting like counts:", err);
+        // Continue with articles even if like counts fail
+      }
+
+      setArticles(processedArticles);
     } catch (err) {
-      console.error("Error fetching user articles:", err);
+      console.error("Error in fetchArticles:", err);
       setError("Failed to load articles");
-    } finally {
-      setLoading(false);
     }
   }
 
   // Format date (e.g., "Mar 15, 2024")
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    try {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch (err) {
+      console.warn("Date formatting error:", err);
+      return "Unknown date";
+    }
   };
+
+  // If no userId is provided or invalid, show error
+  if (!userId) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          Invalid profile URL. Please check the URL and try again.
+        </div>
+        <Link href="/" className="text-blue-600 hover:text-blue-800">
+          Return to Home
+        </Link>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <span className="ml-3">Loading articles...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -155,7 +264,7 @@ export default function UserArticlesPage() {
       {profile && (
         <div className="bg-white p-6 rounded-lg shadow-md mb-6">
           <div className="flex items-center">
-            <Link href={`/profile/${profile.id}`} className="mr-6">
+            <div className="mr-6">
               <div className="h-20 w-20 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden">
                 {profile.avatar_url ? (
                   <img
@@ -171,13 +280,11 @@ export default function UserArticlesPage() {
                   </span>
                 )}
               </div>
-            </Link>
+            </div>
             <div>
-              <Link href={`/profile/${profile.id}`}>
-                <h1 className="text-2xl font-bold hover:text-blue-600">
-                  {profile.full_name || profile.username || "Anonymous User"}
-                </h1>
-              </Link>
+              <h1 className="text-2xl font-bold">
+                {profile.full_name || profile.username || "Anonymous User"}
+              </h1>
               {profile.username && (
                 <p className="text-gray-600">@{profile.username}</p>
               )}
@@ -246,42 +353,7 @@ export default function UserArticlesPage() {
           </div>
         </div>
 
-        {loading ? (
-          <div className="animate-pulse">
-            {displayType === "grid" ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(6)].map((_, index) => (
-                  <div
-                    key={index}
-                    className="bg-white rounded-lg shadow-md overflow-hidden"
-                  >
-                    <div className="h-48 bg-slate-200"></div>
-                    <div className="p-4">
-                      <div className="h-6 bg-slate-200 rounded w-3/4 mb-3"></div>
-                      <div className="h-4 bg-slate-200 rounded w-1/4 mb-3"></div>
-                      <div className="h-4 bg-slate-200 rounded w-full mb-2"></div>
-                      <div className="h-4 bg-slate-200 rounded w-full mb-2"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {[...Array(6)].map((_, index) => (
-                  <div
-                    key={index}
-                    className="bg-white rounded-lg shadow-md p-6"
-                  >
-                    <div className="h-6 bg-slate-200 rounded w-3/4 mb-3"></div>
-                    <div className="h-4 bg-slate-200 rounded w-1/4 mb-3"></div>
-                    <div className="h-4 bg-slate-200 rounded w-full mb-2"></div>
-                    <div className="h-4 bg-slate-200 rounded w-full mb-2"></div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : articles.length === 0 ? (
+        {articles.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-600 text-lg mb-6">
               This user hasn't published any articles yet.
@@ -294,7 +366,7 @@ export default function UserArticlesPage() {
             </Link>
           </div>
         ) : displayType === "grid" ? (
-          // Grid display (Instagram-style)
+          // Instagram-style grid display
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {articles.map((article) => (
               <Link
@@ -337,7 +409,7 @@ export default function UserArticlesPage() {
                             clipRule="evenodd"
                           />
                         </svg>
-                        {article.view_count}
+                        {article.view_count || 0}
                       </span>
                       <span className="flex items-center">
                         <svg
@@ -410,7 +482,7 @@ export default function UserArticlesPage() {
                               clipRule="evenodd"
                             />
                           </svg>
-                          {article.view_count}
+                          {article.view_count || 0}
                         </span>
                         <span className="flex items-center">
                           <svg

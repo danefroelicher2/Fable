@@ -4,30 +4,55 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-// Inline version of createUserPost to avoid import issues
-async function createUserPost(content: string, title?: string) {
+// This function only handles creating posts in the public_articles table
+// It doesn't affect the saveDraft functionality
+async function createPublicArticle(
+  content: string,
+  title: string,
+  category?: string
+) {
   try {
     const { data: userData, error: userError } = await supabase.auth.getUser();
 
     if (userError || !userData.user) {
-      throw new Error("You must be logged in to create a post");
+      throw new Error("You must be logged in to create an article");
     }
 
-    // Use type assertion with 'any' to bypass TypeScript checking
-    const { error } = await (supabase as any).from("posts").insert({
-      user_id: userData.user.id,
-      content,
-      title,
-    });
+    // Generate a slug from the title
+    const slug = title
+      .toLowerCase()
+      .replace(/[^\w\s]/gi, "")
+      .replace(/\s+/g, "-");
+
+    // Create an excerpt from the content (first 150 characters)
+    const excerpt =
+      content.substring(0, 150) + (content.length > 150 ? "..." : "");
+
+    // Insert into public_articles instead of posts
+    const { data, error } = await (supabase as any)
+      .from("public_articles")
+      .insert({
+        user_id: userData.user.id,
+        title,
+        content,
+        excerpt,
+        category: category || "general", // Default category if none provided
+        slug,
+        is_published: true,
+        published_at: new Date().toISOString(),
+        view_count: 0,
+      })
+      .select("*")
+      .single();
 
     if (error) {
-      console.error("Error creating post:", error);
+      console.error("Error creating article:", error);
       throw new Error(error.message);
     }
 
-    return { success: true };
+    return { success: true, data };
   } catch (err) {
-    console.error("Error in createUserPost:", err);
+    console.error("Error in createPublicArticle:", err);
     throw err;
   }
 }
@@ -39,6 +64,7 @@ export default function CreatePostForm({
 }) {
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -46,8 +72,13 @@ export default function CreatePostForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!title.trim()) {
+      setError("Title cannot be empty");
+      return;
+    }
+
     if (!content.trim()) {
-      setError("Post content cannot be empty");
+      setError("Content cannot be empty");
       return;
     }
 
@@ -55,9 +86,11 @@ export default function CreatePostForm({
     setError(null);
 
     try {
-      await createUserPost(content, title || undefined);
+      await createPublicArticle(content, title, category || undefined);
+
       setContent("");
       setTitle("");
+      setCategory("");
       setSuccess(true);
 
       // Call the callback if provided
@@ -92,14 +125,37 @@ export default function CreatePostForm({
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-gray-700 mb-2">Title (Optional)</label>
+          <label className="block text-gray-700 mb-2">Title</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full p-2 border rounded"
             placeholder="Add a title to your post"
+            required
           />
+        </div>
+
+        <div>
+          <label className="block text-gray-700 mb-2">
+            Category (Optional)
+          </label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full p-2 border rounded"
+          >
+            <option value="">Select a category</option>
+            <option value="ancient-history">Ancient History</option>
+            <option value="medieval-period">Medieval Period</option>
+            <option value="renaissance">Renaissance</option>
+            <option value="early-modern-period">Early Modern Period</option>
+            <option value="industrial-age">Industrial Age</option>
+            <option value="20th-century">20th Century</option>
+            <option value="world-wars">World Wars</option>
+            <option value="cold-war-era">Cold War Era</option>
+            <option value="modern-history">Modern History</option>
+          </select>
         </div>
 
         <div>
@@ -108,7 +164,7 @@ export default function CreatePostForm({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className="w-full p-2 border rounded h-32"
-            placeholder="What's on your mind?"
+            placeholder="Write your post content..."
             required
           />
         </div>

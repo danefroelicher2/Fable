@@ -103,7 +103,6 @@ export async function getUserDrafts(): Promise<Draft[] | null> {
     return null;
   }
 }
-
 /**
  * Get a specific draft by id
  * @param id The id of the draft to get
@@ -111,7 +110,7 @@ export async function getUserDrafts(): Promise<Draft[] | null> {
  */
 export async function getDraftById(id: string): Promise<Draft | null> {
   try {
-    // Use any to bypass TypeScript checking
+    // Use type assertion with 'any' to bypass TypeScript checking
     const { data, error } = await (supabase as any)
       .from("drafts")
       .select("*")
@@ -137,11 +136,20 @@ export async function getDraftById(id: string): Promise<Draft | null> {
  */
 export async function deleteDraft(id: string): Promise<boolean> {
   try {
+    // Get current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userData.user) {
+      console.error("Error getting user:", userError);
+      return false;
+    }
+
     // Use any to bypass TypeScript checking
     const { error } = await (supabase as any)
       .from("drafts")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", userData.user.id); // Ensure user can only delete their own drafts
 
     if (error) {
       console.error("Error deleting draft:", error);
