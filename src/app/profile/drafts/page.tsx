@@ -5,7 +5,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { getUserDrafts, deleteDraft, Draft } from "@/lib/draftUtils";
+import {
+  getUserDrafts,
+  deleteDraft,
+  Draft,
+  publishDraft,
+} from "@/lib/draftUtils";
 
 export default function DraftsPage() {
   const { user } = useAuth();
@@ -14,6 +19,8 @@ export default function DraftsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   // Protected route check
   useEffect(() => {
@@ -55,6 +62,11 @@ export default function DraftsPage() {
         // Remove the draft from the list
         setDrafts(drafts.filter((draft) => draft.id !== id));
         setDeleteConfirm(null);
+
+        // Show success message
+        setMessage("Draft deleted successfully");
+        // Clear message after 3 seconds
+        setTimeout(() => setMessage(null), 3000);
       } else {
         setError("Failed to delete draft");
       }
@@ -68,6 +80,50 @@ export default function DraftsPage() {
     // Store draft in localStorage temporarily (you could also use URL params)
     localStorage.setItem("editDraft", JSON.stringify(draft));
     router.push(`/write/edit/${draft.id}`);
+  };
+
+  const handlePublishDraft = async (draft: Draft) => {
+    if (!draft.id) return;
+
+    try {
+      setPublishingId(draft.id);
+
+      // Check if draft has required fields
+      if (!draft.title || !draft.title.trim()) {
+        setError("Draft must have a title to publish");
+        return;
+      }
+
+      if (!draft.content || !draft.content.trim()) {
+        setError("Draft must have content to publish");
+        return;
+      }
+
+      // Publish the draft
+      const publishedId = await publishDraft(draft);
+
+      if (publishedId) {
+        // Remove the draft from the list since it's now published
+        setDrafts(drafts.filter((d) => d.id !== draft.id));
+
+        // Show success message
+        setMessage("Draft published successfully!");
+
+        // Clear message after 3 seconds
+        setTimeout(() => {
+          setMessage(null);
+          // Optionally, navigate to the published article
+          router.push(`/articles/${draft.slug || publishedId}`);
+        }, 3000);
+      } else {
+        setError("Failed to publish draft");
+      }
+    } catch (err) {
+      console.error("Error publishing draft:", err);
+      setError("An error occurred while publishing the draft");
+    } finally {
+      setPublishingId(null);
+    }
   };
 
   const formatDate = (dateString?: string) => {
@@ -113,6 +169,12 @@ export default function DraftsPage() {
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
+          </div>
+        )}
+
+        {message && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {message}
           </div>
         )}
 
@@ -197,6 +259,19 @@ export default function DraftsPage() {
                               className="text-blue-600 hover:text-blue-900"
                             >
                               Edit
+                            </button>
+                            <button
+                              onClick={() => handlePublishDraft(draft)}
+                              disabled={publishingId === draft.id}
+                              className={`text-green-600 hover:text-green-900 ${
+                                publishingId === draft.id
+                                  ? "opacity-50 cursor-not-allowed"
+                                  : ""
+                              }`}
+                            >
+                              {publishingId === draft.id
+                                ? "Publishing..."
+                                : "Publish"}
                             </button>
                             <button
                               onClick={() =>

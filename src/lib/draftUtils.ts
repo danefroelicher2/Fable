@@ -8,6 +8,10 @@ export type Draft = {
   content: string | null;
   excerpt: string | null;
   category: string | null;
+  slug?: string | null;
+  image_url?: string | null; // Added image_url to the type
+  is_published?: boolean; // Added to track publication status
+  published_id?: string; // Reference to the published article ID
   created_at?: string;
   updated_at?: string;
 };
@@ -56,7 +60,10 @@ export async function saveDraft(
       // Use any to bypass TypeScript checking
       const { data, error } = await (supabase as any)
         .from("drafts")
-        .insert(draftWithUser)
+        .insert({
+          ...draftWithUser,
+          is_published: false, // Ensure new drafts are not marked as published
+        })
         .select();
 
       if (error) {
@@ -90,6 +97,7 @@ export async function getUserDrafts(): Promise<Draft[] | null> {
       .from("drafts")
       .select("*")
       .eq("user_id", userData.user.id)
+      .eq("is_published", false) // Only get unpublished drafts
       .order("updated_at", { ascending: false });
 
     if (error) {
@@ -103,6 +111,7 @@ export async function getUserDrafts(): Promise<Draft[] | null> {
     return null;
   }
 }
+
 /**
  * Get a specific draft by id
  * @param id The id of the draft to get
@@ -110,7 +119,7 @@ export async function getUserDrafts(): Promise<Draft[] | null> {
  */
 export async function getDraftById(id: string): Promise<Draft | null> {
   try {
-    // Use type assertion with 'any' to bypass TypeScript checking
+    // Use any to bypass TypeScript checking
     const { data, error } = await (supabase as any)
       .from("drafts")
       .select("*")
@@ -136,20 +145,11 @@ export async function getDraftById(id: string): Promise<Draft | null> {
  */
 export async function deleteDraft(id: string): Promise<boolean> {
   try {
-    // Get current user
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !userData.user) {
-      console.error("Error getting user:", userError);
-      return false;
-    }
-
     // Use any to bypass TypeScript checking
     const { error } = await (supabase as any)
       .from("drafts")
       .delete()
-      .eq("id", id)
-      .eq("user_id", userData.user.id); // Ensure user can only delete their own drafts
+      .eq("id", id);
 
     if (error) {
       console.error("Error deleting draft:", error);
@@ -160,5 +160,109 @@ export async function deleteDraft(id: string): Promise<boolean> {
   } catch (error) {
     console.error("Error deleting draft:", error);
     return false;
+  }
+}
+
+/**
+ * Mark a draft as published and save the published article ID
+ * @param draftId The ID of the draft that was published
+ * @param publishedId The ID of the published article
+ * @returns Whether the operation was successful
+ */
+export async function markDraftAsPublished(
+  draftId: string,
+  publishedId: string
+): Promise<boolean> {
+  try {
+    // Update the draft to mark it as published
+    const { error } = await (supabase as any)
+      .from("drafts")
+      .update({
+        is_published: true,
+        published_id: publishedId,
+      })
+      .eq("id", draftId);
+
+    if (error) {
+      console.error("Error marking draft as published:", error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error marking draft as published:", error);
+    return false;
+  }
+}
+
+/**
+ * Publish a draft directly to public_articles
+ * @param draft The draft to publish
+ * @returns The ID of the published article or null if there was an error
+ */
+export async function publishDraft(draft: Draft): Promise<string | null> {
+  try {
+    if (!draft.id) {
+      console.error("Draft ID is required for publishing");
+      return null;
+    }
+
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userData.user) {
+      console.error("Error getting user:", userError);
+      return null;
+    }
+
+    // Generate a URL-friendly slug from the title if not provided
+    const finalSlug =
+      draft.slug ||
+      draft.title
+        ?.toLowerCase()
+        .replace(/[^\w\s]/gi, "")
+        .replace(/\s+/g, "-") +
+        "-" +
+        Date.now().toString().slice(-6);
+
+    // Use excerpt or generate one from content if not provided
+    const finalExcerpt =
+      draft.excerpt ||
+      (draft.content && draft.content.length > 150
+        ? draft.content.substring(0, 150) + "..."
+        : draft.content);
+
+    // Insert into public_articles
+    const { data, error } = await (supabase as any)
+      .from("public_articles")
+      .insert({
+        user_id: userData.user.id,
+        title: draft.title,
+        content: draft.content,
+        excerpt: finalExcerpt,
+        category: draft.category,
+        slug: finalSlug,
+        is_published: true,
+        published_at: new Date().toISOString(),
+        view_count: 0,
+        image_url: draft.image_url || null,
+      })
+      .select();
+
+    if (error) {
+      console.error("Error publishing draft:", error);
+      return null;
+    }
+
+    // If successful, mark the draft as published
+    if (data && data[0] && data[0].id) {
+      const publishedId = data[0].id;
+      await markDraftAsPublished(draft.id, publishedId);
+      return publishedId;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error publishing draft:", error);
+    return null;
   }
 }
