@@ -49,7 +49,6 @@ export default function UserArticlesPage() {
     }
   }, [userId, router]);
 
-  // Rest of the code remains the same...
   async function fetchProfile() {
     try {
       const { data, error } = await supabase
@@ -156,7 +155,7 @@ export default function UserArticlesPage() {
       {profile && (
         <div className="bg-white p-6 rounded-lg shadow-md mb-6">
           <div className="flex items-center">
-            <div className="mr-6">
+            <Link href={`/profile/${profile.id}`} className="mr-6">
               <div className="h-20 w-20 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden">
                 {profile.avatar_url ? (
                   <img
@@ -166,15 +165,19 @@ export default function UserArticlesPage() {
                   />
                 ) : (
                   <span className="text-2xl">
-                    {(profile.username || "U").charAt(0).toUpperCase()}
+                    {(profile.username || profile.full_name || "U")
+                      .charAt(0)
+                      .toUpperCase()}
                   </span>
                 )}
               </div>
-            </div>
+            </Link>
             <div>
-              <h1 className="text-2xl font-bold">
-                {profile.full_name || profile.username || "Anonymous User"}
-              </h1>
+              <Link href={`/profile/${profile.id}`}>
+                <h1 className="text-2xl font-bold hover:text-blue-600">
+                  {profile.full_name || profile.username || "Anonymous User"}
+                </h1>
+              </Link>
               {profile.username && (
                 <p className="text-gray-600">@{profile.username}</p>
               )}
@@ -291,15 +294,16 @@ export default function UserArticlesPage() {
             </Link>
           </div>
         ) : displayType === "grid" ? (
-          // Grid display
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          // Grid display (Instagram-style)
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {articles.map((article) => (
               <Link
                 key={article.id}
                 href={`/articles/${article.slug}`}
-                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                className="block aspect-square bg-gray-100 relative overflow-hidden group"
               >
-                <div className="h-48 bg-slate-200 relative">
+                {/* Square Article Thumbnail */}
+                <div className="w-full h-full bg-slate-200 relative">
                   {article.image_url ? (
                     <img
                       src={article.image_url}
@@ -307,24 +311,18 @@ export default function UserArticlesPage() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-500">
-                      [Article Image]
+                    <div className="w-full h-full flex items-center justify-center text-slate-500 p-4">
+                      <p className="text-center font-medium">{article.title}</p>
                     </div>
                   )}
 
-                  {article.category && (
-                    <div className="absolute bottom-0 right-0 bg-blue-600 text-white px-2 py-1 text-xs">
-                      {article.category}
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="font-bold mb-1 text-lg line-clamp-2">
-                    {article.title}
-                  </h3>
-                  <div className="flex justify-between text-sm text-gray-500 mb-2">
-                    <span>{formatDate(article.published_at)}</span>
-                    <div className="flex items-center space-x-2">
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white p-4">
+                    <h3 className="font-bold text-center mb-2 line-clamp-2">
+                      {article.title}
+                    </h3>
+
+                    <div className="flex items-center space-x-3 mt-2">
                       <span className="flex items-center">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -358,11 +356,6 @@ export default function UserArticlesPage() {
                       </span>
                     </div>
                   </div>
-                  {article.excerpt && (
-                    <p className="text-gray-700 text-sm line-clamp-2">
-                      {article.excerpt}
-                    </p>
-                  )}
                 </div>
               </Link>
             ))}

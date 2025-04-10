@@ -1,4 +1,4 @@
-// src/app/articles/[slug]/page.tsx
+// src/app/articles/[slug]/page.tsx with improved author profile link
 "use client";
 
 import { useState, useEffect } from "react";
@@ -158,32 +158,45 @@ export default function ArticlePage() {
       <div className="max-w-3xl mx-auto">
         <h1 className="text-4xl font-bold mb-4">{article.title}</h1>
 
+        {/* Improved Author Section with link to profile */}
         <div className="flex items-center mb-6">
-          <div className="flex items-center">
-            <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-3">
+          <Link
+            href={`/profile/${author?.id}`}
+            className="flex items-center group"
+          >
+            <div className="h-12 w-12 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-3 overflow-hidden">
               {author?.avatar_url ? (
                 <img
                   src={author.avatar_url}
                   alt={author.username || "User"}
-                  className="h-10 w-10 rounded-full"
+                  className="h-12 w-12 rounded-full object-cover"
                 />
               ) : (
-                (author?.username || "U")[0].toUpperCase()
+                (
+                  author?.username?.charAt(0) ||
+                  author?.full_name?.charAt(0) ||
+                  "U"
+                ).toUpperCase()
               )}
             </div>
             <div>
-              <Link
-                href={`/profile/${author?.id}`}
-                className="font-medium hover:text-blue-600"
-              >
+              <div className="font-medium group-hover:text-blue-600 transition">
                 {author?.full_name || author?.username || "Anonymous"}
-              </Link>
+              </div>
               <p className="text-sm text-gray-500">
                 {new Date(article.published_at).toLocaleDateString()}
               </p>
             </div>
-          </div>
+          </Link>
         </div>
+
+        {article.category && (
+          <div className="mb-4">
+            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+              {article.category}
+            </span>
+          </div>
+        )}
 
         {article.image_url && (
           <div className="mb-8">
@@ -232,6 +245,46 @@ export default function ArticlePage() {
           <div className="text-gray-600 text-sm">
             {article.view_count || 1}{" "}
             {(article.view_count || 1) === 1 ? "View" : "Views"}
+          </div>
+        </div>
+
+        {/* Author Card with more details */}
+        <div className="bg-gray-50 rounded-lg p-6 mb-8 border border-gray-200">
+          <div className="flex items-start">
+            <Link href={`/profile/${author?.id}`} className="shrink-0">
+              <div className="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 overflow-hidden">
+                {author?.avatar_url ? (
+                  <img
+                    src={author.avatar_url}
+                    alt={author.username || "User"}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  (
+                    author?.username?.charAt(0) ||
+                    author?.full_name?.charAt(0) ||
+                    "U"
+                  ).toUpperCase()
+                )}
+              </div>
+            </Link>
+            <div className="ml-4">
+              <Link
+                href={`/profile/${author?.id}`}
+                className="block text-lg font-medium hover:text-blue-600"
+              >
+                {author?.full_name || author?.username || "Anonymous"}
+              </Link>
+              {author?.username && (
+                <p className="text-gray-600 text-sm">@{author.username}</p>
+              )}
+              <Link
+                href={`/profile/${author?.id}`}
+                className="inline-block mt-3 text-blue-600 hover:text-blue-800 text-sm"
+              >
+                View author profile →
+              </Link>
+            </div>
           </div>
         </div>
 

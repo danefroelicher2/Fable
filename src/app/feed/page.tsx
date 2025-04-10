@@ -6,48 +6,46 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
+interface Article {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  category: string | null;
+  published_at: string;
+  view_count: number;
+  image_url?: string | null;
+  user_id: string;
+  profiles?: {
+    id: string;
+    username: string | null;
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+}
+
 export default function PublicFeed() {
-  const [articles, setArticles] = useState<any[]>([]);
+  const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const { user } = useAuth();
 
   useEffect(() => {
-    checkDatabaseAccess();
     fetchArticles();
   }, [selectedCategory]);
 
-  async function checkDatabaseAccess() {
-    try {
-      // Check if public_articles table exists and is accessible
-      const { data: tableData, error: tableError } = await (supabase as any)
-        .from("public_articles")
-        .select("count()", { count: "exact", head: true });
-
-      console.log("Table check result:", tableData, tableError);
-
-      // Try a simple query with minimal restrictions
-      const { data: simpleData, error: simpleError } = await (supabase as any)
-        .from("public_articles")
-        .select("id")
-        .limit(1);
-
-      console.log("Simple query result:", simpleData, simpleError);
-    } catch (error) {
-      console.error("Database access check error:", error);
-    }
-  }
-
-  // src/app/feed/page.tsx - Update the fetchArticles function
   async function fetchArticles() {
     setLoading(true);
 
     try {
-      console.log("Fetching articles with category:", selectedCategory);
-
       let query = (supabase as any)
         .from("public_articles")
-        .select(`*`) // Just select all fields from the article for now
+        .select(
+          `
+          *,
+          profiles:user_id(id, username, full_name, avatar_url)
+        `
+        )
         .eq("is_published", true)
         .order("published_at", { ascending: false });
 
@@ -62,7 +60,7 @@ export default function PublicFeed() {
         throw error;
       }
 
-      console.log("Articles fetched:", data?.length || 0, data);
+      console.log("Articles fetched:", data?.length || 0);
       setArticles(data || []);
     } catch (error) {
       console.error("Error fetching articles:", error);
@@ -71,6 +69,15 @@ export default function PublicFeed() {
       setLoading(false);
     }
   }
+
+  // Format date (e.g., "Mar 15, 2024")
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
 
   // Categories matching your existing ones
   const categories = [
@@ -109,8 +116,25 @@ export default function PublicFeed() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[...Array(6)].map((_, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-lg shadow-md overflow-hidden article-card animate-pulse"
+            >
+              <div className="h-48 bg-slate-200"></div>
+              <div className="p-4">
+                <div className="h-6 bg-slate-200 rounded w-3/4 mb-2"></div>
+                <div className="flex items-center mb-2">
+                  <div className="h-8 w-8 rounded-full bg-slate-200 mr-2"></div>
+                  <div className="h-4 bg-slate-200 rounded w-24"></div>
+                </div>
+                <div className="h-4 bg-slate-200 rounded w-1/3 mb-3"></div>
+                <div className="h-4 bg-slate-200 rounded w-full mb-2"></div>
+                <div className="h-4 bg-slate-200 rounded w-full mb-2"></div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : articles.length === 0 ? (
         <div className="text-center py-8 bg-white rounded-lg shadow-md">
@@ -128,15 +152,23 @@ export default function PublicFeed() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {articles.map((article: any) => (
+          {articles.map((article: Article) => (
             <div
               key={article.id}
               className="bg-white rounded-lg shadow-md overflow-hidden article-card"
             >
               <div className="h-48 bg-slate-200 overflow-hidden">
-                <div className="w-full h-full flex items-center justify-center text-slate-500">
-                  [Featured Image: {article.title}]
-                </div>
+                {article.image_url ? (
+                  <img
+                    src={article.image_url}
+                    alt={article.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-500">
+                    <span className="text-center p-4">{article.title}</span>
+                  </div>
+                )}
               </div>
               <div className="p-4">
                 <Link href={`/articles/${article.slug}`}>
@@ -144,21 +176,69 @@ export default function PublicFeed() {
                     {article.title}
                   </h2>
                 </Link>
-                <div className="flex items-center mb-2">
-                  <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-2">
-                    U
+
+                <Link
+                  href={`/profile/${article.user_id}`}
+                  className="flex items-center mb-2 group"
+                >
+                  <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-2 overflow-hidden">
+                    {article.profiles?.avatar_url ? (
+                      <img
+                        src={article.profiles.avatar_url}
+                        alt={article.profiles.username || "User"}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span>
+                        {(
+                          article.profiles?.username?.charAt(0) ||
+                          article.profiles?.full_name?.charAt(0) ||
+                          "U"
+                        ).toUpperCase()}
+                      </span>
+                    )}
                   </div>
-                  <span className="text-sm text-gray-600">Author</span>
-                </div>
-                <p className="text-gray-600 text-sm mb-1">
-                  {new Date(article.published_at).toLocaleDateString()}
+                  <span className="text-sm text-gray-600 group-hover:text-blue-600">
+                    {article.profiles?.full_name ||
+                      article.profiles?.username ||
+                      "Anonymous"}
+                  </span>
+                </Link>
+
+                <p className="text-gray-600 text-sm mb-2">
+                  {formatDate(article.published_at)}
                 </p>
-                <p className="text-gray-700 mb-3">{article.excerpt}</p>
+
+                <p className="text-gray-700 mb-3 line-clamp-3">
+                  {article.excerpt || "No excerpt available"}
+                </p>
+
                 <div className="flex justify-between items-center mt-4">
                   <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
                     {categories.find((c) => c.value === article.category)
-                      ?.label || article.category}
+                      ?.label ||
+                      article.category ||
+                      "Uncategorized"}
                   </span>
+
+                  <div className="flex items-center text-sm text-gray-500">
+                    <span className="flex items-center mr-3">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 mr-1"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                        <path
+                          fillRule="evenodd"
+                          d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      {article.view_count || 0}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

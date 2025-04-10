@@ -159,22 +159,29 @@ export default function UserPublishedArticles({
         <p className="text-gray-600">
           This user hasn't published any articles yet.
         </p>
+        <Link
+          href="/write"
+          className="mt-4 inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+        >
+          Write Your First Article
+        </Link>
       </div>
     );
   }
 
-  // Grid display (Instagram-like)
+  // Instagram-style Grid Display
   if (displayType === "grid") {
     return (
       <div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {articles.map((article) => (
             <Link
               key={article.id}
               href={`/articles/${article.slug}`}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+              className="block aspect-square bg-gray-100 relative overflow-hidden group"
             >
-              <div className="h-48 bg-slate-200 relative">
+              {/* Square Article Thumbnail */}
+              <div className="w-full h-full bg-slate-200 relative">
                 {article.image_url ? (
                   <img
                     src={article.image_url}
@@ -182,24 +189,18 @@ export default function UserPublishedArticles({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-500">
-                    [Article Image]
+                  <div className="w-full h-full flex items-center justify-center text-slate-500 p-4">
+                    <p className="text-center font-medium">{article.title}</p>
                   </div>
                 )}
 
-                {article.category && (
-                  <div className="absolute bottom-0 right-0 bg-blue-600 text-white px-2 py-1 text-xs">
-                    {article.category}
-                  </div>
-                )}
-              </div>
-              <div className="p-4">
-                <h3 className="font-bold mb-1 text-lg line-clamp-2">
-                  {article.title}
-                </h3>
-                <div className="flex justify-between text-sm text-gray-500 mb-2">
-                  <span>{formatDate(article.published_at)}</span>
-                  <div className="flex items-center space-x-2">
+                {/* Hover Overlay */}
+                <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white p-4">
+                  <h3 className="font-bold text-center mb-2 line-clamp-2">
+                    {article.title}
+                  </h3>
+
+                  <div className="flex items-center space-x-3 mt-2">
                     <span className="flex items-center">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -233,11 +234,6 @@ export default function UserPublishedArticles({
                     </span>
                   </div>
                 </div>
-                {article.excerpt && (
-                  <p className="text-gray-700 text-sm line-clamp-2">
-                    {article.excerpt}
-                  </p>
-                )}
               </div>
             </Link>
           ))}
@@ -247,7 +243,7 @@ export default function UserPublishedArticles({
           <div className="text-center mt-8">
             <Link
               href={`/profile/${userId}/articles`}
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-md transition"
+              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-md transition"
             >
               View All Articles
             </Link>
