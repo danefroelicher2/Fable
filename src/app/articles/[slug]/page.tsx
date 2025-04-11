@@ -157,8 +157,10 @@ export default function ArticlePage() {
     return (
       <div className="container mx-auto py-10 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-4xl font-bold mb-4">Article Not Found</h1>
-          <p className="text-gray-600 mb-6">
+          <h1 className="text-4xl font-bold mb-4 dark:text-white">
+            Article Not Found
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             The article you're looking for doesn't exist or has been removed.
           </p>
           <Link
@@ -177,12 +179,12 @@ export default function ArticlePage() {
       <div className="container mx-auto py-10 px-4">
         <div className="max-w-3xl mx-auto">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/4 mb-8"></div>
-            <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-8"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
           </div>
         </div>
       </div>
@@ -196,36 +198,44 @@ export default function ArticlePage() {
   return (
     <div className="container mx-auto py-10 px-4">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-4xl font-bold mb-4">{article.title}</h1>
+        <h1 className="text-4xl font-bold mb-4 dark:text-white">
+          {article.title}
+        </h1>
 
         <div className="flex items-center mb-6">
           <div className="flex items-center">
-            <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-3">
+            <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 mr-3 overflow-hidden">
               {author?.avatar_url ? (
                 <img
                   src={author.avatar_url}
                   alt={author.username || "User"}
-                  className="h-10 w-10 rounded-full"
+                  className="h-10 w-10 object-cover"
                 />
               ) : (
-                (author?.username || "U")[0].toUpperCase()
+                <span className="text-lg font-medium">
+                  {(author?.username || "U")[0].toUpperCase()}
+                </span>
               )}
             </div>
             <div>
               {author?.id ? (
                 <Link
                   href={`/profile/${author.id}`}
-                  className="font-medium hover:text-blue-600"
+                  className="font-medium hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
                 >
                   {author?.full_name || author?.username || "Anonymous"}
                 </Link>
               ) : (
-                <span className="font-medium">
+                <span className="font-medium dark:text-white">
                   {author?.full_name || author?.username || "Anonymous"}
                 </span>
               )}
-              <p className="text-sm text-gray-500">
-                {new Date(article.published_at).toLocaleDateString()}
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {new Date(article.published_at).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
               </p>
             </div>
           </div>
@@ -241,30 +251,43 @@ export default function ArticlePage() {
           </div>
         )}
 
-        <div className="prose max-w-none mb-10">
-          <div dangerouslySetInnerHTML={{ __html: article.content }}></div>
+        {article.category && (
+          <div className="mb-4">
+            <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-2 py-1 rounded text-sm">
+              {article.category}
+            </span>
+          </div>
+        )}
+
+        <div className="prose dark:prose-invert max-w-none mb-10">
+          <div
+            dangerouslySetInnerHTML={{ __html: article.content }}
+            className="dark:text-gray-300"
+          ></div>
         </div>
 
-        <div className="border-t border-b py-4 mb-8 flex justify-between items-center">
+        <div className="border-t dark:border-gray-700 border-b py-4 mb-8 flex justify-between items-center">
           <div className="flex items-center">
             <button
               onClick={handleLike}
               className={`flex items-center ${
-                isLiked ? "text-red-600" : "text-gray-600"
-              }`}
+                isLiked
+                  ? "text-red-600 dark:text-red-500"
+                  : "text-gray-600 dark:text-gray-400"
+              } hover:text-red-500 dark:hover:text-red-400 transition-colors`}
               aria-label={isLiked ? "Unlike this article" : "Like this article"}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
+                className="h-6 w-6 transition-transform hover:scale-110"
                 fill={isLiked ? "currentColor" : "none"}
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                strokeWidth={isLiked ? "1" : "2"}
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                 />
               </svg>
@@ -274,7 +297,27 @@ export default function ArticlePage() {
             </button>
           </div>
 
-          <div className="text-gray-600 text-sm">
+          <div className="text-gray-600 dark:text-gray-400 text-sm flex items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 mr-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+              />
+            </svg>
             {article.view_count || 0}{" "}
             {article.view_count === 1 ? "View" : "Views"}
           </div>

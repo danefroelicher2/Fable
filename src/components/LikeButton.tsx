@@ -35,7 +35,8 @@ export default function LikeButton({
       try {
         setCheckingLike(true);
 
-        const { data, error } = await supabase
+        // Using type cast to any to avoid TypeScript errors
+        const { data, error } = await (supabase as any)
           .from("likes")
           .select("id")
           .eq("article_id", articleId)
@@ -71,7 +72,8 @@ export default function LikeButton({
     try {
       if (isLiked) {
         // Unlike
-        const { error } = await supabase
+        // Using type cast to any to avoid TypeScript errors
+        const { error } = await (supabase as any)
           .from("likes")
           .delete()
           .eq("article_id", articleId)
@@ -83,7 +85,8 @@ export default function LikeButton({
         setIsLiked(false);
       } else {
         // Like
-        const { error } = await supabase.from("likes").insert({
+        // Using type cast to any to avoid TypeScript errors
+        const { error } = await (supabase as any).from("likes").insert({
           article_id: articleId,
           user_id: user.id,
         });
@@ -104,30 +107,39 @@ export default function LikeButton({
     <button
       onClick={handleLikeToggle}
       disabled={isLoading || checkingLike}
-      className={`flex items-center space-x-1 transition-colors focus:outline-none ${
+      className={`flex items-center space-x-2 transition-colors focus:outline-none ${
         isLiked
           ? "text-red-600 dark:text-red-500"
           : "text-gray-600 dark:text-gray-400"
-      } ${className} ${isLoading ? "opacity-50" : ""}`}
+      } ${className} ${
+        isLoading || checkingLike
+          ? "opacity-50 cursor-not-allowed"
+          : "hover:text-red-500"
+      }`}
       aria-label={isLiked ? "Unlike this article" : "Like this article"}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        className={`h-6 w-6 transition-transform ${isLiked ? "scale-110" : ""}`}
-        fill={isLiked ? "currentColor" : "none"}
+        className={`h-6 w-6 transition-transform ${
+          isLiked ? "scale-110 fill-current" : "fill-none"
+        }`}
         viewBox="0 0 24 24"
         stroke="currentColor"
+        strokeWidth={isLiked ? "1" : "2"}
       >
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
-          strokeWidth={2}
           d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
         />
       </svg>
       <span>
         {likeCount} {likeCount === 1 ? "Like" : "Likes"}
       </span>
+
+      {checkingLike && (
+        <span className="animate-pulse h-2 w-2 bg-gray-400 rounded-full"></span>
+      )}
     </button>
   );
 }
