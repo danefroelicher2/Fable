@@ -1,7 +1,7 @@
 // src/app/write/page.tsx
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
@@ -12,6 +12,7 @@ export default function WritePage() {
   const { user } = useAuth();
   const router = useRouter();
   const editorRef = useRef<HTMLTextAreaElement>(null);
+  const messageRef = useRef<HTMLDivElement>(null);
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -23,6 +24,15 @@ export default function WritePage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [slug, setSlug] = useState("");
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [publishedId, setPublishedId] = useState<string | null>(null);
+
+  // Scroll to top when message or error is shown
+  useEffect(() => {
+    if ((message || error) && messageRef.current) {
+      messageRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [message, error]);
 
   // If user is not signed in, show sign-in prompt
   if (!user) {
@@ -136,21 +146,31 @@ export default function WritePage() {
       }
 
       // Now publish the draft
-      const publishedId = await publishDraft(savedDraft);
+      const published = await publishDraft(savedDraft);
 
-      if (publishedId) {
-        setMessage("Article published successfully!");
+      if (published) {
+        setPublishedId(published);
+        setMessage(
+          "Article published successfully! Redirecting to your profile..."
+        );
+        setIsRedirecting(true);
 
-        // Redirect to the published article
+        // Scroll to message
+        if (messageRef.current) {
+          messageRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+
+        // Redirect to the profile page after a delay
         setTimeout(() => {
-          router.push(`/articles/${draftSlug}`);
-        }, 1500);
+          router.push("/profile");
+        }, 2500);
       } else {
         throw new Error("Failed to publish article");
       }
     } catch (error: any) {
       console.error("Error publishing article:", error);
       setError("Error publishing article: " + error.message);
+      setIsRedirecting(false);
     } finally {
       setIsPublishing(false);
     }
@@ -193,17 +213,25 @@ export default function WritePage() {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Write a New Article</h1>
 
-        {message && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
-            {message}
-          </div>
-        )}
+        <div ref={messageRef}>
+          {message && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+              {message}
+              {isRedirecting && (
+                <div className="mt-2 flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-green-700 mr-2"></div>
+                  <span>Redirecting...</span>
+                </div>
+              )}
+            </div>
+          )}
 
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-            {error}
-          </div>
-        )}
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+              {error}
+            </div>
+          )}
+        </div>
 
         <form className="bg-white p-6 rounded-lg shadow-md">
           <div className="mb-6">
@@ -227,6 +255,7 @@ export default function WritePage() {
               className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="Enter a compelling title for your article"
               required
+              disabled={isRedirecting}
             />
           </div>
 
@@ -246,6 +275,7 @@ export default function WritePage() {
                 onChange={(e) => setSlug(e.target.value)}
                 className="flex-1 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="custom-url-slug"
+                disabled={isRedirecting}
               />
             </div>
             <p className="text-gray-500 text-sm mt-1">
@@ -267,6 +297,7 @@ export default function WritePage() {
               className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
               rows={3}
               placeholder="Provide a brief summary of your article (will appear in previews)"
+              disabled={isRedirecting}
             />
             <p className="text-gray-500 text-sm mt-1">
               If left empty, an excerpt will be automatically generated from the
@@ -287,6 +318,7 @@ export default function WritePage() {
               onChange={(e) => setCategory(e.target.value)}
               className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
               required
+              disabled={isRedirecting}
             >
               <option value="">Select a category</option>
               <option value="ancient-history">Ancient History</option>
@@ -316,15 +348,25 @@ export default function WritePage() {
                 </div>
               )}
               <div className={coverImage ? "md:w-2/3" : "w-full"}>
-                <ImageUpload
-                  onImageUploaded={(url) => setCoverImage(url)}
-                  bucketName="article-images"
-                  folderPath="{userId}/covers/{timestamp}"
-                  buttonLabel="Upload Cover Image"
-                  acceptedTypes="image/jpeg,image/png,image/webp"
-                  maxSize={2} // 2MB
-                  showPreview={false}
-                />
+                {!isRedirecting ? (
+                  <ImageUpload
+                    onImageUploaded={(url) => setCoverImage(url)}
+                    bucketName="article-images"
+                    folderPath="{userId}/covers/{timestamp}"
+                    buttonLabel="Upload Cover Image"
+                    acceptedTypes="image/jpeg,image/png,image/webp"
+                    maxSize={2} // 2MB
+                    showPreview={false}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="bg-gray-300 text-gray-600 px-4 py-2 rounded opacity-50 cursor-not-allowed"
+                  >
+                    Upload Cover Image
+                  </button>
+                )}
                 <p className="text-gray-500 text-sm mt-2">
                   Upload an eye-catching cover image for your article (max 2MB,
                   JPEG or PNG)
@@ -371,6 +413,7 @@ export default function WritePage() {
                       }
                     }
                   }}
+                  disabled={isRedirecting}
                 >
                   Bold
                 </button>
@@ -403,6 +446,7 @@ export default function WritePage() {
                       }
                     }
                   }}
+                  disabled={isRedirecting}
                 >
                   Italic
                 </button>
@@ -425,6 +469,7 @@ export default function WritePage() {
                       setContent(newContent);
                     }
                   }}
+                  disabled={isRedirecting}
                 >
                   Heading
                 </button>
@@ -432,13 +477,23 @@ export default function WritePage() {
             </div>
 
             <div className="mb-2">
-              <ImageUpload
-                onImageUploaded={handleInsertImage}
-                bucketName="article-images"
-                folderPath="{userId}/content/{timestamp}"
-                buttonLabel="Insert Image"
-                className="mb-2"
-              />
+              {!isRedirecting ? (
+                <ImageUpload
+                  onImageUploaded={handleInsertImage}
+                  bucketName="article-images"
+                  folderPath="{userId}/content/{timestamp}"
+                  buttonLabel="Insert Image"
+                  className="mb-2"
+                />
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="bg-gray-300 text-gray-600 px-4 py-2 rounded opacity-50 cursor-not-allowed mb-2"
+                >
+                  Insert Image
+                </button>
+              )}
             </div>
 
             <textarea
@@ -450,6 +505,7 @@ export default function WritePage() {
               rows={15}
               placeholder="Write your article here..."
               required
+              disabled={isRedirecting}
             />
             <p className="text-gray-500 text-sm mt-2">
               Tip: Use Markdown for formatting. *italic* for italics, **bold**
@@ -461,7 +517,7 @@ export default function WritePage() {
             <button
               type="button"
               onClick={handleSaveDraft}
-              disabled={isSaving}
+              disabled={isSaving || isRedirecting}
               className="px-6 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 disabled:opacity-50"
             >
               {isSaving ? "Saving..." : "Save as Draft"}
@@ -470,7 +526,7 @@ export default function WritePage() {
             <button
               type="button"
               onClick={handlePublish}
-              disabled={isPublishing}
+              disabled={isPublishing || isRedirecting}
               className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
             >
               {isPublishing ? "Publishing..." : "Publish Article"}
