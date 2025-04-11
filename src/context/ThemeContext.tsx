@@ -30,86 +30,63 @@ type ThemeProviderProps = {
 };
 
 export const ThemeProvider = ({ children }: ThemeProviderProps) => {
-  const [theme, setTheme] = useState<Theme>("light");
+  const [theme, setThemeState] = useState<Theme>("light");
   const [mounted, setMounted] = useState(false);
 
-  // Set mounted to true on client-side to avoid hydration issues
+  // Apply theme to document
+  const applyTheme = (newTheme: Theme) => {
+    // Update the theme state
+    setThemeState(newTheme);
+
+    // Save to localStorage for persistence
+    localStorage.setItem("theme", newTheme);
+
+    // Apply dark class to HTML element
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
+
+  // Toggle between light and dark
+  const toggleTheme = () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    applyTheme(newTheme);
+  };
+
+  // Set a specific theme
+  const setTheme = (newTheme: Theme) => {
+    applyTheme(newTheme);
+  };
+
+  // Effect for initial theme setup
   useEffect(() => {
     setMounted(true);
-  }, []);
 
-  useEffect(() => {
-    // Only run this code on the client side
-    if (!mounted) return;
-
-    // Load theme preference from localStorage on component mount
+    // Get theme from localStorage or system preference
     const savedTheme = localStorage.getItem("theme") as Theme | null;
 
     if (savedTheme) {
-      setTheme(savedTheme);
-      document.documentElement.classList.toggle("dark", savedTheme === "dark");
+      // If user has saved preference, use that
+      applyTheme(savedTheme);
     } else {
-      // Check system preference
+      // Otherwise check system preference
       const prefersDark = window.matchMedia(
         "(prefers-color-scheme: dark)"
       ).matches;
-      const initialTheme = prefersDark ? "dark" : "light";
-      setTheme(initialTheme);
-      document.documentElement.classList.toggle(
-        "dark",
-        initialTheme === "dark"
-      );
-      localStorage.setItem("theme", initialTheme);
+      applyTheme(prefersDark ? "dark" : "light");
     }
+  }, []);
 
-    // Listen for system preference changes
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = (e: MediaQueryListEvent) => {
-      // Only change theme if user hasn't explicitly set a preference
-      if (!localStorage.getItem("theme")) {
-        const newTheme = e.matches ? "dark" : "light";
-        setTheme(newTheme);
-        document.documentElement.classList.toggle("dark", e.matches);
-      }
-    };
+  // Provide context values to children only after mounting
+  // This avoids hydration mismatch issues
+  if (!mounted) {
+    return <>{children}</>;
+  }
 
-    // Add event listener
-    try {
-      // Modern API
-      mediaQuery.addEventListener("change", handleChange);
-    } catch (e) {
-      // Fallback for older browsers
-      mediaQuery.addListener(handleChange);
-    }
-
-    // Clean up
-    return () => {
-      try {
-        mediaQuery.removeEventListener("change", handleChange);
-      } catch (e) {
-        mediaQuery.removeListener(handleChange);
-      }
-    };
-  }, [mounted]);
-
-  const changeTheme = (newTheme: Theme) => {
-    if (!mounted) return;
-
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-    document.documentElement.classList.toggle("dark", newTheme === "dark");
-  };
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    changeTheme(newTheme);
-  };
-
-  // Use a div with conditional class to prevent hydration mismatch
   return (
-    <ThemeContext.Provider
-      value={{ theme, setTheme: changeTheme, toggleTheme }}
-    >
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
