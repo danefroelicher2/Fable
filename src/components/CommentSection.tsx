@@ -3,9 +3,16 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
+import { Database } from "@/types/supabase"; // Use the new .d.ts file
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
+
+// Create Supabase client with typed database
+const supabase = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 // Format a date to "time ago" (e.g. "5 minutes ago", "2 hours ago", "3 days ago")
 function timeAgo(dateString: string): string {
@@ -41,25 +48,13 @@ function timeAgo(dateString: string): string {
   return seconds < 10 ? "just now" : `${Math.floor(seconds)} seconds ago`;
 }
 
-// Basic type for comments from the database
-type BasicComment = {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-  article_id: string;
-};
-
-// Basic type for user profile from the database
-type BasicProfile = {
-  id: string;
-  username: string | null;
-  full_name: string | null;
-  avatar_url: string | null;
-};
-
 // Combined display type
-type CommentDisplay = BasicComment & {
+type CommentDisplay = Database["public"]["Tables"]["comments"]["Row"] & {
+  profiles?: {
+    username?: string | null;
+    full_name?: string | null;
+    avatar_url?: string | null;
+  } | null;
   authorName: string;
   authorAvatar: string | null;
 };
@@ -86,44 +81,35 @@ export default function CommentSection({ articleId }: { articleId: string }) {
     setError(null);
 
     try {
-      // Fetch comments for this article
+      // Fetch comments with related profile info using join
       const { data: commentsData, error: commentsError } = await supabase
         .from("comments")
-        .select("*")
+        .select(
+          `
+          *,
+          profiles (
+            username,
+            full_name,
+            avatar_url
+          )
+        `
+        )
         .eq("article_id", articleId)
         .order("created_at", { ascending: false });
 
       if (commentsError) throw commentsError;
 
       // Process comments to include author info
-      const displayComments: CommentDisplay[] = [];
-
-      // For each comment, get the profile info
-      for (const comment of commentsData || []) {
-        try {
-          // Get profile for this user
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", comment.user_id)
-            .single();
-
-          // Add to our display array
-          displayComments.push({
-            ...comment,
-            authorName:
-              profile?.full_name || profile?.username || "Anonymous User",
-            authorAvatar: profile?.avatar_url,
-          });
-        } catch (err) {
-          // If we can't get profile, still show the comment
-          displayComments.push({
-            ...comment,
-            authorName: "Anonymous User",
-            authorAvatar: null,
-          });
-        }
-      }
+      const displayComments: CommentDisplay[] = (commentsData || []).map(
+        (comment) => ({
+          ...comment,
+          authorName:
+            comment.profiles?.full_name ||
+            comment.profiles?.username ||
+            "Anonymous User",
+          authorAvatar: comment.profiles?.avatar_url || null,
+        })
+      );
 
       setComments(displayComments);
     } catch (err: any) {
@@ -159,23 +145,28 @@ export default function CommentSection({ articleId }: { articleId: string }) {
           user_id: user.id,
           content: commentText.trim(),
         })
-        .select()
+        .select(
+          `
+          *,
+          profiles (
+            username,
+            full_name,
+            avatar_url
+          )
+        `
+        )
         .single();
 
       if (insertError) throw insertError;
 
-      // Get user profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
       // Add to display list
       const commentDisplay: CommentDisplay = {
         ...newComment,
-        authorName: profile?.full_name || profile?.username || "Anonymous User",
-        authorAvatar: profile?.avatar_url,
+        authorName:
+          newComment.profiles?.full_name ||
+          newComment.profiles?.username ||
+          "Anonymous User",
+        authorAvatar: newComment.profiles?.avatar_url || null,
       };
 
       // Update the comments list

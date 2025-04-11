@@ -1,4 +1,6 @@
-// src/types/supabase.ts
+// src/types/supabase.d.ts
+// Use .d.ts extension to declare global types without conflicts
+
 export type Json =
   | string
   | number
@@ -10,33 +12,64 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      comments: {
+        Row: {
+          id: string;
+          article_id: string;
+          user_id: string;
+          content: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          article_id: string;
+          user_id: string;
+          content: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          article_id?: string;
+          user_id?: string;
+          content?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "comments_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       profiles: {
         Row: {
           id: string;
-          updated_at: string | null;
           username: string | null;
           full_name: string | null;
           avatar_url: string | null;
           website: string | null;
           created_at: string | null;
+          updated_at: string | null;
         };
         Insert: {
           id: string;
-          updated_at?: string | null;
           username?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
           website?: string | null;
           created_at?: string | null;
+          updated_at?: string | null;
         };
         Update: {
           id?: string;
-          updated_at?: string | null;
           username?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
           website?: string | null;
           created_at?: string | null;
+          updated_at?: string | null;
         };
         Relationships: [
           {
