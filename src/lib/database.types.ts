@@ -90,7 +90,135 @@ export interface Database {
           }
         ];
       };
-      // Add other tables as needed
+      public_articles: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          content: string;
+          excerpt: string | null;
+          slug: string;
+          category: string | null;
+          image_url: string | null;
+          published_at: string;
+          is_published: boolean;
+          view_count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          content: string;
+          excerpt?: string | null;
+          slug: string;
+          category?: string | null;
+          image_url?: string | null;
+          published_at?: string;
+          is_published?: boolean;
+          view_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          content?: string;
+          excerpt?: string | null;
+          slug?: string;
+          category?: string | null;
+          image_url?: string | null;
+          published_at?: string;
+          is_published?: boolean;
+          view_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "public_articles_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      likes: {
+        Row: {
+          id: string;
+          user_id: string;
+          article_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          article_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          article_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "likes_article_id_fkey";
+            columns: ["article_id"];
+            referencedRelation: "public_articles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "likes_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      comments: {
+        Row: {
+          id: string;
+          user_id: string;
+          article_id: string;
+          content: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          article_id: string;
+          content: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          article_id?: string;
+          content?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "comments_article_id_fkey";
+            columns: ["article_id"];
+            referencedRelation: "public_articles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;

@@ -1,4 +1,4 @@
-// src/app/articles/[slug]/page.tsx with improved author profile link
+// src/app/articles/[slug]/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -17,8 +17,11 @@ export default function ArticlePage() {
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [notFoundTriggered, setNotFoundTriggered] = useState(false);
 
-  const { slug } = params;
+  // Extract slug from params
+  const slugParam = params.slug;
+  const slug = Array.isArray(slugParam) ? slugParam[0] : slugParam;
 
   useEffect(() => {
     if (slug) {
@@ -35,64 +38,79 @@ export default function ArticlePage() {
   async function fetchArticle() {
     setLoading(true);
     try {
-      const { data: articleData, error: articleError } = await (supabase as any)
+      console.log("Fetching article with slug:", slug);
+
+      // Use type assertion to bypass TypeScript checking
+      const { data, error } = await (supabase as any)
         .from("public_articles")
-        .select(
-          `
-          *,
-          profiles:user_id(id, username, full_name, avatar_url)
-        `
-        )
+        .select("*")
         .eq("slug", slug)
         .eq("is_published", true)
         .single();
 
-      if (articleError) throw articleError;
+      if (error) {
+        console.error("Error fetching article:", error);
+        setNotFoundTriggered(true);
+        return;
+      }
 
-      // Get like count
-      const { count: likesCount, error: likesError } = await (supabase as any)
+      console.log("Article found:", data);
+      setArticle(data);
+
+      // 2. Fetch the author if we have user_id
+      if (data.user_id) {
+        const { data: authorData, error: authorError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", data.user_id)
+          .single();
+
+        if (!authorError && authorData) {
+          setAuthor(authorData);
+        }
+      }
+
+      // 3. Get like count
+      const { count, error: likesError } = await (supabase as any)
         .from("likes")
-        .select("id", { count: "exact" })
-        .eq("article_id", articleData.id);
+        .select("*", { count: "exact", head: true })
+        .eq("article_id", data.id);
 
-      if (likesError) throw likesError;
+      if (!likesError && count !== null) {
+        setLikeCount(count);
+      }
 
-      setArticle(articleData);
-      setAuthor(articleData.profiles);
-      setLikeCount(likesCount || 0);
-
-      // Increment view count
-      try {
+      // 4. Update view count
+      if (data.id) {
+        const currentViewCount =
+          typeof data.view_count === "number" ? data.view_count : 0;
         await (supabase as any)
           .from("public_articles")
-          .update({ view_count: (articleData.view_count || 0) + 1 })
-          .eq("id", articleData.id);
-      } catch (updateError) {
-        console.error("Error updating view count:", updateError);
-        // Continue even if view count update fails
+          .update({ view_count: currentViewCount + 1 })
+          .eq("id", data.id);
       }
     } catch (error) {
-      console.error("Error fetching article:", error);
-      // Handle not found
-      router.push("/not-found");
+      console.error("Error in article fetch flow:", error);
+      setNotFoundTriggered(true);
     } finally {
       setLoading(false);
     }
   }
 
   async function checkIfLiked() {
-    try {
-      if (!user) return; // Skip checking likes if user is not logged in
+    if (!user || !article?.id) return;
 
+    try {
       const { data, error } = await (supabase as any)
         .from("likes")
-        .select("id")
+        .select("*")
         .eq("article_id", article.id)
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (error) throw error;
-      setIsLiked(!!data);
+      if (!error) {
+        setIsLiked(!!data);
+      }
     } catch (error) {
       console.error("Error checking like status:", error);
     }
@@ -101,10 +119,12 @@ export default function ArticlePage() {
   async function handleLike() {
     if (!user) {
       router.push(
-        "/signin?redirect=" + encodeURIComponent(`/articles/${slug}`)
+        `/signin?redirect=${encodeURIComponent(`/articles/${slug}`)}`
       );
       return;
     }
+
+    if (!article?.id) return;
 
     try {
       if (isLiked) {
@@ -132,6 +152,26 @@ export default function ArticlePage() {
     }
   }
 
+  // Render not-found if the article doesn't exist
+  if (notFoundTriggered) {
+    return (
+      <div className="container mx-auto py-10 px-4">
+        <div className="max-w-3xl mx-auto text-center">
+          <h1 className="text-4xl font-bold mb-4">Article Not Found</h1>
+          <p className="text-gray-600 mb-6">
+            The article you're looking for doesn't exist or has been removed.
+          </p>
+          <Link
+            href="/"
+            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+          >
+            Return to Homepage
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto py-10 px-4">
@@ -150,7 +190,7 @@ export default function ArticlePage() {
   }
 
   if (!article) {
-    return null; // Will redirect via the useEffect
+    return null;
   }
 
   return (
@@ -158,45 +198,38 @@ export default function ArticlePage() {
       <div className="max-w-3xl mx-auto">
         <h1 className="text-4xl font-bold mb-4">{article.title}</h1>
 
-        {/* Improved Author Section with link to profile */}
         <div className="flex items-center mb-6">
-          <Link
-            href={`/profile/${author?.id}`}
-            className="flex items-center group"
-          >
-            <div className="h-12 w-12 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-3 overflow-hidden">
+          <div className="flex items-center">
+            <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-3">
               {author?.avatar_url ? (
                 <img
                   src={author.avatar_url}
                   alt={author.username || "User"}
-                  className="h-12 w-12 rounded-full object-cover"
+                  className="h-10 w-10 rounded-full"
                 />
               ) : (
-                (
-                  author?.username?.charAt(0) ||
-                  author?.full_name?.charAt(0) ||
-                  "U"
-                ).toUpperCase()
+                (author?.username || "U")[0].toUpperCase()
               )}
             </div>
             <div>
-              <div className="font-medium group-hover:text-blue-600 transition">
-                {author?.full_name || author?.username || "Anonymous"}
-              </div>
+              {author?.id ? (
+                <Link
+                  href={`/profile/${author.id}`}
+                  className="font-medium hover:text-blue-600"
+                >
+                  {author?.full_name || author?.username || "Anonymous"}
+                </Link>
+              ) : (
+                <span className="font-medium">
+                  {author?.full_name || author?.username || "Anonymous"}
+                </span>
+              )}
               <p className="text-sm text-gray-500">
                 {new Date(article.published_at).toLocaleDateString()}
               </p>
             </div>
-          </Link>
-        </div>
-
-        {article.category && (
-          <div className="mb-4">
-            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-              {article.category}
-            </span>
           </div>
-        )}
+        </div>
 
         {article.image_url && (
           <div className="mb-8">
@@ -209,7 +242,6 @@ export default function ArticlePage() {
         )}
 
         <div className="prose max-w-none mb-10">
-          {/* Render content with markdown support if needed */}
           <div dangerouslySetInnerHTML={{ __html: article.content }}></div>
         </div>
 
@@ -243,52 +275,11 @@ export default function ArticlePage() {
           </div>
 
           <div className="text-gray-600 text-sm">
-            {article.view_count || 1}{" "}
-            {(article.view_count || 1) === 1 ? "View" : "Views"}
+            {article.view_count || 0}{" "}
+            {article.view_count === 1 ? "View" : "Views"}
           </div>
         </div>
 
-        {/* Author Card with more details */}
-        <div className="bg-gray-50 rounded-lg p-6 mb-8 border border-gray-200">
-          <div className="flex items-start">
-            <Link href={`/profile/${author?.id}`} className="shrink-0">
-              <div className="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 overflow-hidden">
-                {author?.avatar_url ? (
-                  <img
-                    src={author.avatar_url}
-                    alt={author.username || "User"}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  (
-                    author?.username?.charAt(0) ||
-                    author?.full_name?.charAt(0) ||
-                    "U"
-                  ).toUpperCase()
-                )}
-              </div>
-            </Link>
-            <div className="ml-4">
-              <Link
-                href={`/profile/${author?.id}`}
-                className="block text-lg font-medium hover:text-blue-600"
-              >
-                {author?.full_name || author?.username || "Anonymous"}
-              </Link>
-              {author?.username && (
-                <p className="text-gray-600 text-sm">@{author.username}</p>
-              )}
-              <Link
-                href={`/profile/${author?.id}`}
-                className="inline-block mt-3 text-blue-600 hover:text-blue-800 text-sm"
-              >
-                View author profile →
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Comments Section */}
         {article.id && <CommentSection articleId={article.id} />}
       </div>
     </div>
