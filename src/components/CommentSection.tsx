@@ -41,67 +41,106 @@ function timeAgo(dateString: string): string {
   return seconds < 10 ? "just now" : `${Math.floor(seconds)} seconds ago`;
 }
 
-interface Comment {
+// Basic type for comments from the database
+type BasicComment = {
   id: string;
   content: string;
   created_at: string;
   user_id: string;
-  // Using any for profiles to avoid TypeScript errors with Supabase's join behavior
-  profiles: any;
-}
+  article_id: string;
+};
+
+// Basic type for user profile from the database
+type BasicProfile = {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+};
+
+// Combined display type
+type CommentDisplay = BasicComment & {
+  authorName: string;
+  authorAvatar: string | null;
+};
 
 export default function CommentSection({ articleId }: { articleId: string }) {
   const { user } = useAuth();
   const router = useRouter();
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<CommentDisplay[]>([]);
   const [commentText, setCommentText] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Load comments when the component mounts
   useEffect(() => {
     if (articleId) {
-      fetchComments();
+      loadComments();
     }
   }, [articleId]);
 
-  async function fetchComments() {
+  // Function to load comments
+  async function loadComments() {
     setLoading(true);
     setError(null);
 
     try {
-      // Using the type cast to any to avoid TypeScript errors
-      const { data, error } = await (supabase as any)
+      // Fetch comments for this article
+      const { data: commentsData, error: commentsError } = await supabase
         .from("comments")
-        .select(
-          `
-          id,
-          content,
-          created_at,
-          user_id,
-          profiles:user_id(username, full_name, avatar_url)
-        `
-        )
+        .select("*")
         .eq("article_id", articleId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setComments(data || []);
-    } catch (error: any) {
-      console.error("Error fetching comments:", error);
-      setError("Failed to load comments. Please try again later.");
-      setComments([]);
+      if (commentsError) throw commentsError;
+
+      // Process comments to include author info
+      const displayComments: CommentDisplay[] = [];
+
+      // For each comment, get the profile info
+      for (const comment of commentsData || []) {
+        try {
+          // Get profile for this user
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", comment.user_id)
+            .single();
+
+          // Add to our display array
+          displayComments.push({
+            ...comment,
+            authorName:
+              profile?.full_name || profile?.username || "Anonymous User",
+            authorAvatar: profile?.avatar_url,
+          });
+        } catch (err) {
+          // If we can't get profile, still show the comment
+          displayComments.push({
+            ...comment,
+            authorName: "Anonymous User",
+            authorAvatar: null,
+          });
+        }
+      }
+
+      setComments(displayComments);
+    } catch (err: any) {
+      console.error("Error loading comments:", err);
+      setError(`Failed to load comments: ${err.message}`);
     } finally {
       setLoading(false);
     }
   }
 
+  // Function to submit a new comment
   async function handleSubmitComment(e: React.FormEvent) {
     e.preventDefault();
 
     if (!user) {
       router.push(
-        "/signin?redirect=" + encodeURIComponent(window.location.pathname)
+        `/signin?redirect=${encodeURIComponent(window.location.pathname)}`
       );
       return;
     }
@@ -112,32 +151,39 @@ export default function CommentSection({ articleId }: { articleId: string }) {
     setError(null);
 
     try {
-      // Using the type cast to any to avoid TypeScript errors
-      const { data, error } = await (supabase as any)
+      // Insert the new comment
+      const { data: newComment, error: insertError } = await supabase
         .from("comments")
         .insert({
           article_id: articleId,
           user_id: user.id,
           content: commentText.trim(),
         })
-        .select(
-          `
-          id,
-          content,
-          created_at,
-          user_id,
-          profiles:user_id(username, full_name, avatar_url)
-        `
-        )
+        .select()
         .single();
 
-      if (error) throw error;
+      if (insertError) throw insertError;
 
-      setComments([data, ...comments]);
+      // Get user profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      // Add to display list
+      const commentDisplay: CommentDisplay = {
+        ...newComment,
+        authorName: profile?.full_name || profile?.username || "Anonymous User",
+        authorAvatar: profile?.avatar_url,
+      };
+
+      // Update the comments list
+      setComments([commentDisplay, ...comments]);
       setCommentText("");
-    } catch (error: any) {
-      console.error("Error submitting comment:", error);
-      setError("Failed to post comment. Please try again.");
+    } catch (err: any) {
+      console.error("Error submitting comment:", err);
+      setError(`Failed to post comment: ${err.message}`);
     } finally {
       setSubmitting(false);
     }
@@ -222,21 +268,15 @@ export default function CommentSection({ articleId }: { articleId: string }) {
             <div key={comment.id} className="flex">
               <div className="mr-3 flex-shrink-0">
                 <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 overflow-hidden">
-                  {comment.profiles?.avatar_url ? (
+                  {comment.authorAvatar ? (
                     <img
-                      src={comment.profiles.avatar_url}
-                      alt={comment.profiles.username || "User"}
+                      src={comment.authorAvatar}
+                      alt={comment.authorName}
                       className="h-full w-full object-cover"
                     />
                   ) : (
                     <span className="text-lg font-medium">
-                      {(
-                        comment.profiles?.username ||
-                        comment.profiles?.full_name ||
-                        "U"
-                      )
-                        .charAt(0)
-                        .toUpperCase()}
+                      {comment.authorName.charAt(0).toUpperCase()}
                     </span>
                   )}
                 </div>
@@ -245,9 +285,7 @@ export default function CommentSection({ articleId }: { articleId: string }) {
                 <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                   <div className="flex items-center mb-1">
                     <span className="font-medium dark:text-white mr-2">
-                      {comment.profiles?.full_name ||
-                        comment.profiles?.username ||
-                        "Anonymous"}
+                      {comment.authorName}
                     </span>
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       {timeAgo(comment.created_at)}
