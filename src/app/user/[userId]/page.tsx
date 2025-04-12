@@ -36,10 +36,12 @@ export default function PublicUserProfilePage() {
         setLoading(true);
         setError(null);
 
-        // Fetch profile data
+        console.log("Loading public profile for user:", userId);
+
+        // Fetch profile data with safe column selection
         const { data, error } = await supabase
           .from("profiles")
-          .select("id, username, full_name, avatar_url, website")
+          .select("id, username, full_name, avatar_url")
           .eq("id", userId)
           .single();
 
@@ -49,10 +51,35 @@ export default function PublicUserProfilePage() {
             router.push("/not-found");
             return;
           }
+
+          // Log the full error for debugging
+          console.error("Profile fetch error:", error);
           throw error;
         }
 
-        setProfile(data);
+        // Separately fetch website if needed
+        let websiteData = null;
+        try {
+          const { data: websiteQuery, error: websiteError } = await supabase
+            .from("profiles")
+            .select("website")
+            .eq("id", userId)
+            .single();
+
+          if (!websiteError && websiteQuery) {
+            websiteData = websiteQuery.website;
+          }
+        } catch (websiteQueryError) {
+          console.warn("Could not fetch website:", websiteQueryError);
+        }
+
+        // Merge base profile data with website
+        const completeProfile = {
+          ...data,
+          website: websiteData,
+        };
+
+        setProfile(completeProfile);
 
         // Bio is stored in localStorage on the user's device
         // For public viewing, we can't access it, but if user is viewing their own profile

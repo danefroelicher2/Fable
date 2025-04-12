@@ -29,6 +29,8 @@ export default function SearchBar() {
 
     setIsSearching(true);
     try {
+      console.log("Searching for users with query:", query);
+
       // Search by username or full name
       const { data, error } = await supabase
         .from("profiles")
@@ -37,6 +39,7 @@ export default function SearchBar() {
         .limit(5);
 
       if (error) throw error;
+      console.log("Search results:", data?.length || 0);
       setSearchResults(data || []);
     } catch (error) {
       console.error("Error searching users:", error);
@@ -78,6 +81,7 @@ export default function SearchBar() {
   const navigateToProfile = (userId: string) => {
     setIsDropdownOpen(false);
     setSearchQuery("");
+    console.log("Navigating to user profile:", userId);
     router.push(`/user/${userId}`);
   };
 
