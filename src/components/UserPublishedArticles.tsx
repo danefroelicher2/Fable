@@ -242,7 +242,7 @@ export default function UserPublishedArticles({
         {showViewAll && articles.length >= limit && (
           <div className="text-center mt-8">
             <Link
-              href={`/profile/${userId}/articles`}
+              href={`/user/${userId}/articles`}
               className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-md transition"
             >
               View All Articles
@@ -336,7 +336,7 @@ export default function UserPublishedArticles({
       {showViewAll && articles.length >= limit && (
         <div className="text-center mt-6">
           <Link
-            href={`/profile/${userId}/articles`}
+            href={`/user/${userId}/articles`}
             className="text-blue-600 hover:text-blue-800 font-medium"
           >
             View All Articles →

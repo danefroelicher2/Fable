@@ -57,7 +57,7 @@ export interface Database {
           username: string | null;
           full_name: string | null;
           avatar_url: string | null;
-          bio: string | null; // Added bio field
+          bio: string | null; // Keep bio field as it exists in your database
           website: string | null;
           created_at: string | null;
         };
@@ -67,7 +67,7 @@ export interface Database {
           username?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
-          bio?: string | null; // Added bio field
+          bio?: string | null; // Keep bio field as it exists in your database
           website?: string | null;
           created_at?: string | null;
         };
@@ -77,7 +77,7 @@ export interface Database {
           username?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
-          bio?: string | null; // Added bio field
+          bio?: string | null; // Keep bio field as it exists in your database
           website?: string | null;
           created_at?: string | null;
         };

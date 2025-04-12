@@ -264,6 +264,13 @@ export default function ProfilePage() {
     }
   };
 
+  // View public profile function
+  const viewPublicProfile = () => {
+    if (user) {
+      window.open(`/user/${user.id}`, "_blank");
+    }
+  };
+
   // Format date (e.g., "Mar 15, 2024")
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -479,13 +486,21 @@ export default function ProfilePage() {
         {/* Profile Header */}
         <div className="bg-white p-8 rounded-lg shadow-md mb-6">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">Profile</h1>
-            <button
-              onClick={() => setIsEditing(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-            >
-              Edit Profile
-            </button>
+            <h1 className="text-3xl font-bold">Manage Your Profile</h1>
+            <div className="flex space-x-3">
+              <button
+                onClick={viewPublicProfile}
+                className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition"
+              >
+                View Public Profile
+              </button>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+              >
+                Edit Profile
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col md:flex-row">
@@ -681,7 +696,7 @@ export default function ProfilePage() {
                     {articles.length > 0 && (
                       <div className="mt-6 text-center">
                         <Link
-                          href={user ? `/profile/${user.id}/articles` : "#"}
+                          href={user ? `/user/${user.id}/articles` : "#"}
                           className="text-blue-600 hover:text-blue-800 font-medium"
                         >
                           View All Published Articles →
