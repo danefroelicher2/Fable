@@ -13,6 +13,7 @@ export default function ProfileDropdown() {
   const [profileData, setProfileData] = useState<any>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
   // Fetch user profile data for the avatar
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -125,6 +126,7 @@ export default function ProfileDropdown() {
             <div className="text-sm text-gray-500 truncate">{user.email}</div>
           </div>
 
+          {/* Personal profile (manage your profile) */}
           <Link
             href="/profile"
             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
@@ -144,8 +146,39 @@ export default function ProfileDropdown() {
                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
               />
             </svg>
-            My Profile
+            Manage Profile
           </Link>
+
+          {/* Public profile (view your profile as others see it) */}
+          {user && (
+            <Link
+              href={`/user/${user.id}`}
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+              onClick={() => setIsDropdownOpen(false)}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+              </svg>
+              View Public Profile
+            </Link>
+          )}
 
           <Link
             href="/profile/account-settings"
@@ -217,28 +250,6 @@ export default function ProfileDropdown() {
               />
             </svg>
             Saved Drafts
-          </Link>
-
-          <Link
-            href="/premium"
-            className="block px-4 py-2 text-sm text-yellow-600 font-medium hover:bg-gray-100 flex items-center"
-            onClick={() => setIsDropdownOpen(false)}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-              />
-            </svg>
-            Unlock Premium
           </Link>
 
           <div className="border-t my-1"></div>

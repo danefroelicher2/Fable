@@ -10,6 +10,7 @@ export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [showSearchMobile, setShowSearchMobile] = useState(false);
 
   // Handle scroll events to apply styling changes
   useEffect(() => {
@@ -210,7 +211,7 @@ export default function Navigation() {
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center">
             {/* Social media icons on the left */}
-            <div className="flex items-center ml-60">
+            <div className="flex items-center md:ml-60 ml-0">
               <Link
                 href="https://x.com/lostxlibrary"
                 className="hover:text-gray-300 transition-colors"
@@ -225,7 +226,7 @@ export default function Navigation() {
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                 </svg>
               </Link>
-              <Link href="/feed" className="nav-link flex items-center">
+              <Link href="/feed" className="nav-link flex items-center ml-4">
                 Community Articles
               </Link>
               {/* Add more social icons if needed */}
@@ -259,6 +260,33 @@ export default function Navigation() {
 
             {/* Auth and Search on the right */}
             <div className="flex items-center space-x-4">
+              {/* Search button for mobile view */}
+              <button
+                className="md:hidden text-white hover:text-gray-300"
+                onClick={() => setShowSearchMobile(!showSearchMobile)}
+                aria-label="Toggle search"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </button>
+
+              {/* Desktop search bar */}
+              <div className="hidden md:block w-48">
+                <SearchBar />
+              </div>
+
               <Link
                 href="/write"
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors"
@@ -266,9 +294,15 @@ export default function Navigation() {
                 Write
               </Link>
               <ProfileDropdown />
-              <SearchBar />
             </div>
           </div>
+
+          {/* Mobile search bar (toggle with button) */}
+          {showSearchMobile && (
+            <div className="mt-4 md:hidden px-4">
+              <SearchBar />
+            </div>
+          )}
         </div>
       </div>
 
