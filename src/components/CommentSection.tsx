@@ -173,6 +173,35 @@ export default function CommentSection({ articleId }: { articleId: string }) {
     }
   }
 
+  // Function to delete a comment
+  async function handleDeleteComment(commentId: string) {
+    if (!user) return;
+
+    // Show confirmation dialog
+    if (!window.confirm("Are you sure you want to delete this comment?")) {
+      return;
+    }
+
+    setError(null);
+
+    try {
+      // Delete the comment from the database
+      const { error: deleteError } = await supabase
+        .from("comments")
+        .delete()
+        .eq("id", commentId)
+        .eq("user_id", user.id); // Ensure only the owner can delete
+
+      if (deleteError) throw deleteError;
+
+      // Remove the comment from the state
+      setComments(comments.filter((comment) => comment.id !== commentId));
+    } catch (err: any) {
+      console.error("Error deleting comment:", err);
+      setError(`Failed to delete comment: ${err.message}`);
+    }
+  }
+
   return (
     <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <h3 className="text-2xl font-bold mb-6 dark:text-white">
@@ -267,13 +296,44 @@ export default function CommentSection({ articleId }: { articleId: string }) {
               </div>
               <div className="flex-grow">
                 <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <div className="flex items-center mb-1">
-                    <span className="font-medium dark:text-white mr-2">
-                      {comment.authorName}
-                    </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {timeAgo(comment.created_at)}
-                    </span>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center">
+                      <span className="font-medium dark:text-white mr-2">
+                        {comment.authorName}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {timeAgo(comment.created_at)}
+                      </span>
+                    </div>
+
+                    {/* Delete button - only show for the comment owner */}
+                    {user && user.id === comment.user_id && (
+                      <button
+                        onClick={() => handleDeleteComment(comment.id)}
+                        className="text-red-500 hover:text-red-700 transition-colors"
+                        aria-label="Delete comment"
+                        title="Delete comment"
+                      >
+                        {/* Simple Trash icon SVG */}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M3 6h18"></path>
+                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                          <line x1="10" y1="11" x2="10" y2="17"></line>
+                          <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                      </button>
+                    )}
                   </div>
                   <p className="text-gray-700 dark:text-gray-300">
                     {comment.content}
