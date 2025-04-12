@@ -111,13 +111,14 @@ body {
 /* Main Navigation Styles */
 .main-nav {
   position: relative;
-  z-index: 40;
+  z-index: 100; /* Increased z-index */
 }
 
 /* Updated margin to approximately 1 inch (96px) */
 .nav-item {
   position: relative;
   margin-right: 56px; /* Increased spacing to 1 inch between items */
+  z-index: 101; /* Increased z-index for nav items */
 }
 
 /* Remove margin from the last nav item */
@@ -169,8 +170,14 @@ body {
   max-width: 1000px; /* Make dropdown width narrower */
   margin: 0 auto;
   right: 0; /* Add right: 0 to help center the dropdown */
-  z-index: 50;
+  z-index: 200; /* Increased z-index */
+  top: 100%; /* Position right below the nav item */
   animation: fadeIn 0.3s ease forwards;
+  background: white; /* Ensure background is white */
+}
+
+.dark .nav-item > div {
+  background: var(--historynet-dark);
 }
 
 /* Prevent text wrapping in the horizontal menu items */
@@ -218,7 +225,7 @@ body {
   margin: 0 auto; /* Center the dropdown */
   width: 80%; /* Reduce width to 80% of the viewport */
   max-width: 1000px; /* Maximum width */
-  z-index: 50;
+  z-index: 200; /* Increased z-index */
   animation: fadeIn 0.2s ease forwards;
   border-top: 1px solid #e5e7eb;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
@@ -284,11 +291,11 @@ body {
 /* Profile dropdown container and its dropdown */
 .profile-dropdown-container {
   position: relative;
-  z-index: 101; /* Higher than everything */
+  z-index: 300; /* Highest z-index to ensure it's always on top */
 }
 
 .profile-dropdown-container > div {
-  z-index: 100; /* Higher than nav dropdowns */
+  z-index: 301; /* Slightly higher than the container */
 }
 
 /* Mobile styles */
@@ -306,6 +313,6 @@ body {
 
   .profile-dropdown-container,
   .profile-dropdown-container > div {
-    z-index: 101;
+    z-index: 301;
   }
 }
