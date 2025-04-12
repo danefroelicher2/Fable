@@ -136,7 +136,7 @@ export default function SearchBar() {
 
       {/* Search results dropdown */}
       {isDropdownOpen && searchQuery && (
-        <div className="absolute z-[10000] mt-1 w-full bg-white rounded-md shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-[10000] top-full mt-1 w-full bg-white rounded-md shadow-lg max-h-60 overflow-auto">
           {isSearching ? (
             <div className="p-4 text-center">
               <div className="inline-block animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500 mr-2"></div>
