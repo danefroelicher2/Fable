@@ -316,3 +316,25 @@ body {
     z-index: 301;
   }
 }
+/* Ensure search dropdown is always on top */
+.search-dropdown-container {
+  position: relative;
+  z-index: 9999 !important;
+}
+
+.search-dropdown-container > div {
+  position: absolute;
+  z-index: 10000 !important;
+  top: 100%;
+  left: 0;
+  right: 0;
+}
+
+/* Ensure other dropdowns have lower z-index */
+.nav-item > div {
+  z-index: 100 !important;
+}
+
+.main-nav {
+  z-index: 50 !important;
+}
