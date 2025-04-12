@@ -1,11 +1,17 @@
-// src/app/profile/[userId]/articles/page.tsx
+// src/app/user/[userId]/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/context/AuthContext";
+import Link from "next/link";
+
+interface Profile {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+}
 
 interface Article {
   id: string;
@@ -19,25 +25,21 @@ interface Article {
   like_count?: number;
 }
 
-export default function UserArticlesPage() {
+export default function UserProfilePage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
-
-  // Safely access userId from params
   const userId = typeof params?.userId === "string" ? params.userId : null;
 
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [articles, setArticles] = useState<Article[]>([]);
   const [totalArticles, setTotalArticles] = useState(0);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [displayType, setDisplayType] = useState<"grid" | "list">("grid");
 
   // Add console logging for debugging
   useEffect(() => {
-    console.log("Articles page mounted with userId:", userId);
-    console.log("Current authenticated user:", user?.id);
+    console.log("User profile page mounted with userId:", userId);
 
     if (!userId) {
       console.error("No userId provided in URL params");
@@ -46,7 +48,7 @@ export default function UserArticlesPage() {
     }
 
     fetchData();
-  }, [userId, router, user]);
+  }, [userId, router]);
 
   async function fetchData() {
     try {
@@ -74,6 +76,7 @@ export default function UserArticlesPage() {
 
       console.log("Fetching profile for userId:", userId);
 
+      // Query for the user profile
       const { data, error } = await supabase
         .from("profiles")
         .select("id, username, full_name, avatar_url")
@@ -82,14 +85,18 @@ export default function UserArticlesPage() {
 
       if (error) {
         console.error("Error fetching profile:", error);
+        if (error.code === "PGRST116") {
+          // Profile not found
+          throw new Error("User profile not found");
+        }
         throw error;
       }
 
       console.log("Profile fetched:", data);
       setProfile(data);
-    } catch (err) {
-      console.error("Error in fetchProfile:", err);
-      setError("Failed to load user profile");
+    } catch (err: any) {
+      console.error("Error fetching profile:", err);
+      setError(err.message);
     }
   }
 
@@ -114,56 +121,29 @@ export default function UserArticlesPage() {
       console.log(`Total articles found: ${count}`);
       setTotalArticles(count || 0);
 
-      // Fetch articles with retry logic
-      let articlesData = null;
-      let fetchError = null;
-
-      try {
-        const { data, error } = await (supabase as any)
-          .from("public_articles")
-          .select(
-            `
-            id, 
-            title, 
-            slug, 
-            excerpt, 
-            category, 
-            published_at, 
-            view_count,
-            image_url
+      // Fetch articles
+      const { data, error } = await (supabase as any)
+        .from("public_articles")
+        .select(
           `
-          )
-          .eq("user_id", userId)
-          .eq("is_published", true)
-          .order("published_at", { ascending: false });
+          id, 
+          title, 
+          slug, 
+          excerpt, 
+          category, 
+          published_at, 
+          view_count,
+          image_url
+        `
+        )
+        .eq("user_id", userId)
+        .eq("is_published", true)
+        .order("published_at", { ascending: false });
 
-        if (error) throw error;
-        articlesData = data;
-      } catch (err) {
-        console.error("First attempt to fetch articles failed:", err);
-        fetchError = err;
-
-        // Try a simplified query as fallback
-        try {
-          const { data, error } = await (supabase as any)
-            .from("public_articles")
-            .select("id, title, slug, published_at, view_count")
-            .eq("user_id", userId)
-            .eq("is_published", true);
-
-          if (error) throw error;
-          articlesData = data;
-          fetchError = null;
-        } catch (fallbackErr) {
-          console.error("Fallback attempt also failed:", fallbackErr);
-          throw fetchError || fallbackErr;
-        }
-      }
+      if (error) throw error;
 
       // Process articles to add like counts if possible
-      let processedArticles = articlesData || [];
-      console.log(`Articles fetched: ${processedArticles.length}`);
-
+      let processedArticles = data || [];
       try {
         // Add placeholder like counts to avoid errors
         processedArticles = processedArticles.map((article: Article) => ({
@@ -171,35 +151,30 @@ export default function UserArticlesPage() {
           like_count: 0,
         }));
 
-        // Try to fetch real like counts if the table exists
-        const { data: tableCheck } = await (supabase as any)
-          .from("likes")
-          .select("count(*)", { count: "exact", head: true });
+        // Try to get like counts for each article
+        processedArticles = await Promise.all(
+          processedArticles.map(async (article: Article) => {
+            try {
+              const { count, error: likesError } = await (supabase as any)
+                .from("likes")
+                .select("id", { count: "exact" })
+                .eq("article_id", article.id);
 
-        // If we can access the likes table, get the real counts
-        if (tableCheck !== null) {
-          processedArticles = await Promise.all(
-            processedArticles.map(async (article: Article) => {
-              try {
-                const { count, error } = await (supabase as any)
-                  .from("likes")
-                  .select("id", { count: "exact" })
-                  .eq("article_id", article.id);
+              if (likesError) throw likesError;
 
-                return {
-                  ...article,
-                  like_count: count || 0,
-                };
-              } catch (err) {
-                console.warn(
-                  `Couldn't get like count for article ${article.id}:`,
-                  err
-                );
-                return article;
-              }
-            })
-          );
-        }
+              return {
+                ...article,
+                like_count: count || 0,
+              };
+            } catch (err) {
+              console.warn(
+                `Couldn't get like count for article ${article.id}:`,
+                err
+              );
+              return article;
+            }
+          })
+        );
       } catch (err) {
         console.warn("Error getting like counts:", err);
         // Continue with articles even if like counts fail
@@ -226,27 +201,52 @@ export default function UserArticlesPage() {
     }
   };
 
-  // If no userId is provided or invalid, show error
-  if (!userId) {
+  // Error state
+  if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          Invalid profile URL. Please check the URL and try again.
+        <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <p>{error}</p>
+          </div>
+          <Link
+            href="/"
+            className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Back to Home
+          </Link>
         </div>
-        <Link href="/" className="text-blue-600 hover:text-blue-800">
-          Return to Home
-        </Link>
       </div>
     );
   }
 
-  // Show loading state
+  // Loading state
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          <span className="ml-3">Loading articles...</span>
+          <span className="ml-3">Loading profile...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Profile not found
+  if (!profile) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md text-center">
+          <h1 className="text-2xl font-bold mb-4">User Not Found</h1>
+          <p className="mb-6">
+            The user profile you're looking for doesn't exist.
+          </p>
+          <Link
+            href="/"
+            className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Back to Home
+          </Link>
         </div>
       </div>
     );
@@ -254,47 +254,40 @@ export default function UserArticlesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      {/* User Header */}
-      {profile && (
-        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-          <div className="flex items-center">
-            <div className="mr-6">
-              <div className="h-20 w-20 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden">
-                {profile.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={profile.username || "User"}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="text-2xl">
-                    {(profile.username || profile.full_name || "U")
-                      .charAt(0)
-                      .toUpperCase()}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">
-                {profile.full_name || profile.username || "Anonymous User"}
-              </h1>
-              {profile.username && (
-                <p className="text-gray-600">@{profile.username}</p>
+      {/* Profile Header */}
+      <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md mb-8">
+        <div className="flex flex-col md:flex-row">
+          <div className="md:w-1/3 mb-6 md:mb-0 flex justify-center">
+            <div className="h-48 w-48 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden">
+              {profile.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt={profile.username || "User"}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="text-6xl">
+                  {(profile.full_name || profile.username || "U")
+                    .charAt(0)
+                    .toUpperCase()}
+                </span>
               )}
             </div>
           </div>
+
+          <div className="md:w-2/3 md:pl-8">
+            <h1 className="text-3xl font-bold mb-2">
+              {profile.full_name || profile.username || "Anonymous User"}
+            </h1>
+            {profile.username && (
+              <p className="text-gray-600 mb-4">@{profile.username}</p>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
       {/* Articles Section */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className="text-2xl font-bold">Published Articles</h2>

@@ -35,6 +35,8 @@ export default function SearchPage() {
     setError(null);
 
     try {
+      console.log("Performing search with query:", query);
+
       // Search for users whose username or full_name contains the query
       const { data, error } = await (supabase as any)
         .from("profiles")
@@ -44,6 +46,7 @@ export default function SearchPage() {
 
       if (error) throw error;
 
+      console.log(`Found ${data?.length || 0} results for "${query}"`);
       setResults(data || []);
     } catch (err) {
       console.error("Error searching for users:", err);
@@ -86,7 +89,7 @@ export default function SearchPage() {
             {results.map((user) => (
               <Link
                 key={user.id}
-                href={`/profile/${user.id}`}
+                href={`/user/${user.id}`}
                 className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-center">
@@ -133,6 +136,25 @@ export default function SearchPage() {
             </p>
           </div>
         )}
+
+        {/* Add links to different search types */}
+        <div className="mt-8 bg-white p-4 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Search Options</h2>
+          <div className="flex flex-wrap gap-4">
+            <Link
+              href="/search/users"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Find Users
+            </Link>
+            <Link
+              href="/feed"
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+            >
+              Browse Articles
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );
