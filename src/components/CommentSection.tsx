@@ -3,16 +3,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "@/types/supabase"; // Use the new .d.ts file
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-
-// Create Supabase client with typed database
-const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 // Format a date to "time ago" (e.g. "5 minutes ago", "2 hours ago", "3 days ago")
 function timeAgo(dateString: string): string {
@@ -48,16 +41,20 @@ function timeAgo(dateString: string): string {
   return seconds < 10 ? "just now" : `${Math.floor(seconds)} seconds ago`;
 }
 
+// Define types for our comments
+interface Comment {
+  id: string;
+  article_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+}
+
 // Combined display type
-type CommentDisplay = Database["public"]["Tables"]["comments"]["Row"] & {
-  profiles?: {
-    username?: string | null;
-    full_name?: string | null;
-    avatar_url?: string | null;
-  } | null;
+interface CommentDisplay extends Comment {
   authorName: string;
   authorAvatar: string | null;
-};
+}
 
 export default function CommentSection({ articleId }: { articleId: string }) {
   const { user } = useAuth();
@@ -81,33 +78,33 @@ export default function CommentSection({ articleId }: { articleId: string }) {
     setError(null);
 
     try {
-      // Fetch comments with related profile info using join
+      // Fetch comments first
       const { data: commentsData, error: commentsError } = await supabase
         .from("comments")
-        .select(
-          `
-          *,
-          profiles (
-            username,
-            full_name,
-            avatar_url
-          )
-        `
-        )
+        .select("*")
         .eq("article_id", articleId)
         .order("created_at", { ascending: false });
 
       if (commentsError) throw commentsError;
 
-      // Process comments to include author info
-      const displayComments: CommentDisplay[] = (commentsData || []).map(
-        (comment) => ({
-          ...comment,
-          authorName:
-            comment.profiles?.full_name ||
-            comment.profiles?.username ||
-            "Anonymous User",
-          authorAvatar: comment.profiles?.avatar_url || null,
+      // For each comment, fetch the profile data separately
+      const displayComments = await Promise.all(
+        (commentsData || []).map(async (comment) => {
+          // Get profile data for this comment
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("username, full_name, avatar_url")
+            .eq("id", comment.user_id)
+            .single();
+
+          return {
+            ...comment,
+            authorName:
+              profileData?.full_name ||
+              profileData?.username ||
+              "Anonymous User",
+            authorAvatar: profileData?.avatar_url || null,
+          };
         })
       );
 
@@ -138,35 +135,31 @@ export default function CommentSection({ articleId }: { articleId: string }) {
 
     try {
       // Insert the new comment
-      const { data: newComment, error: insertError } = await supabase
+      const { data: newCommentData, error: insertError } = await supabase
         .from("comments")
         .insert({
           article_id: articleId,
           user_id: user.id,
           content: commentText.trim(),
         })
-        .select(
-          `
-          *,
-          profiles (
-            username,
-            full_name,
-            avatar_url
-          )
-        `
-        )
+        .select("*") // Just select the comment data, not relationships
         .single();
 
       if (insertError) throw insertError;
 
-      // Add to display list
+      // Get the current user's profile data (we already have user.id)
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("username, full_name, avatar_url")
+        .eq("id", user.id)
+        .single();
+
+      // Create the display comment with author info
       const commentDisplay: CommentDisplay = {
-        ...newComment,
+        ...newCommentData,
         authorName:
-          newComment.profiles?.full_name ||
-          newComment.profiles?.username ||
-          "Anonymous User",
-        authorAvatar: newComment.profiles?.avatar_url || null,
+          profileData?.full_name || profileData?.username || "Anonymous User",
+        authorAvatar: profileData?.avatar_url || null,
       };
 
       // Update the comments list
