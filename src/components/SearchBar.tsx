@@ -29,9 +29,6 @@ export default function SearchBar() {
 
     setIsSearching(true);
     try {
-      console.log("Searching for users with query:", query);
-
-      // Search by username or full name
       const { data, error } = await supabase
         .from("profiles")
         .select("id, username, full_name, avatar_url")
@@ -39,7 +36,6 @@ export default function SearchBar() {
         .limit(5);
 
       if (error) throw error;
-      console.log("Search results:", data?.length || 0);
       setSearchResults(data || []);
     } catch (error) {
       console.error("Error searching users:", error);
@@ -81,7 +77,6 @@ export default function SearchBar() {
   const navigateToProfile = (userId: string) => {
     setIsDropdownOpen(false);
     setSearchQuery("");
-    console.log("Navigating to user profile:", userId);
     router.push(`/user/${userId}`);
   };
 
@@ -136,58 +131,66 @@ export default function SearchBar() {
 
       {/* Search results dropdown */}
       {isDropdownOpen && searchQuery && (
-        <div className="absolute z-[10000] top-full mt-1 w-full bg-white rounded-md shadow-lg max-h-60 overflow-auto">
-          {isSearching ? (
-            <div className="p-4 text-center">
-              <div className="inline-block animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500 mr-2"></div>
-              <span>Searching...</span>
-            </div>
-          ) : searchResults.length > 0 ? (
-            <ul>
-              {searchResults.map((user) => (
-                <li key={user.id} className="border-b last:border-0">
-                  <Link
-                    href={`/user/${user.id}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigateToProfile(user.id);
-                    }}
-                    className="block p-3 hover:bg-gray-100 transition-colors flex items-center"
-                  >
-                    <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 overflow-hidden mr-3">
-                      {user.avatar_url ? (
-                        <img
-                          src={user.avatar_url}
-                          alt={user.username || "User"}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span>
-                          {user.username?.charAt(0).toUpperCase() ||
-                            user.full_name?.charAt(0).toUpperCase() ||
-                            "U"}
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <div className="font-medium">
-                        {user.full_name || user.username || "Anonymous User"}
+        <div
+          className="absolute z-[10000] left-0 right-0 mt-1"
+          style={{
+            top: "calc(100% + 2px)",
+            transform: "translateY(0)",
+          }}
+        >
+          <div className="bg-white rounded-md shadow-lg max-h-60 overflow-auto">
+            {isSearching ? (
+              <div className="p-4 text-center">
+                <div className="inline-block animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500 mr-2"></div>
+                <span>Searching...</span>
+              </div>
+            ) : searchResults.length > 0 ? (
+              <ul>
+                {searchResults.map((user) => (
+                  <li key={user.id} className="border-b last:border-0">
+                    <Link
+                      href={`/user/${user.id}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateToProfile(user.id);
+                      }}
+                      className="block p-3 hover:bg-gray-100 transition-colors flex items-center"
+                    >
+                      <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 overflow-hidden mr-3">
+                        {user.avatar_url ? (
+                          <img
+                            src={user.avatar_url}
+                            alt={user.username || "User"}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span>
+                            {user.username?.charAt(0).toUpperCase() ||
+                              user.full_name?.charAt(0).toUpperCase() ||
+                              "U"}
+                          </span>
+                        )}
                       </div>
-                      {user.username && (
-                        <div className="text-sm text-gray-500">
-                          @{user.username}
+                      <div>
+                        <div className="font-medium">
+                          {user.full_name || user.username || "Anonymous User"}
                         </div>
-                      )}
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : searchQuery.length > 0 ? (
-            <div className="p-4 text-center text-gray-500">
-              No users found matching "{searchQuery}"
-            </div>
-          ) : null}
+                        {user.username && (
+                          <div className="text-sm text-gray-500">
+                            @{user.username}
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : searchQuery.length > 0 ? (
+              <div className="p-4 text-center text-gray-500">
+                No users found matching "{searchQuery}"
+              </div>
+            ) : null}
+          </div>
         </div>
       )}
     </div>
