@@ -20,7 +20,6 @@ export default function SearchBar() {
   const searchRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  // Search for users
   const searchUsers = async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -45,7 +44,6 @@ export default function SearchBar() {
     }
   };
 
-  // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchQuery) {
@@ -56,7 +54,6 @@ export default function SearchBar() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -73,7 +70,6 @@ export default function SearchBar() {
     };
   }, []);
 
-  // Navigate to user profile
   const navigateToProfile = (userId: string) => {
     setIsDropdownOpen(false);
     setSearchQuery("");
@@ -81,64 +77,60 @@ export default function SearchBar() {
   };
 
   return (
-    <div
-      className="relative search-dropdown-container z-[9999]"
-      ref={searchRef}
-    >
-      <div className="flex items-center">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setIsDropdownOpen(true);
-          }}
-          onClick={() => {
-            if (searchQuery && searchResults.length > 0) {
+    <div className="relative z-[9999]" ref={searchRef}>
+      <div className="relative">
+        <div className="flex items-center">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
               setIsDropdownOpen(true);
-            }
-          }}
-          placeholder="Search users..."
-          className="border rounded-md py-2 px-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white text-gray-800"
-        />
-        <button
-          type="button"
-          onClick={() => {
-            if (searchQuery) {
-              searchUsers(searchQuery);
-              setIsDropdownOpen(true);
-            }
-          }}
-          className="ml-2 bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700"
-          aria-label="Search"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+            }}
+            onClick={() => {
+              if (searchQuery && searchResults.length > 0) {
+                setIsDropdownOpen(true);
+              }
+            }}
+            placeholder="Search users..."
+            className="border rounded-md py-1 px-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white text-gray-800"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (searchQuery) {
+                searchUsers(searchQuery);
+                setIsDropdownOpen(true);
+              }
+            }}
+            className="ml-2 bg-blue-600 text-white p-1 rounded-md hover:bg-blue-700"
+            aria-label="Search"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-        </button>
-      </div>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </button>
+        </div>
 
-      {/* Search results dropdown */}
-      {isDropdownOpen && searchQuery && (
-        <div
-          className="absolute z-[10000] left-0 right-0 mt-1"
-          style={{
-            top: "calc(100% + 2px)",
-            transform: "translateY(0)",
-          }}
-        >
-          <div className="bg-white rounded-md shadow-lg max-h-60 overflow-auto">
+        {isDropdownOpen && searchQuery && (
+          <div
+            className="absolute left-0 right-0 mt-2 bg-white rounded-md shadow-lg border border-gray-200 z-[10000]"
+            style={{
+              maxHeight: "300px",
+              overflowY: "auto",
+            }}
+          >
             {isSearching ? (
               <div className="p-4 text-center">
                 <div className="inline-block animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500 mr-2"></div>
@@ -191,8 +183,8 @@ export default function SearchBar() {
               </div>
             ) : null}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
