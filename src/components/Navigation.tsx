@@ -283,7 +283,7 @@ export default function Navigation() {
               </button>
 
               {/* Desktop search bar */}
-              <div className="hidden md:block w-48">
+              <div className="hidden md:block w-65">
                 <SearchBar />
               </div>
 
