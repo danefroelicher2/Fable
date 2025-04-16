@@ -7,123 +7,138 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 
-// Format a date to "time ago" (e.g. "5 minutes ago", "2 hours ago", "3 days ago")
-function timeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  let interval = Math.floor(seconds / 31536000); // years
-  if (interval >= 1) {
-    return interval === 1 ? "1 year ago" : `${interval} years ago`;
-  }
-
-  interval = Math.floor(seconds / 2592000); // months
-  if (interval >= 1) {
-    return interval === 1 ? "1 month ago" : `${interval} months ago`;
-  }
-
-  interval = Math.floor(seconds / 86400); // days
-  if (interval >= 1) {
-    return interval === 1 ? "1 day ago" : `${interval} days ago`;
-  }
-
-  interval = Math.floor(seconds / 3600); // hours
-  if (interval >= 1) {
-    return interval === 1 ? "1 hour ago" : `${interval} hours ago`;
-  }
-
-  interval = Math.floor(seconds / 60); // minutes
-  if (interval >= 1) {
-    return interval === 1 ? "1 minute ago" : `${interval} minutes ago`;
-  }
-
-  return seconds < 10 ? "just now" : `${Math.floor(seconds)} seconds ago`;
-}
-
-// Define types for our comments
+// Define a Comment type that can handle replies
 interface Comment {
   id: string;
-  article_id: string;
-  user_id: string;
   content: string;
   created_at: string;
-}
-
-// Combined display type
-interface CommentDisplay extends Comment {
-  authorName: string;
-  authorAvatar: string | null;
+  user_id: string;
+  parent_id: string | null;
+  profiles: {
+    username: string | null;
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+  replies?: Comment[];
+  reply_count?: number;
 }
 
 export default function CommentSection({ articleId }: { articleId: string }) {
   const { user } = useAuth();
   const router = useRouter();
-  const [comments, setComments] = useState<CommentDisplay[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Track which comment we're replying to
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  // Track which comments have expanded replies
+  const [expandedReplies, setExpandedReplies] = useState<
+    Record<string, boolean>
+  >({});
 
-  // Load comments when the component mounts
   useEffect(() => {
     if (articleId) {
-      loadComments();
+      fetchComments();
     }
   }, [articleId]);
 
-  // Function to load comments
-  async function loadComments() {
+  async function fetchComments() {
     setLoading(true);
-    setError(null);
-
     try {
-      // Fetch comments first
-      const { data: commentsData, error: commentsError } = await supabase
+      // First fetch all parent comments (comments without a parent_id)
+      const { data: parentComments, error: parentError } = await (
+        supabase as any
+      )
         .from("comments")
-        .select("*")
+        .select(
+          `
+          id,
+          content,
+          created_at,
+          user_id,
+          parent_id,
+          profiles:user_id(username, full_name, avatar_url)
+        `
+        )
         .eq("article_id", articleId)
+        .is("parent_id", null)
         .order("created_at", { ascending: false });
 
-      if (commentsError) throw commentsError;
+      if (parentError) throw parentError;
 
-      // For each comment, fetch the profile data separately
-      const displayComments = await Promise.all(
-        (commentsData || []).map(async (comment) => {
-          // Get profile data for this comment
-          const { data: profileData } = await supabase
-            .from("profiles")
-            .select("username, full_name, avatar_url")
-            .eq("id", comment.user_id)
-            .single();
+      // For each parent comment, count its replies
+      const commentsWithCounts = await Promise.all(
+        (parentComments || []).map(async (comment: Comment) => {
+          // Count replies for this comment
+          const { count, error: countError } = await (supabase as any)
+            .from("comments")
+            .select("id", { count: "exact" })
+            .eq("article_id", articleId)
+            .eq("parent_id", comment.id);
+
+          if (countError) throw countError;
 
           return {
             ...comment,
-            authorName:
-              profileData?.full_name ||
-              profileData?.username ||
-              "Anonymous User",
-            authorAvatar: profileData?.avatar_url || null,
+            reply_count: count || 0,
+            replies: [],
           };
         })
       );
 
-      setComments(displayComments);
-    } catch (err: any) {
-      console.error("Error loading comments:", err);
-      setError(`Failed to load comments: ${err.message}`);
+      setComments(commentsWithCounts);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      setComments([]);
     } finally {
       setLoading(false);
     }
   }
 
-  // Function to submit a new comment
+  async function fetchReplies(parentId: string) {
+    try {
+      const { data, error } = await (supabase as any)
+        .from("comments")
+        .select(
+          `
+          id,
+          content,
+          created_at,
+          user_id,
+          parent_id,
+          profiles:user_id(username, full_name, avatar_url)
+        `
+        )
+        .eq("article_id", articleId)
+        .eq("parent_id", parentId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      // Update the comment with its replies
+      setComments((prevComments) =>
+        prevComments.map((comment) =>
+          comment.id === parentId
+            ? { ...comment, replies: data || [] }
+            : comment
+        )
+      );
+
+      return data || [];
+    } catch (error) {
+      console.error("Error fetching replies:", error);
+      return [];
+    }
+  }
+
   async function handleSubmitComment(e: React.FormEvent) {
     e.preventDefault();
 
     if (!user) {
       router.push(
-        `/signin?redirect=${encodeURIComponent(window.location.pathname)}`
+        "/signin?redirect=" + encodeURIComponent(window.location.pathname)
       );
       return;
     }
@@ -131,108 +146,199 @@ export default function CommentSection({ articleId }: { articleId: string }) {
     if (!commentText.trim()) return;
 
     setSubmitting(true);
-    setError(null);
-
     try {
-      // Insert the new comment
-      const { data: newCommentData, error: insertError } = await supabase
+      // First insert the comment
+      const { data, error } = await (supabase as any)
         .from("comments")
         .insert({
           article_id: articleId,
           user_id: user.id,
           content: commentText.trim(),
+          parent_id: null, // This is a top-level comment
         })
-        .select("*") // Just select the comment data, not relationships
+        .select();
+
+      if (error) {
+        console.error("Supabase insert error:", error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error("No data returned from insert");
+      }
+
+      // Then get the complete data with profiles joined
+      const { data: commentWithProfile, error: fetchError } = await (
+        supabase as any
+      )
+        .from("comments")
+        .select(
+          `
+          id,
+          content,
+          created_at,
+          user_id,
+          parent_id,
+          profiles:user_id(username, full_name, avatar_url)
+        `
+        )
+        .eq("id", data[0].id)
         .single();
 
-      if (insertError) throw insertError;
+      if (fetchError) {
+        console.error("Error fetching comment with profile:", fetchError);
+        throw fetchError;
+      }
 
-      // Get the current user's profile data (we already have user.id)
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("username, full_name, avatar_url")
-        .eq("id", user.id)
-        .single();
-
-      // Create the display comment with author info
-      const commentDisplay: CommentDisplay = {
-        ...newCommentData,
-        authorName:
-          profileData?.full_name || profileData?.username || "Anonymous User",
-        authorAvatar: profileData?.avatar_url || null,
+      // Add reply_count to the new comment
+      const newComment = {
+        ...commentWithProfile,
+        reply_count: 0,
+        replies: [],
       };
 
-      // Update the comments list
-      setComments([commentDisplay, ...comments]);
+      setComments([newComment, ...comments]);
       setCommentText("");
-    } catch (err: any) {
-      console.error("Error submitting comment:", err);
-      setError(`Failed to post comment: ${err.message}`);
+    } catch (error: any) {
+      console.error("Error submitting comment:", error.message || error);
     } finally {
       setSubmitting(false);
     }
   }
 
-  // Function to delete a comment
-  async function handleDeleteComment(commentId: string) {
-    if (!user) return;
-
-    // Show confirmation dialog
-    if (!window.confirm("Are you sure you want to delete this comment?")) {
+  async function handleSubmitReply(parentId: string) {
+    if (!user) {
+      router.push(
+        "/signin?redirect=" + encodeURIComponent(window.location.pathname)
+      );
       return;
     }
 
-    setError(null);
+    if (!replyText.trim()) return;
 
+    setSubmitting(true);
     try {
-      // Delete the comment from the database
-      const { error: deleteError } = await supabase
+      // First insert the reply
+      const { data, error } = await (supabase as any)
         .from("comments")
-        .delete()
-        .eq("id", commentId)
-        .eq("user_id", user.id); // Ensure only the owner can delete
+        .insert({
+          article_id: articleId,
+          user_id: user.id,
+          content: replyText.trim(),
+          parent_id: parentId, // This is a reply to a parent comment
+        })
+        .select();
 
-      if (deleteError) throw deleteError;
+      if (error) {
+        console.error("Supabase insert error:", error);
+        throw error;
+      }
 
-      // Remove the comment from the state
-      setComments(comments.filter((comment) => comment.id !== commentId));
-    } catch (err: any) {
-      console.error("Error deleting comment:", err);
-      setError(`Failed to delete comment: ${err.message}`);
+      if (!data || data.length === 0) {
+        throw new Error("No data returned from insert");
+      }
+
+      // Then get the complete data with profiles joined
+      const { data: replyWithProfile, error: fetchError } = await (
+        supabase as any
+      )
+        .from("comments")
+        .select(
+          `
+          id,
+          content,
+          created_at,
+          user_id,
+          parent_id,
+          profiles:user_id(username, full_name, avatar_url)
+        `
+        )
+        .eq("id", data[0].id)
+        .single();
+
+      if (fetchError) {
+        console.error("Error fetching reply with profile:", fetchError);
+        throw fetchError;
+      }
+
+      // Update the parent comment with the new reply
+      setComments((prevComments) =>
+        prevComments.map((comment) => {
+          if (comment.id === parentId) {
+            // If replies are already loaded, add the new reply
+            if (comment.replies && comment.replies.length > 0) {
+              return {
+                ...comment,
+                replies: [...comment.replies, replyWithProfile],
+                reply_count: (comment.reply_count || 0) + 1,
+              };
+            } else {
+              // Just increment the count if replies aren't loaded
+              return {
+                ...comment,
+                reply_count: (comment.reply_count || 0) + 1,
+              };
+            }
+          }
+          return comment;
+        })
+      );
+
+      // Clear the reply form and close it
+      setReplyText("");
+      setReplyingTo(null);
+    } catch (error: any) {
+      console.error("Error submitting reply:", error.message || error);
+    } finally {
+      setSubmitting(false);
     }
   }
 
-  return (
-    <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-      <h3 className="text-2xl font-bold mb-6 dark:text-white">
-        Comments ({comments.length})
-      </h3>
+  function toggleReplies(commentId: string) {
+    // If we haven't loaded the replies yet, fetch them
+    const comment = comments.find((c) => c.id === commentId);
+    if (
+      comment &&
+      (!comment.replies || comment.replies.length === 0) &&
+      comment.reply_count! > 0
+    ) {
+      fetchReplies(commentId);
+    }
 
-      {error && (
-        <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
+    // Toggle the expanded state
+    setExpandedReplies((prev) => ({
+      ...prev,
+      [commentId]: !prev[commentId],
+    }));
+  }
+
+  function formatDate(dateString: string) {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  return (
+    <div>
+      <h3 className="text-2xl font-bold mb-6">Comments ({comments.length})</h3>
 
       {user ? (
         <form onSubmit={handleSubmitComment} className="mb-8">
           <div className="flex items-start">
             <div className="mr-3 flex-shrink-0">
-              <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 overflow-hidden">
-                {user.email ? (
-                  <span className="text-lg font-medium">
-                    {user.email.charAt(0).toUpperCase()}
-                  </span>
-                ) : (
-                  <span className="text-lg font-medium">U</span>
-                )}
+              <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 overflow-hidden">
+                {user?.email?.charAt(0).toUpperCase() || "U"}
               </div>
             </div>
             <div className="flex-grow">
               <textarea
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                className="w-full p-3 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-white"
+                className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="Add a comment..."
                 rows={3}
                 required
@@ -240,8 +346,8 @@ export default function CommentSection({ articleId }: { articleId: string }) {
               <div className="mt-2 flex justify-end">
                 <button
                   type="submit"
-                  disabled={submitting || !commentText.trim()}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
+                  disabled={submitting}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-300"
                 >
                   {submitting ? "Posting..." : "Post Comment"}
                 </button>
@@ -250,18 +356,19 @@ export default function CommentSection({ articleId }: { articleId: string }) {
           </div>
         </form>
       ) : (
-        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-8 text-center">
-          <p className="text-gray-700 dark:text-gray-300 mb-2">
-            Sign in to join the conversation
-          </p>
-          <Link
-            href={`/signin?redirect=${encodeURIComponent(
-              window.location.pathname
-            )}`}
-            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+        <div className="bg-gray-50 p-4 rounded-lg mb-8 text-center">
+          <p className="text-gray-700 mb-2">Sign in to join the conversation</p>
+          <button
+            onClick={() =>
+              router.push(
+                "/signin?redirect=" +
+                  encodeURIComponent(window.location.pathname)
+              )
+            }
+            className="text-blue-600 hover:text-blue-800 font-medium"
           >
             Sign In
-          </Link>
+          </button>
         </div>
       )}
 
@@ -270,76 +377,160 @@ export default function CommentSection({ articleId }: { articleId: string }) {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
       ) : comments.length === 0 ? (
-        <div className="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <p className="text-gray-600 dark:text-gray-300">
+        <div className="text-center py-8 bg-gray-50 rounded-lg">
+          <p className="text-gray-600">
             Be the first to comment on this article!
           </p>
         </div>
       ) : (
         <div className="space-y-6">
           {comments.map((comment) => (
-            <div key={comment.id} className="flex">
-              <div className="mr-3 flex-shrink-0">
-                <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 overflow-hidden">
-                  {comment.authorAvatar ? (
-                    <img
-                      src={comment.authorAvatar}
-                      alt={comment.authorName}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-lg font-medium">
-                      {comment.authorName.charAt(0).toUpperCase()}
-                    </span>
-                  )}
+            <div
+              key={comment.id}
+              className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4"
+            >
+              <div className="flex">
+                <div className="mr-3 flex-shrink-0">
+                  <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 overflow-hidden">
+                    {comment.profiles?.avatar_url ? (
+                      <img
+                        src={comment.profiles.avatar_url}
+                        alt={comment.profiles.username || "User"}
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      (comment.profiles?.username || "U")[0].toUpperCase()
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="flex-grow">
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center">
-                      <span className="font-medium dark:text-white mr-2">
-                        {comment.authorName}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {timeAgo(comment.created_at)}
-                      </span>
-                    </div>
+                <div className="flex-grow">
+                  <div className="flex items-center mb-1">
+                    <span className="font-medium mr-2">
+                      {comment.profiles?.full_name ||
+                        comment.profiles?.username ||
+                        "Anonymous"}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {formatDate(comment.created_at)}
+                    </span>
+                  </div>
+                  <p className="text-gray-700 mb-2">{comment.content}</p>
 
-                    {/* Delete button - only show for the comment owner */}
-                    {user && user.id === comment.user_id && (
+                  <div className="flex mt-2">
+                    <button
+                      onClick={() =>
+                        setReplyingTo(
+                          replyingTo === comment.id ? null : comment.id
+                        )
+                      }
+                      className="text-sm text-blue-600 hover:text-blue-800 mr-4"
+                    >
+                      {replyingTo === comment.id ? "Cancel" : "Reply"}
+                    </button>
+
+                    {comment.reply_count! > 0 && (
                       <button
-                        onClick={() => handleDeleteComment(comment.id)}
-                        className="text-red-500 hover:text-red-700 transition-colors"
-                        aria-label="Delete comment"
-                        title="Delete comment"
+                        onClick={() => toggleReplies(comment.id)}
+                        className="text-sm text-gray-600 hover:text-gray-800 flex items-center"
                       >
-                        {/* Simple Trash icon SVG */}
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
+                          className={`h-4 w-4 mr-1 transform transition-transform ${
+                            expandedReplies[comment.id] ? "rotate-180" : ""
+                          }`}
                           fill="none"
+                          viewBox="0 0 24 24"
                           stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
                         >
-                          <path d="M3 6h18"></path>
-                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                          <line x1="10" y1="11" x2="10" y2="17"></line>
-                          <line x1="14" y1="11" x2="14" y2="17"></line>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
                         </svg>
+                        {expandedReplies[comment.id] ? "Hide" : "View"}{" "}
+                        {comment.reply_count}{" "}
+                        {comment.reply_count === 1 ? "Reply" : "Replies"}
                       </button>
                     )}
                   </div>
-                  <p className="text-gray-700 dark:text-gray-300">
-                    {comment.content}
-                  </p>
                 </div>
               </div>
+
+              {/* Reply Form */}
+              {replyingTo === comment.id && user && (
+                <div className="mt-3 ml-11">
+                  <div className="flex items-start">
+                    <div className="mr-3 flex-shrink-0">
+                      <div className="h-6 w-6 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 overflow-hidden">
+                        {user?.email?.charAt(0).toUpperCase() || "U"}
+                      </div>
+                    </div>
+                    <div className="flex-grow">
+                      <textarea
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                        placeholder={`Reply to ${
+                          comment.profiles?.username || "Anonymous"
+                        }...`}
+                        rows={2}
+                        required
+                      />
+                      <div className="mt-2 flex justify-end">
+                        <button
+                          onClick={() => handleSubmitReply(comment.id)}
+                          disabled={submitting}
+                          className="bg-blue-600 text-white text-sm px-3 py-1 rounded hover:bg-blue-700 disabled:bg-blue-300"
+                        >
+                          {submitting ? "Posting..." : "Post Reply"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Replies Section */}
+              {expandedReplies[comment.id] &&
+                comment.replies &&
+                comment.replies.length > 0 && (
+                  <div className="mt-3 ml-11 space-y-4 pt-2 border-t border-gray-100">
+                    {comment.replies.map((reply) => (
+                      <div key={reply.id} className="flex">
+                        <div className="mr-3 flex-shrink-0">
+                          <div className="h-6 w-6 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 overflow-hidden">
+                            {reply.profiles?.avatar_url ? (
+                              <img
+                                src={reply.profiles.avatar_url}
+                                alt={reply.profiles?.username || "User"}
+                                className="h-6 w-6 rounded-full object-cover"
+                              />
+                            ) : (
+                              (reply.profiles?.username || "U")[0].toUpperCase()
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex-grow">
+                          <div className="flex items-center mb-1">
+                            <span className="font-medium mr-2 text-sm">
+                              {reply.profiles?.full_name ||
+                                reply.profiles?.username ||
+                                "Anonymous"}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {formatDate(reply.created_at)}
+                            </span>
+                          </div>
+                          <p className="text-gray-700 text-sm">
+                            {reply.content}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
             </div>
           ))}
         </div>
