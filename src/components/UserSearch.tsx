@@ -4,7 +4,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-
+import { useAuth } from "@/context/AuthContext";
+import FollowButton from "@/components/FollowButton";
 interface SearchResult {
   id: string;
   username: string | null;
@@ -18,6 +19,7 @@ export default function UserSearch() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { user } = useAuth();
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,36 +104,52 @@ export default function UserSearch() {
       {results.length > 0 && (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <ul className="divide-y divide-gray-200">
-            {results.map((user) => (
+            {results.map((userResult) => (
               <li
-                key={user.id}
-                className="p-4 hover:bg-gray-50 cursor-pointer transition"
-                onClick={() => handleUserClick(user.id)}
+                key={userResult.id}
+                className="p-4 hover:bg-gray-50 transition"
               >
-                <div className="flex items-center">
-                  <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3 overflow-hidden">
-                    {user.avatar_url ? (
-                      <img
-                        src={user.avatar_url}
-                        alt={user.username || "User"}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span>
-                        {(user.full_name || user.username || "U")
-                          .charAt(0)
-                          .toUpperCase()}
-                      </span>
-                    )}
+                <div className="flex justify-between">
+                  <div
+                    className="flex items-center cursor-pointer"
+                    onClick={() => handleUserClick(userResult.id)}
+                  >
+                    <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3 overflow-hidden">
+                      {userResult.avatar_url ? (
+                        <img
+                          src={userResult.avatar_url}
+                          alt={userResult.username || "User"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span>
+                          {(userResult.full_name || userResult.username || "U")
+                            .charAt(0)
+                            .toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium">
+                        {userResult.full_name ||
+                          userResult.username ||
+                          "Anonymous User"}
+                      </p>
+                      {userResult.username && (
+                        <p className="text-sm text-gray-500">
+                          @{userResult.username}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">
-                      {user.full_name || user.username || "Anonymous User"}
-                    </p>
-                    {user.username && (
-                      <p className="text-sm text-gray-500">@{user.username}</p>
-                    )}
-                  </div>
+
+                  {/* Only show follow button if the current user is not the result user */}
+                  {user && user.id !== userResult.id && (
+                    <FollowButton
+                      targetUserId={userResult.id}
+                      className="self-center ml-2 text-xs px-3 py-1"
+                    />
+                  )}
                 </div>
               </li>
             ))}

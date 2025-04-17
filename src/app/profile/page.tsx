@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import FollowStats from "@/components/FollowStats";
 
 interface Profile {
   id: string;
@@ -532,6 +533,13 @@ export default function ProfilePage() {
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold mb-2">Bio</h3>
                   <p className="text-gray-700 whitespace-pre-line">{bio}</p>
+                </div>
+              )}
+
+              {/* Adding Follow Stats */}
+              {user && (
+                <div className="mb-6">
+                  <FollowStats userId={user.id} />
                 </div>
               )}
 

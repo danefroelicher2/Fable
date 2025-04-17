@@ -1,10 +1,14 @@
+// src/app/user/[userId]/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import UserPublishedArticles from "@/components/UserPublishedArticles";
+import FollowButton from "@/components/FollowButton";
+import FollowStats from "@/components/FollowStats";
 
 interface Profile {
   id: string;
@@ -19,17 +23,22 @@ export default function PublicUserProfilePage() {
   const params = useParams();
   const router = useRouter();
   const userId = params.userId as string;
+  const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [bio, setBio] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const [isCurrentUser, setIsCurrentUser] = useState(false);
 
   useEffect(() => {
     if (!userId) {
       router.push("/not-found");
       return;
     }
+
+    // Check if the viewed profile is the current user's own profile
+    setIsCurrentUser(user?.id === userId);
 
     async function loadProfile() {
       try {
@@ -41,7 +50,7 @@ export default function PublicUserProfilePage() {
         // Fetch profile data with safe column selection
         const { data, error } = await supabase
           .from("profiles")
-          .select("id, username, full_name, avatar_url")
+          .select("id, username, full_name, avatar_url, website")
           .eq("id", userId)
           .single();
 
@@ -57,29 +66,7 @@ export default function PublicUserProfilePage() {
           throw error;
         }
 
-        // Separately fetch website if needed
-        let websiteData = null;
-        try {
-          const { data: websiteQuery, error: websiteError } = await supabase
-            .from("profiles")
-            .select("website")
-            .eq("id", userId)
-            .single();
-
-          if (!websiteError && websiteQuery) {
-            websiteData = websiteQuery.website;
-          }
-        } catch (websiteQueryError) {
-          console.warn("Could not fetch website:", websiteQueryError);
-        }
-
-        // Merge base profile data with website
-        const completeProfile = {
-          ...data,
-          website: websiteData,
-        };
-
-        setProfile(completeProfile);
+        setProfile(data);
 
         // Bio is stored in localStorage on the user's device
         // For public viewing, we can't access it, but if user is viewing their own profile
@@ -99,7 +86,7 @@ export default function PublicUserProfilePage() {
     }
 
     loadProfile();
-  }, [userId, router]);
+  }, [userId, router, user]);
 
   if (loading) {
     return (
@@ -154,9 +141,17 @@ export default function PublicUserProfilePage() {
 
             <div className="md:w-2/3 md:pl-8">
               <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">
-                  {profile?.full_name || profile?.username || "Anonymous User"}
-                </h2>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                  <h2 className="text-2xl font-bold mb-2 md:mb-0">
+                    {profile?.full_name ||
+                      profile?.username ||
+                      "Anonymous User"}
+                  </h2>
+
+                  {!isCurrentUser && profile && (
+                    <FollowButton targetUserId={profile.id} />
+                  )}
+                </div>
                 {profile?.username && (
                   <p className="text-gray-600">@{profile.username}</p>
                 )}
@@ -193,6 +188,34 @@ export default function PublicUserProfilePage() {
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold mb-2">Bio</h3>
                   <p className="text-gray-700 whitespace-pre-line">{bio}</p>
+                </div>
+              )}
+
+              {/* Followers and Following stats */}
+              {profile && <FollowStats userId={profile.id} className="mb-4" />}
+
+              {isCurrentUser && (
+                <div className="mb-4">
+                  <Link
+                    href="/profile"
+                    className="text-blue-600 hover:text-blue-800 flex items-center"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                      />
+                    </svg>
+                    Edit Your Profile
+                  </Link>
                 </div>
               )}
             </div>
