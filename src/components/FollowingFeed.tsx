@@ -38,6 +38,8 @@ export default function FollowingFeed() {
   useEffect(() => {
     if (user) {
       fetchFollowingArticles(1);
+    } else {
+      setLoading(false);
     }
   }, [user]);
 
@@ -52,6 +54,10 @@ export default function FollowingFeed() {
       setLoading(true);
       setError(null);
 
+      console.log(
+        `Fetching following articles for user ${user.id}, page ${pageNum}`
+      );
+
       // First get list of users the current user follows
       const { data: followingData, error: followingError } = await (
         supabase as any
@@ -64,6 +70,7 @@ export default function FollowingFeed() {
 
       // If not following anyone, show empty state
       if (!followingData || followingData.length === 0) {
+        console.log("User is not following anyone");
         setArticles([]);
         setHasMore(false);
         setLoading(false);
@@ -74,6 +81,7 @@ export default function FollowingFeed() {
       const followingIds = followingData.map(
         (follow: { following_id: string }) => follow.following_id
       );
+      console.log("Following IDs:", followingIds);
 
       // Fetch articles from followed users with pagination
       const from = (pageNum - 1) * articlesPerPage;
@@ -96,14 +104,18 @@ export default function FollowingFeed() {
 
       if (articlesError) throw articlesError;
 
+      console.log(
+        `Found ${articlesData?.length || 0} articles from followed users`
+      );
+
       // Determine if there are more articles to load
-      setHasMore(articlesData.length === articlesPerPage);
+      setHasMore(articlesData?.length === articlesPerPage);
 
       // If loading more, append to existing articles
       if (pageNum > 1) {
-        setArticles((prev) => [...prev, ...articlesData]);
+        setArticles((prev) => [...prev, ...(articlesData || [])]);
       } else {
-        setArticles(articlesData);
+        setArticles(articlesData || []);
       }
 
       setPage(pageNum);
@@ -130,6 +142,24 @@ export default function FollowingFeed() {
     });
   };
 
+  // Get category label
+  const getCategoryLabel = (categoryValue: string | null) => {
+    const categories = [
+      { value: "ancient-history", label: "Ancient History" },
+      { value: "medieval-period", label: "Medieval Period" },
+      { value: "renaissance", label: "Renaissance" },
+      { value: "early-modern-period", label: "Early Modern Period" },
+      { value: "industrial-age", label: "Industrial Age" },
+      { value: "20th-century", label: "20th Century" },
+      { value: "world-wars", label: "World Wars" },
+      { value: "cold-war-era", label: "Cold War Era" },
+      { value: "modern-history", label: "Modern History" },
+    ];
+
+    const category = categories.find((c) => c.value === categoryValue);
+    return category ? category.label : categoryValue || "Uncategorized";
+  };
+
   if (!user) {
     return (
       <div className="text-center py-10 bg-white rounded-lg shadow-md">
@@ -151,16 +181,23 @@ export default function FollowingFeed() {
 
   if (loading && articles.length === 0) {
     return (
-      <div className="animate-pulse space-y-6">
-        {[...Array(3)].map((_, index) => (
-          <div key={index} className="bg-white rounded-lg shadow-md p-6">
-            <div className="h-6 bg-gray-200 rounded w-3/4 mb-3"></div>
-            <div className="flex items-center mb-3">
-              <div className="h-8 w-8 bg-gray-200 rounded-full mr-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-pulse">
+        {[...Array(6)].map((_, index) => (
+          <div
+            key={index}
+            className="bg-white rounded-lg shadow-md overflow-hidden"
+          >
+            <div className="h-48 bg-slate-200"></div>
+            <div className="p-4">
+              <div className="h-6 bg-slate-200 rounded w-3/4 mb-2"></div>
+              <div className="flex items-center mb-2">
+                <div className="h-8 w-8 rounded-full bg-slate-200 mr-2"></div>
+                <div className="h-4 bg-slate-200 rounded w-24"></div>
+              </div>
+              <div className="h-4 bg-slate-200 rounded w-1/3 mb-3"></div>
+              <div className="h-4 bg-slate-200 rounded w-full mb-2"></div>
+              <div className="h-4 bg-slate-200 rounded w-full mb-2"></div>
             </div>
-            <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
           </div>
         ))}
       </div>
@@ -184,28 +221,45 @@ export default function FollowingFeed() {
         <p className="text-gray-600 mb-6">
           Follow other users to see their articles here
         </p>
-        <Link
-          href="/feed"
-          className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
-        >
-          Explore Community Articles
-        </Link>
+        <div className="flex flex-col md:flex-row justify-center gap-4">
+          <Link
+            href="/feed"
+            className="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700"
+          >
+            Explore Community Feed
+          </Link>
+          <Link
+            href="/search-users"
+            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+          >
+            Find Users to Follow
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">
-        Articles from People You Follow
-      </h2>
-
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {articles.map((article) => (
           <div
             key={article.id}
             className="bg-white rounded-lg shadow-md overflow-hidden article-card"
           >
+            <div className="h-48 bg-slate-200 overflow-hidden">
+              {article.image_url ? (
+                <img
+                  src={article.image_url}
+                  alt={article.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-slate-500">
+                  <span className="text-center p-4">{article.title}</span>
+                </div>
+              )}
+            </div>
             <div className="p-4">
               <Link href={`/articles/${article.slug}`}>
                 <h2 className="text-xl font-bold mb-2 hover:text-blue-600">
@@ -214,7 +268,7 @@ export default function FollowingFeed() {
               </Link>
 
               <Link
-                href={`/user/${article.profiles?.id}`}
+                href={`/user/${article.user_id}`}
                 className="flex items-center mb-2 group"
               >
                 <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-2 overflow-hidden">
@@ -234,28 +288,25 @@ export default function FollowingFeed() {
                     </span>
                   )}
                 </div>
-                <div className="text-sm text-gray-700 group-hover:text-blue-600">
-                  By{" "}
+                <span className="text-sm text-gray-600 group-hover:text-blue-600">
                   {article.profiles?.full_name ||
                     article.profiles?.username ||
-                    "Anonymous User"}
-                </div>
+                    "Anonymous"}
+                </span>
               </Link>
 
-              <p className="text-gray-600 text-sm mb-3">
+              <p className="text-gray-600 text-sm mb-2">
                 {formatDate(article.published_at)}
               </p>
 
-              <p className="text-gray-700 mb-4">
-                {article.excerpt || article.title}
+              <p className="text-gray-700 mb-3 line-clamp-3">
+                {article.excerpt || "No excerpt available"}
               </p>
 
-              <div className="flex justify-between items-center">
-                {article.category && (
-                  <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                    {article.category}
-                  </span>
-                )}
+              <div className="flex justify-between items-center mt-4">
+                <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                  {getCategoryLabel(article.category)}
+                </span>
 
                 <div className="flex items-center text-sm text-gray-500">
                   <span className="flex items-center mr-3">
