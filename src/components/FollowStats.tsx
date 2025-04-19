@@ -10,6 +10,13 @@ interface FollowStatsProps {
   onStatsLoaded?: (followers: number, following: number) => void;
 }
 
+interface ProfileData {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
 export default function FollowStats({
   userId,
   className = "",
@@ -22,7 +29,7 @@ export default function FollowStats({
   const [showFollowModal, setShowFollowModal] = useState<
     "followers" | "following" | null
   >(null);
-  const [followList, setFollowList] = useState<any[]>([]);
+  const [followList, setFollowList] = useState<ProfileData[]>([]);
   const [loadingList, setLoadingList] = useState(false);
 
   useEffect(() => {
@@ -74,42 +81,51 @@ export default function FollowStats({
     try {
       setLoadingList(true);
       setFollowList([]);
+      console.log(`Fetching ${type} list for user ID:`, userId);
 
-      let query;
+      // First, let's get the user IDs that are following or being followed
+      let userIds: string[] = [];
+
       if (type === "followers") {
-        // Get all users who follow this user (with profile info)
-        query = (supabase as any)
+        // Get IDs of users who follow this user
+        const { data: followerData, error: followerError } = await (
+          supabase as any
+        )
           .from("follows")
-          .select(
-            `
-            follower_id,
-            profiles!follower_id(id, username, full_name, avatar_url)
-          `
-          )
+          .select("follower_id")
           .eq("following_id", userId);
+
+        if (followerError) throw followerError;
+        userIds = followerData.map((item: any) => item.follower_id);
+        console.log("Follower IDs:", userIds);
       } else {
-        // Get all users this user follows (with profile info)
-        query = (supabase as any)
+        // Get IDs of users this user follows
+        const { data: followingData, error: followingError } = await (
+          supabase as any
+        )
           .from("follows")
-          .select(
-            `
-            following_id,
-            profiles!following_id(id, username, full_name, avatar_url)
-          `
-          )
+          .select("following_id")
           .eq("follower_id", userId);
+
+        if (followingError) throw followingError;
+        userIds = followingData.map((item: any) => item.following_id);
+        console.log("Following IDs:", userIds);
       }
 
-      const { data, error } = await query;
+      // If we have user IDs, fetch their profile information
+      if (userIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, username, full_name, avatar_url")
+          .in("id", userIds);
 
-      if (error) throw error;
-
-      // Process the data to get the profile info
-      const profiles = data.map((item: any) =>
-        type === "followers" ? item.profiles : item.profiles
-      );
-
-      setFollowList(profiles);
+        if (profilesError) throw profilesError;
+        console.log(`${type} profiles:`, profilesData);
+        setFollowList(profilesData || []);
+      } else {
+        // No followers/following
+        setFollowList([]);
+      }
     } catch (err) {
       console.error(`Error fetching ${type} list:`, err);
     } finally {
