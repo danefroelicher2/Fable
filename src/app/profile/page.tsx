@@ -64,35 +64,59 @@ export default function ProfilePage() {
         console.log("Loading profile for user:", user.id);
 
         // Check if profile exists
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("id, username, full_name, avatar_url, social_links")
-          .eq("id", user.id)
-          .single();
+        let profileData = null;
+        let profileError = null;
 
-        if (error) {
+        try {
+          // Try fetching with social_links column
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("id, username, full_name, avatar_url, social_links")
+            .eq("id", user.id)
+            .single();
+            
+          profileData = data;
+          profileError = error;
+        } catch (e) {
+          // If social_links column doesn't exist, try without it
+          console.warn("Error fetching profile with social_links:", e);
+          
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("id, username, full_name, avatar_url")
+            .eq("id", user.id)
+            .single();
+            
+          profileData = data;
+          profileError = error;
+        }
+
+        if (profileError) {
           // If error is not 'not found', throw it
-          if (error.code !== "PGRST116") {
-            console.error("Error fetching profile:", error);
-            throw error;
+          if (profileError.code !== "PGRST116") {
+            console.error("Error fetching profile:", profileError);
+            throw profileError;
           }
 
           console.log("Profile not found, creating a new one");
 
           // Create a new profile if one doesn't exist
-          const { error: createError } = await supabase
-            .from("profiles")
-            .insert({
-              id: user.id,
-              username: "",
-              full_name: "",
-              avatar_url: "",
-              social_links: { instagram: "", facebook: "", x: "" },
-            });
+          try {
+            const { error: createError } = await supabase
+              .from("profiles")
+              .insert({
+                id: user.id,
+                username: "",
+                full_name: "",
+                avatar_url: "",
+              });
 
-          if (createError) {
-            console.error("Error creating profile:", createError);
-            throw createError;
+            if (createError) {
+              console.error("Error creating profile:", createError);
+              throw createError;
+            }
+          } catch (e) {
+            console.error("Error creating profile:", e);
           }
 
           // Set default values
@@ -105,25 +129,31 @@ export default function ProfilePage() {
           };
 
           setProfile(defaultProfile);
-        } else if (data) {
-          console.log("Profile loaded successfully:", data);
+        } else if (profileData) {
+          console.log("Profile loaded successfully:", profileData);
+          
+          // Add social_links if it doesn't exist in the data
+          if (!profileData.social_links) {
+            profileData.social_links = { instagram: "", facebook: "", x: "" };
+          }
+          
           // Profile exists, set the data
-          setProfile(data);
-          setUsername(data.username || "");
-          setFullName(data.full_name || "");
+          setProfile(profileData);
+          setUsername(profileData.username || "");
+          setFullName(profileData.full_name || "");
 
           // Initialize social links if they exist
-          if (data.social_links) {
-            setInstagramLink(data.social_links.instagram || "");
-            setFacebookLink(data.social_links.facebook || "");
-            setXLink(data.social_links.x || "");
+          if (profileData.social_links) {
+            setInstagramLink(profileData.social_links.instagram || "");
+            setFacebookLink(profileData.social_links.facebook || "");
+            setXLink(profileData.social_links.x || "");
           }
 
           // Initialize bio from localStorage if available
           const savedBio = localStorage.getItem("userBio_" + user.id);
           setBio(savedBio || "");
 
-          setAvatarUrl(data.avatar_url || "");
+          setAvatarUrl(profileData.avatar_url || "");
         }
 
         // Load published articles
@@ -211,27 +241,42 @@ export default function ProfilePage() {
         newAvatarUrl = urlData.publicUrl;
       }
 
-      // Create social links object
-      const socialLinks = {
-        instagram: instagramLink.trim(),
-        facebook: facebookLink.trim(),
-        x: xLink.trim(),
-      };
-
-      // Update fields in the database
-      const updates = {
+      // Update fields in the database - first without social_links
+      const baseUpdates = {
         username,
         full_name: fullName,
         avatar_url: newAvatarUrl,
-        social_links: socialLinks,
       };
 
       const { error } = await supabase
         .from("profiles")
-        .update(updates)
+        .update(baseUpdates)
         .eq("id", user.id);
-
+        
       if (error) throw error;
+      
+      // Try to update social links separately (to handle if the column doesn't exist)
+      try {
+        // Create social links object
+        const socialLinks = {
+          instagram: instagramLink.trim(),
+          facebook: facebookLink.trim(),
+          x: xLink.trim(),
+        };
+        
+        const { error: socialLinksError } = await supabase
+          .from("profiles")
+          .update({ social_links: socialLinks })
+          .eq("id", user.id);
+          
+        // If there's an error, we just log it but don't break the flow
+        if (socialLinksError) {
+          console.warn("Could not update social_links:", socialLinksError.message);
+        }
+      } catch (socialError) {
+        console.warn("Social links update failed:", socialError);
+        // Don't rethrow - we still want to consider the profile update successful
+      }
 
       // Store bio in localStorage since it's not in the DB
       if (bio) {
@@ -240,26 +285,51 @@ export default function ProfilePage() {
         localStorage.removeItem("userBio_" + user.id);
       }
 
-      // Refresh the profile data
-      const { data, error: refreshError } = await supabase
-        .from("profiles")
-        .select("id, username, full_name, avatar_url, social_links")
-        .eq("id", user.id)
-        .single();
+      // Refresh the profile data, but don't fail if social_links column doesn't exist
+      try {
+        const { data, error: refreshError } = await supabase
+          .from("profiles")
+          .select("id, username, full_name, avatar_url, social_links")
+          .eq("id", user.id)
+          .single();
 
-      if (refreshError) throw refreshError;
-
-      if (data) {
-        setProfile(data);
-        setUsername(data.username || "");
-        setFullName(data.full_name || "");
-        if (data.social_links) {
-          setInstagramLink(data.social_links.instagram || "");
-          setFacebookLink(data.social_links.facebook || "");
-          setXLink(data.social_links.x || "");
+        if (!refreshError && data) {
+          setProfile(data);
+          setUsername(data.username || "");
+          setFullName(data.full_name || "");
+          
+          // Handle social links if they exist in the response
+          if (data.social_links) {
+            setInstagramLink(data.social_links.instagram || "");
+            setFacebookLink(data.social_links.facebook || "");
+            setXLink(data.social_links.x || "");
+          }
+          
+          setAvatarUrl(data.avatar_url || "");
         }
-        // Bio is already set in state
-        setAvatarUrl(data.avatar_url || "");
+      } catch (refreshError) {
+        console.warn("Could not refresh profile with social_links:", refreshError);
+        
+        // Fallback to fetching without social_links
+        try {
+          const { data: basicData } = await supabase
+            .from("profiles")
+            .select("id, username, full_name, avatar_url")
+            .eq("id", user.id)
+            .single();
+            
+          if (basicData) {
+            setProfile({
+              ...basicData,
+              social_links: { instagram: instagramLink, facebook: facebookLink, x: xLink }
+            });
+            setUsername(basicData.username || "");
+            setFullName(basicData.full_name || "");
+            setAvatarUrl(basicData.avatar_url || "");
+          }
+        } catch (basicError) {
+          console.error("Failed to fetch basic profile data:", basicError);
+        }
       }
 
       setMessage("Profile updated successfully!");
@@ -697,7 +767,7 @@ export default function ProfilePage() {
                     {user?.email?.charAt(0).toUpperCase() || "U"}
                   </span>
                 )}
-              </div>
+                </div>
             </div>
 
             <div className="md:w-2/3 md:pl-8">
@@ -715,30 +785,31 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {/* Social Links Section */}
-              {profile?.social_links && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-2">
-                    Connect with me
-                  </h3>
-                  <div className="flex space-x-4">
-                    {formatSocialLinks(profile.social_links).map(
-                      (link, index) => (
-                        <a
-                          key={index}
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center text-gray-700 hover:text-blue-600 transition-colors"
-                        >
-                          <span className="mr-2">{link.icon}</span>
-                          <span>{link.name}</span>
-                        </a>
-                      )
-                    )}
-                  </div>
+            {/* Social Links Section */}
+            {profile?.social_links && 
+              Object.values(profile.social_links || {}).some(value => value && typeof value === 'string' && value.length > 0) && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">
+                  Connect with me
+                </h3>
+                <div className="flex space-x-4">
+                  {formatSocialLinks(profile.social_links).map(
+                    (link, index) => (
+                      
+                        key={index}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-gray-700 hover:text-blue-600 transition-colors"
+                      >
+                        <span className="mr-2">{link.icon}</span>
+                        <span>{link.name}</span>
+                      </a>
+                    )
+                  )}
                 </div>
-              )}
+              </div>
+            )}
 
               {/* Adding Follow Stats */}
               {user && (
