@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
-import MainLayout from "@/app/ClientLayout"; // Import the default export from ClientLayout.tsx
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,7 +32,10 @@ export default function RootLayout({
       >
         <AuthProvider>
           <ThemeProvider>
-            <MainLayout>{children}</MainLayout>
+            <div className="flex min-h-screen">
+              {/* We'll add the sidebar later */}
+              <main className="flex-1 md:pl-64">{children}</main>
+            </div>
           </ThemeProvider>
         </AuthProvider>
       </body>
