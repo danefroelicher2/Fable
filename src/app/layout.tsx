@@ -1,6 +1,3 @@
-// src/app/layout.tsx
-"use client";
-
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -22,14 +19,39 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// We need to move the metadata outside of the component since it can't be used in client components
-export const metadata = {
+// Metadata moved outside of the component
+export const metadata: Metadata = {
   title: "HistoryNet - History, Wars, People, and More",
   description:
     "Exploring historical events, figures, wars, and eras through in-depth articles and analyses.",
 };
 
-function SidebarNav() {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <AuthProvider>
+          <ThemeProvider>
+            <ClientLayout>{children}</ClientLayout>
+          </ThemeProvider>
+        </AuthProvider>
+      </body>
+    </html>
+  );
+}
+
+// Separate client component
+function ClientLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   const pathname = usePathname();
   const { user } = useAuth();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -217,236 +239,208 @@ function SidebarNav() {
   };
 
   return (
-    <>
-      {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0">
-        <div className="flex flex-col h-full py-5 px-4 border-r border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-800 overflow-y-auto">
-          {/* LOSTLIBRARY Logo */}
-          <Link href="/" className="mb-8 text-center">
-            <div className="bg-red-600 px-5 py-2 hover:bg-red-700 transition-colors mx-auto inline-block">
-              <span className="text-2xl font-bold tracking-wide text-white">
-                LOSTLIBRARY
-              </span>
-            </div>
-          </Link>
+    <div className="flex flex-col min-h-screen">
+      <>
+        {/* Desktop Sidebar */}
+        <div className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0">
+          <div className="flex flex-col h-full py-5 px-4 border-r border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-800 overflow-y-auto">
+            {/* LOSTLIBRARY Logo */}
+            <Link href="/" className="mb-8 text-center">
+              <div className="bg-red-600 px-5 py-2 hover:bg-red-700 transition-colors mx-auto inline-block">
+                <span className="text-2xl font-bold tracking-wide text-white">
+                  LOSTLIBRARY
+                </span>
+              </div>
+            </Link>
 
-          {/* Navigation Items */}
-          <nav className="flex-1 space-y-1">
-            {navItems.map((item) => (
+            {/* Navigation Items */}
+            <nav className="flex-1 space-y-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`flex items-center px-3 py-3 text-lg font-medium rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
+                    isActive(item.href)
+                      ? "text-black dark:text-white font-bold"
+                      : "text-gray-700 dark:text-gray-300"
+                  }`}
+                >
+                  <span className="mr-4">{renderIcon(item.icon)}</span>
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+
+            {/* Profile Section */}
+            <div className="pt-4 mt-auto border-t border-gray-200 dark:border-gray-700">
+              <ProfileDropdown />
+            </div>
+
+            {/* Write Button */}
+            <Link
+              href="/write"
+              className="mt-4 bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-full font-bold text-center transition-colors flex items-center justify-center"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+              Write
+            </Link>
+          </div>
+        </div>
+
+        {/* Mobile bottom navigation */}
+        <div className="md:hidden fixed inset-x-0 bottom-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 z-50">
+          <nav className="flex justify-around">
+            {navItems.slice(0, 5).map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
-                className={`flex items-center px-3 py-3 text-lg font-medium rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
+                className={`flex flex-col items-center py-3 px-2 ${
                   isActive(item.href)
-                    ? "text-black dark:text-white font-bold"
-                    : "text-gray-700 dark:text-gray-300"
+                    ? "text-red-600 dark:text-red-500"
+                    : "text-gray-700dark:text-gray-300"
                 }`}
               >
-                <span className="mr-4">{renderIcon(item.icon)}</span>
-                {item.label}
+                <span className="h-6 w-6">{renderIcon(item.icon)}</span>
+                <span className="text-xs mt-1">{item.label}</span>
               </Link>
             ))}
+            <button
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              className="flex flex-col items-center py-3 px-2 text-gray-700 dark:text-gray-300"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <span className="text-xs mt-1">Search</span>
+            </button>
           </nav>
-
-          {/* Profile Section */}
-          <div className="pt-4 mt-auto border-t border-gray-200 dark:border-gray-700">
-            <ProfileDropdown />
-          </div>
-
-          {/* Write Button */}
-          <Link
-            href="/write"
-            className="mt-4 bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-full font-bold text-center transition-colors flex items-center justify-center"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              />
-            </svg>
-            Write
-          </Link>
         </div>
-      </div>
+      </>
 
-      {/* Mobile bottom navigation */}
-      <div className="md:hidden fixed inset-x-0 bottom-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 z-50">
-        <nav className="flex justify-around">
-          {navItems.slice(0, 5).map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`flex flex-col items-center py-3 px-2 ${
-                isActive(item.href)
-                  ? "text-red-600 dark:text-red-500"
-                  : "text-gray-700 dark:text-gray-300"
-              }`}
-            >
-              <span className="h-6 w-6">{renderIcon(item.icon)}</span>
-              <span className="text-xs mt-1">{item.label}</span>
-            </Link>
-          ))}
-          <button
-            onClick={() => setIsSearchOpen(!isSearchOpen)}
-            className="flex flex-col items-center py-3 px-2 text-gray-700 dark:text-gray-300"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            <span className="text-xs mt-1">Search</span>
-          </button>
-        </nav>
-      </div>
-    </>
-  );
-}
+      {/* Main content area with proper padding for sidebar */}
+      <main className="md:pl-64 flex-1 pt-2 pb-20 md:pb-12">{children}</main>
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <AuthProvider>
-          <ThemeProvider>
-            <div className="flex flex-col min-h-screen">
-              <SidebarNav />
-
-              {/* Main content area with proper padding for sidebar */}
-              <main className="md:pl-64 flex-1 pt-2 pb-20 md:pb-12">
-                {children}
-              </main>
-
-              {/* Footer component */}
-              <footer className="md:pl-64 bg-gray-800 dark:bg-gray-950 text-white py-8">
-                <div className="container mx-auto px-4">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                    <div>
-                      <h3 className="text-xl font-bold mb-4">About Us</h3>
-                      <p className="text-gray-300">
-                        HistoryNet is your destination for exploring historical
-                        events, wars, famous people, and more through in-depth
-                        articles and analysis.
-                      </p>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold mb-4">Categories</h3>
-                      <ul className="space-y-2">
-                        <li>
-                          <Link
-                            href="/wars-events"
-                            className="text-gray-300 hover:text-white"
-                          >
-                            Wars & Events
-                          </Link>
-                        </li>
-                        <li>
-                          <Link
-                            href="/famous-people"
-                            className="text-gray-300 hover:text-white"
-                          >
-                            Famous People
-                          </Link>
-                        </li>
-                        <li>
-                          <Link
-                            href="/eras"
-                            className="text-gray-300 hover:text-white"
-                          >
-                            Historical Eras
-                          </Link>
-                        </li>
-                        <li>
-                          <Link
-                            href="/topics"
-                            className="text-gray-300 hover:text-white"
-                          >
-                            Special Topics
-                          </Link>
-                        </li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold mb-4">Connect</h3>
-                      <ul className="space-y-2">
-                        <li>
-                          <Link
-                            href="/newsletters"
-                            className="text-gray-300 hover:text-white"
-                          >
-                            Newsletters
-                          </Link>
-                        </li>
-                        <li>
-                          <Link
-                            href="/podcasts"
-                            className="text-gray-300 hover:text-white"
-                          >
-                            Podcasts
-                          </Link>
-                        </li>
-                        <li>
-                          <Link
-                            href="/contact"
-                            className="text-gray-300 hover:text-white"
-                          >
-                            Contact Us
-                          </Link>
-                        </li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold mb-4">Subscribe</h3>
-                      <form className="mt-4">
-                        <input
-                          type="email"
-                          placeholder="Your email address"
-                          className="px-4 py-2 w-full text-gray-800 dark:text-white bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600"
-                        />
-                        <button
-                          type="submit"
-                          className="mt-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 w-full rounded-md transition"
-                        >
-                          Subscribe
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                  <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-400">
-                    <p>
-                      © {new Date().getFullYear()} HistoryNet. All Rights
-                      Reserved.
-                    </p>
-                  </div>
-                </div>
-              </footer>
+      {/* Footer component */}
+      <footer className="md:pl-64 bg-gray-800 dark:bg-gray-950 text-white py-8">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="text-xl font-bold mb-4">About Us</h3>
+              <p className="text-gray-300">
+                HistoryNet is your destination for exploring historical events,
+                wars, famous people, and more through in-depth articles and
+                analysis.
+              </p>
             </div>
-          </ThemeProvider>
-        </AuthProvider>
-      </body>
-    </html>
+            <div>
+              <h3 className="text-xl font-bold mb-4">Categories</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link
+                    href="/wars-events"
+                    className="text-gray-300 hover:text-white"
+                  >
+                    Wars & Events
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/famous-people"
+                    className="text-gray-300 hover:text-white"
+                  >
+                    Famous People
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/eras" className="text-gray-300 hover:text-white">
+                    Historical Eras
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/topics"
+                    className="text-gray-300 hover:text-white"
+                  >
+                    Special Topics
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold mb-4">Connect</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link
+                    href="/newsletters"
+                    className="text-gray-300 hover:text-white"
+                  >
+                    Newsletters
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/podcasts"
+                    className="text-gray-300 hover:text-white"
+                  >
+                    Podcasts
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/contact"
+                    className="text-gray-300 hover:text-white"
+                  >
+                    Contact Us
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold mb-4">Subscribe</h3>
+              <form className="mt-4">
+                <input
+                  type="email"
+                  placeholder="Your email address"
+                  className="px-4 py-2 w-full text-gray-800 dark:text-white bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600"
+                />
+                <button
+                  type="submit"
+                  className="mt-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 w-full rounded-md transition"
+                >
+                  Subscribe
+                </button>
+              </form>
+            </div>
+          </div>
+          <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-400">
+            <p>© {new Date().getFullYear()} HistoryNet. All Rights Reserved.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
