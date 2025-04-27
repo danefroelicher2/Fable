@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
-import ProfileDropdown from "@/components/ProfileDropdown";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import MainLayout from "@/app/ClientLayout"; // Import the default export from ClientLayout.tsx
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,7 +15,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Metadata moved outside of the component
 export const metadata: Metadata = {
   title: "HistoryNet - History, Wars, People, and More",
   description:
@@ -38,7 +33,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <ThemeProvider>
-            <ClientLayout>{children}</ClientLayout>
+            <MainLayout>{children}</MainLayout>
           </ThemeProvider>
         </AuthProvider>
       </body>
