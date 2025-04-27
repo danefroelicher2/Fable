@@ -1,3 +1,4 @@
+// src/app/profile/page.tsx
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -12,11 +13,21 @@ interface Profile {
   username: string | null;
   full_name: string | null;
   avatar_url: string | null;
+  // Add social_links as an optional type to avoid TypeScript errors
   social_links?: {
-    instagram?: string | null;
-    facebook?: string | null;
-    x?: string | null;
+    twitter?: string;
+    github?: string;
+    linkedin?: string;
+    website?: string;
   } | null;
+}
+
+// Interface for social links
+interface SocialLinks {
+  twitter: string;
+  github: string;
+  linkedin: string;
+  website: string;
 }
 
 export default function ProfilePage() {
@@ -26,11 +37,9 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [username, setUsername] = useState<string>("");
   const [fullName, setFullName] = useState<string>("");
+  // Keep bio in state only (not in DB)
   const [bio, setBio] = useState<string>("");
   const [avatarUrl, setAvatarUrl] = useState<string>("");
-  const [instagramLink, setInstagramLink] = useState<string>("");
-  const [facebookLink, setFacebookLink] = useState<string>("");
-  const [xLink, setXLink] = useState<string>("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -41,30 +50,22 @@ export default function ProfilePage() {
   const [articles, setArticles] = useState<any[]>([]);
   const [isLoadingArticles, setIsLoadingArticles] = useState(false);
 
+  // Add social links state
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>({
+    twitter: "",
+    github: "",
+    linkedin: "",
+    website: "",
+  });
+
   // Check if user is authenticated
   useEffect(() => {
     if (!user && !loading) {
+      // Redirect to signin page if not authenticated
       router.push("/signin?redirect=" + encodeURIComponent("/profile"));
       return;
     }
   }, [user, router, loading]);
-
-  // Handle avatar change
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) {
-      return;
-    }
-
-    const file = e.target.files[0];
-    setAvatarFile(file);
-
-    // Create a preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAvatarPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
 
   useEffect(() => {
     async function loadProfile() {
@@ -76,66 +77,77 @@ export default function ProfilePage() {
 
         console.log("Loading profile for user:", user.id);
 
-        try {
-          // First try to fetch with the assumption social_links exists
-          const { data, error } = await supabase
+        // Check if profile exists
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, username, full_name, avatar_url")
+          .eq("id", user.id)
+          .single();
+
+        if (error) {
+          // If error is not 'not found', throw it
+          if (error.code !== "PGRST116") {
+            console.error("Error fetching profile:", error);
+            throw error;
+          }
+
+          console.log("Profile not found, creating a new one");
+
+          // Create a new profile if one doesn't exist
+          const { error: createError } = await supabase
             .from("profiles")
-            .select("id, username, full_name, avatar_url, social_links")
-            .eq("id", user.id)
-            .single();
+            .insert({
+              id: user.id,
+              username: "",
+              full_name: "",
+              avatar_url: "",
+            });
 
-          if (error) {
-            // If there's an error about the column, fall back to basic profile fetch
-            if (
-              error.message.includes("column 'social_links' does not exist")
-            ) {
-              const { data: basicData, error: basicError } = await supabase
-                .from("profiles")
-                .select("id, username, full_name, avatar_url")
-                .eq("id", user.id)
-                .single();
-
-              if (basicError) throw basicError;
-
-              // Set profile with a default social_links object
-              const profileWithLinks = {
-                ...basicData,
-                social_links: { instagram: null, facebook: null, x: null },
-              };
-
-              setProfile(profileWithLinks);
-              setUsername(profileWithLinks.username || "");
-              setFullName(profileWithLinks.full_name || "");
-              setAvatarUrl(profileWithLinks.avatar_url || "");
-            } else {
-              // For any other error, throw it
-              throw error;
-            }
-          } else {
-            // If data is successfully fetched
-            setProfile(data || null);
-            setUsername(data.username || "");
-            setFullName(data.full_name || "");
-            setAvatarUrl(data.avatar_url || "");
+          if (createError) {
+            console.error("Error creating profile:", createError);
+            throw createError;
           }
 
-          // Initialize social links if they exist
-          if (profile?.social_links) {
-            setInstagramLink(profile.social_links.instagram || "");
-            setFacebookLink(profile.social_links.facebook || "");
-            setXLink(profile.social_links.x || "");
-          }
+          // Set default values
+          const defaultProfile: Profile = {
+            id: user.id,
+            username: null,
+            full_name: null,
+            avatar_url: null,
+          };
+
+          setProfile(defaultProfile);
+        } else if (data) {
+          console.log("Profile loaded successfully:", data);
+          // Profile exists, set the data
+          setProfile(data);
+          setUsername(data.username || "");
+          setFullName(data.full_name || "");
 
           // Initialize bio from localStorage if available
           const savedBio = localStorage.getItem("userBio_" + user.id);
           setBio(savedBio || "");
 
-          // Load published articles
-          fetchUserArticles();
-        } catch (e) {
-          console.error("Error fetching profile:", e);
-          setError("Failed to load profile data");
+          // Initialize social links from localStorage
+          const savedSocialLinks = localStorage.getItem(
+            "userSocialLinks_" + user.id
+          );
+          if (savedSocialLinks) {
+            try {
+              setSocialLinks(JSON.parse(savedSocialLinks));
+            } catch (e) {
+              console.error("Error parsing social links:", e);
+            }
+          }
+
+          setAvatarUrl(data.avatar_url || "");
         }
+
+        // Load published articles
+        fetchUserArticles();
+      } catch (error: any) {
+        console.error("Error loading profile:", error.message);
+        setError("Failed to load profile data: " + error.message);
       } finally {
         setLoading(false);
       }
@@ -150,21 +162,7 @@ export default function ProfilePage() {
     try {
       setIsLoadingArticles(true);
       console.log("Fetching articles for user:", user.id);
-      const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files || e.target.files.length === 0) {
-          return;
-        }
 
-        const file = e.target.files[0];
-        setAvatarFile(file);
-
-        // Create a preview
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setAvatarPreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-      };
       // Fetch articles from public_articles table
       const { data, error } = await (supabase as any)
         .from("public_articles")
@@ -230,8 +228,8 @@ export default function ProfilePage() {
         newAvatarUrl = urlData.publicUrl;
       }
 
-      // Update fields in the database - first without social_links
-      const baseUpdates = {
+      // Update fields in the database
+      const updates = {
         username,
         full_name: fullName,
         avatar_url: newAvatarUrl,
@@ -239,36 +237,10 @@ export default function ProfilePage() {
 
       const { error } = await supabase
         .from("profiles")
-        .update(baseUpdates)
+        .update(updates)
         .eq("id", user.id);
 
       if (error) throw error;
-
-      // Try to update social links separately (to handle if the column doesn't exist)
-      try {
-        // Create social links object
-        const socialLinks = {
-          instagram: instagramLink.trim(),
-          facebook: facebookLink.trim(),
-          x: xLink.trim(),
-        };
-
-        const { error: socialLinksError } = await supabase
-          .from("profiles")
-          .update({ social_links: socialLinks })
-          .eq("id", user.id);
-
-        // If there's an error, we just log it but don't break the flow
-        if (socialLinksError) {
-          console.warn(
-            "Could not update social_links:",
-            socialLinksError.message
-          );
-        }
-      } catch (socialError) {
-        console.warn("Social links update failed:", socialError);
-        // Don't rethrow - we still want to consider the profile update successful
-      }
 
       // Store bio in localStorage since it's not in the DB
       if (bio) {
@@ -277,60 +249,27 @@ export default function ProfilePage() {
         localStorage.removeItem("userBio_" + user.id);
       }
 
-      // Refresh the profile data, but don't fail if social_links column doesn't exist
-      try {
-        const { data, error: refreshError } = await supabase
-          .from("profiles")
-          .select("id, username, full_name, avatar_url, social_links")
-          .eq("id", user.id)
-          .single();
+      // Store social links in localStorage as a temporary solution
+      localStorage.setItem(
+        "userSocialLinks_" + user.id,
+        JSON.stringify(socialLinks)
+      );
 
-        if (refreshError) {
-          console.warn("Could not refresh profile:", refreshError.message);
-        } else if (data) {
-          setProfile(data);
-          setUsername(data.username || "");
-          setFullName(data.full_name || "");
+      // Refresh the profile data
+      const { data, error: refreshError } = await supabase
+        .from("profiles")
+        .select("id, username, full_name, avatar_url")
+        .eq("id", user.id)
+        .single();
 
-          if (data.social_links) {
-            setInstagramLink(data.social_links.instagram || "");
-            setFacebookLink(data.social_links.facebook || "");
-            setXLink(data.social_links.x || "");
-          }
+      if (refreshError) throw refreshError;
 
-          setAvatarUrl(data.avatar_url || "");
-        }
-      } catch (refreshError) {
-        console.warn(
-          "Could not refresh profile with social_links:",
-          refreshError
-        );
-
-        // Fallback to fetching without social_links
-        try {
-          const { data, error: basicRefreshError } = await supabase
-            .from("profiles")
-            .select("id, username, full_name, avatar_url")
-            .eq("id", user.id)
-            .single();
-
-          if (basicRefreshError) {
-            console.warn(
-              "Could not refresh basic profile:",
-              basicRefreshError.message
-            );
-          } else if (data) {
-            setProfile({
-              ...data,
-              social_links: profile?.social_links || null,
-            });
-            setUsername(data.username || "");
-            setFullName(data.full_name || "");
-            setAvatarUrl(data.avatar_url || "");
-          }
-        } catch (err) {
-          console.error("Unexpected error refreshing basic profile:", err);
-        }
+      if (data) {
+        setProfile(data);
+        setUsername(data.username || "");
+        setFullName(data.full_name || "");
+        // Bio and social links are already set in state
+        setAvatarUrl(data.avatar_url || "");
       }
 
       setMessage("Profile updated successfully!");
@@ -344,6 +283,32 @@ export default function ProfilePage() {
       setLoading(false);
     }
   }
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) {
+      return;
+    }
+
+    const file = e.target.files[0];
+    setAvatarFile(file);
+
+    // Create a preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSocialLinkChange = (
+    platform: keyof SocialLinks,
+    value: string
+  ) => {
+    setSocialLinks((prev) => ({
+      ...prev,
+      [platform]: value,
+    }));
+  };
 
   const triggerFileInput = () => {
     if (fileInputRef.current) {
@@ -365,72 +330,6 @@ export default function ProfilePage() {
       day: "numeric",
       year: "numeric",
     });
-  };
-
-  // Helper to format social links for display
-  const formatSocialLinks = (links: any) => {
-    if (!links) return [];
-
-    const formattedLinks = [];
-
-    if (links.instagram) {
-      formattedLinks.push({
-        name: "Instagram",
-        url: links.instagram.startsWith("http")
-          ? links.instagram
-          : `https://instagram.com/${links.instagram}`,
-        icon: (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-          </svg>
-        ),
-      });
-    }
-
-    if (links.facebook) {
-      formattedLinks.push({
-        name: "Facebook",
-        url: links.facebook.startsWith("http")
-          ? links.facebook
-          : `https://facebook.com/${links.facebook}`,
-        icon: (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z" />
-          </svg>
-        ),
-      });
-    }
-
-    if (links.x) {
-      formattedLinks.push({
-        name: "X",
-        url: links.x.startsWith("http")
-          ? links.x
-          : `https://twitter.com/${links.x}`,
-        icon: (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
-          </svg>
-        ),
-      });
-    }
-
-    return formattedLinks;
   };
 
   // If still loading, show loading indicator
@@ -577,86 +476,112 @@ export default function ProfilePage() {
                 </p>
               </div>
 
-              {/* Social Media Links Section */}
-              <div className="border-t border-gray-200 pt-4 mt-4">
-                <h3 className="text-xl font-bold mb-3">Social Media Links</h3>
+              {/* Social Links Section */}
+              <div>
+                <h3 className="block text-gray-700 font-bold mb-2">
+                  Social Links
+                </h3>
+                <p className="text-sm text-gray-500 mb-3">
+                  Add your social media profiles (stored locally in your
+                  browser)
+                </p>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
                     <label
-                      className="block text-gray-700 font-bold mb-2"
-                      htmlFor="instagramLink"
+                      className="block text-gray-600 text-sm mb-1"
+                      htmlFor="twitter"
                     >
-                      Instagram
+                      Twitter
                     </label>
                     <div className="flex">
-                      <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                        instagram.com/
-                      </span>
-                      <input
-                        id="instagramLink"
-                        type="text"
-                        value={instagramLink}
-                        onChange={(e) => setInstagramLink(e.target.value)}
-                        className="flex-1 p-2 border rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        placeholder="username"
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Enter just your username or the full URL
-                    </p>
-                  </div>
-
-                  <div>
-                    <label
-                      className="block text-gray-700 font-bold mb-2"
-                      htmlFor="facebookLink"
-                    >
-                      Facebook
-                    </label>
-                    <div className="flex">
-                      <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                        facebook.com/
-                      </span>
-                      <input
-                        id="facebookLink"
-                        type="text"
-                        value={facebookLink}
-                        onChange={(e) => setFacebookLink(e.target.value)}
-                        className="flex-1 p-2 border rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        placeholder="username or page"
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Enter just your username or the full URL
-                    </p>
-                  </div>
-
-                  <div>
-                    <label
-                      className="block text-gray-700 font-bold mb-2"
-                      htmlFor="xLink"
-                    >
-                      X (Twitter)
-                    </label>
-                    <div className="flex">
-                      <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                      <span className="bg-gray-100 border border-r-0 border-gray-300 rounded-l-md px-3 py-2 text-gray-500">
                         twitter.com/
                       </span>
                       <input
-                        id="xLink"
+                        id="twitter"
                         type="text"
-                        value={xLink}
-                        onChange={(e) => setXLink(e.target.value)}
-                        className="flex-1 p-2 border rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        value={socialLinks.twitter}
+                        onChange={(e) =>
+                          handleSocialLinkChange("twitter", e.target.value)
+                        }
+                        className="flex-1 p-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-400"
                         placeholder="username"
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Enter just your username or the full URL
-                    </p>
+                  </div>
+
+                  <div>
+                    <label
+                      className="block text-gray-600 text-sm mb-1"
+                      htmlFor="github"
+                    >
+                      GitHub
+                    </label>
+                    <div className="flex">
+                      <span className="bg-gray-100 border border-r-0 border-gray-300 rounded-l-md px-3 py-2 text-gray-500">
+                        github.com/
+                      </span>
+                      <input
+                        id="github"
+                        type="text"
+                        value={socialLinks.github}
+                        onChange={(e) =>
+                          handleSocialLinkChange("github", e.target.value)
+                        }
+                        className="flex-1 p-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        placeholder="username"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      className="block text-gray-600 text-sm mb-1"
+                      htmlFor="linkedin"
+                    >
+                      LinkedIn
+                    </label>
+                    <div className="flex">
+                      <span className="bg-gray-100 border border-r-0 border-gray-300 rounded-l-md px-3 py-2 text-gray-500">
+                        linkedin.com/in/
+                      </span>
+                      <input
+                        id="linkedin"
+                        type="text"
+                        value={socialLinks.linkedin}
+                        onChange={(e) =>
+                          handleSocialLinkChange("linkedin", e.target.value)
+                        }
+                        className="flex-1 p-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        placeholder="username"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      className="block text-gray-600 text-sm mb-1"
+                      htmlFor="website"
+                    >
+                      Personal Website
+                    </label>
+                    <input
+                      id="website"
+                      type="url"
+                      value={socialLinks.website}
+                      onChange={(e) =>
+                        handleSocialLinkChange("website", e.target.value)
+                      }
+                      className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      placeholder="https://example.com"
+                    />
                   </div>
                 </div>
+                <p className="text-sm text-gray-500 mt-3">
+                  Social links will be stored locally in your browser until
+                  database is updated
+                </p>
               </div>
 
               <div>
@@ -770,20 +695,104 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              <div className="flex space-x-4">
-                {formatSocialLinks(profile.social_links).map((link, idx) => (
-                  <a
-                    key={idx}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center text-gray-700 hover:text-blue-600 transition-colors"
-                  >
-                    <span className="mr-2">{link.icon}</span>
-                    <span>{link.name}</span>
-                  </a>
-                ))}
-              </div>
+              {/* Social Links Display */}
+              {(socialLinks.twitter ||
+                socialLinks.github ||
+                socialLinks.linkedin ||
+                socialLinks.website) && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-2">Connect</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {socialLinks.twitter && (
+                      <a
+                        href={`https://twitter.com/${socialLinks.twitter}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-gray-700 hover:text-blue-500"
+                      >
+                        <svg
+                          className="w-5 h-5 mr-2"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+                        </svg>
+                        <span>@{socialLinks.twitter}</span>
+                      </a>
+                    )}
+
+                    {socialLinks.github && (
+                      <a
+                        href={`https://github.com/${socialLinks.github}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-gray-700 hover:text-gray-900"
+                      >
+                        <svg
+                          className="w-5 h-5 mr-2"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                            clipRule="evenodd"
+                          ></path>
+                        </svg>
+                        <span>{socialLinks.github}</span>
+                      </a>
+                    )}
+
+                    {socialLinks.linkedin && (
+                      <a
+                        href={`https://linkedin.com/in/${socialLinks.linkedin}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-gray-700 hover:text-blue-700"
+                      >
+                        <svg
+                          className="w-5 h-5 mr-2"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452z"></path>
+                        </svg>
+                        <span>{socialLinks.linkedin}</span>
+                      </a>
+                    )}
+
+                    {socialLinks.website && (
+                      <a
+                        href={
+                          socialLinks.website.startsWith("http")
+                            ? socialLinks.website
+                            : `https://${socialLinks.website}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-gray-700 hover:text-green-700"
+                      >
+                        <svg
+                          className="w-5 h-5 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+                          ></path>
+                        </svg>
+                        <span>
+                          {socialLinks.website.replace(/^https?:\/\//, "")}
+                        </span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Adding Follow Stats */}
               {user && (
