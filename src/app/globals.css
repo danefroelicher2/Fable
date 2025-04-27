@@ -338,3 +338,35 @@ body {
 .main-nav {
   z-index: 50 !important;
 }
+/* Add to src/app/globals.css */
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  /* Extra padding at bottom to account for mobile nav */
+  main {
+    padding-bottom: 5rem;
+  }
+
+  /* Adjust font sizes for better reading on mobile */
+  h1 {
+    font-size: 1.75rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Active state styling for mobile tabs */
+.mobile-tab-active {
+  color: #dc2626; /* red-600 */
+  font-weight: 600;
+}
+
+/* Transition effects for hover/active states */
+.nav-item-transition {
+  transition: all 0.2s ease-in-out;
+}
+.nav-item-transition:hover {
+  transform: scale(1.05);
+}
