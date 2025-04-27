@@ -1,3 +1,4 @@
+// src/app/page.tsx
 import Link from "next/link";
 import ThisDayInHistory from "@/components/ThisDayInHistory";
 import FanArticles from "@/components/FanArticles";
@@ -45,7 +46,7 @@ const historicalEras = [
 
 export default function Home() {
   return (
-    <div className="container mx-auto px-4">
+    <div className="container mx-auto px-4 pt-4">
       {/* This Day in History Widget */}
       <ThisDayInHistory />
 
