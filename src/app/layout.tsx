@@ -3,15 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
-import dynamic from "next/dynamic";
-
-// Dynamically import the client component so it loads on the client only
-const ClientSidebar = dynamic(
-  () => import("@/components/ClientSidebarContent"),
-  {
-    ssr: false,
-  }
-);
+import ClientSidebar from "@/components/ClientSidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

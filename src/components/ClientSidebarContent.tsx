@@ -23,7 +23,6 @@ export default function ClientSidebarContent() {
     { icon: "feed", label: "Community Feed", href: "/feed" },
   ];
 
-  // Function to determine if a nav item is active
   const isActive = (href: string) => {
     if (href === "/") {
       return pathname === "/";
@@ -31,9 +30,7 @@ export default function ClientSidebarContent() {
     return pathname?.startsWith(href);
   };
 
-  // Simple icon rendering function
   const renderIcon = (icon: string) => {
-    // Simple SVG for testing
     return (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -57,7 +54,6 @@ export default function ClientSidebarContent() {
       {/* Desktop Sidebar */}
       <div className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0">
         <div className="flex flex-col h-full py-5 px-4 border-r border-gray-200 bg-white overflow-y-auto">
-          {/* Logo */}
           <Link href="/" className="mb-8 text-center">
             <div className="bg-red-600 px-5 py-2 hover:bg-red-700 transition-colors mx-auto inline-block">
               <span className="text-2xl font-bold tracking-wide text-white">
@@ -66,7 +62,6 @@ export default function ClientSidebarContent() {
             </div>
           </Link>
 
-          {/* Navigation Items */}
           <nav className="flex-1 space-y-1">
             {navItems.map((item) => (
               <Link
@@ -82,7 +77,6 @@ export default function ClientSidebarContent() {
             ))}
           </nav>
 
-          {/* Write Button */}
           <Link
             href="/write"
             className="mt-4 bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-full font-bold text-center transition-colors flex items-center justify-center"
