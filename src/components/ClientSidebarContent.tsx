@@ -4,7 +4,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
-export default function ClientSidebar() {
+export default function ClientSidebarContent() {
   const pathname = usePathname();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -31,7 +31,7 @@ export default function ClientSidebar() {
     return pathname?.startsWith(href);
   };
 
-  // Render the appropriate icon based on the key
+  // Simple icon rendering function
   const renderIcon = (icon: string) => {
     // Simple SVG for testing
     return (

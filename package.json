@@ -13,9 +13,9 @@
     "@supabase/auth-ui-react": "^0.4.7",
     "@supabase/auth-ui-shared": "^0.1.8",
     "@supabase/supabase-js": "^2.49.3",
-    "next": "^15.4.0-canary.11",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "next": "^15.3.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "supabase-cli": "^0.0.21"
   },
   "devDependencies": {
@@ -26,7 +26,7 @@
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.16",
     "eslint": "^9",
-    "eslint-config-next": "15.2.4",
+    "eslint-config-next": "^15.3.1",
     "postcss": "^8.4.31",
     "tailwindcss": "^4",
     "typescript": "^5"

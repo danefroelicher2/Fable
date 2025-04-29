@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import ProfileDropdown from "./ProfileDropdown";
-import SearchBar from "./SearchBar";
+import SearchBar from "./ClientSidebarContent";
 
 export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
