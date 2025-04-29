@@ -3,9 +3,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
 
 export default function ProfileDropdown() {
   const { user } = useAuth();
@@ -69,26 +69,29 @@ export default function ProfileDropdown() {
   };
 
   if (!user) {
-    return (
-      <Link href="/signin" className="text-white hover:text-gray-300">
-        Sign In
-      </Link>
-    );
+    return null; // We handle non-authenticated state in SidebarNav
   }
 
+  // Safely get the email address, handling potential undefined
+  const userEmail = user?.email || "";
+
+  // Safely truncate email if needed
+  const displayEmail =
+    userEmail.length > 16 ? `${userEmail.substring(0, 16)}...` : userEmail;
+
+  // Safely get the first character of the email
+  const avatarInitial =
+    userEmail.length > 0 ? userEmail.charAt(0).toUpperCase() : "U";
+
   return (
-    <div
-      className="relative profile-dropdown-container"
-      ref={dropdownRef}
-      style={{ zIndex: 101 }}
-    >
+    <div className="relative" ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
-        className="flex items-center space-x-1 text-white focus:outline-none"
+        className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 rounded-md"
         aria-expanded={isDropdownOpen}
         aria-haspopup="true"
       >
-        <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-300 flex items-center justify-center text-gray-800 font-medium">
+        <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-300 flex items-center justify-center text-gray-800 font-medium mr-3">
           {profileData?.avatar_url ? (
             <img
               src={profileData.avatar_url}
@@ -96,11 +99,19 @@ export default function ProfileDropdown() {
               className="w-full h-full object-cover"
             />
           ) : (
-            user.email?.charAt(0).toUpperCase() || "U"
+            avatarInitial
           )}
         </div>
+        <div className="flex-1 text-left truncate">
+          <div className="font-medium">
+            {profileData?.full_name || profileData?.username || "Account"}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+            {displayEmail}
+          </div>
+        </div>
         <svg
-          className="h-5 w-5"
+          className="h-5 w-5 ml-2"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -115,21 +126,20 @@ export default function ProfileDropdown() {
       </button>
 
       {isDropdownOpen && (
-        <div
-          className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1"
-          style={{ zIndex: 100 }}
-        >
-          <div className="px-4 py-3 border-b">
-            <div className="font-medium text-gray-800">
+        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-10">
+          <div className="px-4 py-3 border-b dark:border-gray-700">
+            <div className="font-medium text-gray-800 dark:text-gray-200">
               {profileData?.full_name || profileData?.username || "Welcome!"}
             </div>
-            <div className="text-sm text-gray-500 truncate">{user.email}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+              {userEmail}
+            </div>
           </div>
 
           {/* Personal profile (manage your profile) */}
           <Link
             href="/profile"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 flex items-center"
             onClick={() => setIsDropdownOpen(false)}
           >
             <svg
@@ -153,7 +163,7 @@ export default function ProfileDropdown() {
           {user && (
             <Link
               href={`/user/${user.id}`}
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 flex items-center"
               onClick={() => setIsDropdownOpen(false)}
             >
               <svg
@@ -182,7 +192,7 @@ export default function ProfileDropdown() {
 
           <Link
             href="/profile/account-settings"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 flex items-center"
             onClick={() => setIsDropdownOpen(false)}
           >
             <svg
@@ -209,30 +219,8 @@ export default function ProfileDropdown() {
           </Link>
 
           <Link
-            href="/feed"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-            onClick={() => setIsDropdownOpen(false)}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
-              />
-            </svg>
-            Community Feed
-          </Link>
-
-          <Link
             href="/profile/drafts"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 flex items-center"
             onClick={() => setIsDropdownOpen(false)}
           >
             <svg
@@ -252,11 +240,11 @@ export default function ProfileDropdown() {
             Saved Drafts
           </Link>
 
-          <div className="border-t my-1"></div>
+          <div className="border-t my-1 dark:border-gray-700"></div>
 
           <button
             onClick={handleSignOut}
-            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-700 flex items-center"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

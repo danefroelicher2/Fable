@@ -1,6 +1,8 @@
+// src/components/ThisDayInHistory.tsx
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 interface HistoricalEvent {
   year: string;
@@ -20,7 +22,7 @@ export default function ThisDayInHistory() {
     setEvents(todaysEvents);
   }, []);
 
-  // Format date as "Month Day" (e.g., "March 27")
+  // Format date as "Month Day" (e.g., "April 29")
   const formattedDate = currentDate.toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
@@ -34,75 +36,45 @@ export default function ThisDayInHistory() {
     // Database of historical events by date
     const historicalEventsByDate: Record<string, HistoricalEvent[]> = {
       // Format: "month-day": [events]
-      "3-27": [
-        {
-          year: "1964",
-          description:
-            "The Great Alaskan Earthquake, the most powerful in North American history, strikes with a magnitude of 9.2",
-        },
-        {
-          year: "1977",
-          description:
-            "The deadliest aviation accident in history occurs at Tenerife Airport, killing 583 people",
-        },
-      ],
-      "3-28": [
-        {
-          year: "1979",
-          description:
-            "The Three Mile Island nuclear accident occurs near Harrisburg, Pennsylvania",
-        },
-        {
-          year: "1854",
-          description:
-            "Britain and France declare war on Russia, beginning the Crimean War",
-        },
-      ],
-      "3-29": [
-        {
-          year: "1973",
-          description:
-            "The last U.S. troops withdraw from Vietnam, ending America's direct military involvement",
-        },
-        {
-          year: "1974",
-          description:
-            "NASA's Mariner 10 becomes the first spacecraft to fly by Mercury",
-        },
-      ],
-      "3-30": [
-        {
-          year: "1981",
-          description:
-            "President Ronald Reagan is shot and wounded by John Hinckley Jr. in Washington, D.C.",
-        },
-        {
-          year: "1867",
-          description:
-            "The United States purchases Alaska from Russia for $7.2 million",
-        },
-      ],
-      "3-31": [
-        {
-          year: "1889",
-          description: "The Eiffel Tower is officially opened in Paris",
-        },
-        {
-          year: "1918",
-          description:
-            "Daylight Saving Time goes into effect for the first time in the United States",
-        },
-      ],
-      "4-1": [
-        {
-          year: "1976",
-          description:
-            "Apple Computer Company is formed by Steve Jobs and Steve Wozniak",
-        },
+      "4-29": [
         {
           year: "1945",
           description:
-            "The Battle of Okinawa begins, one of the largest amphibious assaults in the Pacific Theater",
+            "In World War II, American soldiers liberate the Dachau concentration camp.",
+        },
+        {
+          year: "1975",
+          description:
+            "Operation Frequent Wind, the U.S. evacuation of Saigon, begins as North Vietnamese forces advance on the city.",
+        },
+        {
+          year: "1992",
+          description:
+            "Riots break out in Los Angeles following the acquittal of police officers charged with excessive force in the beating of Rodney King.",
+        },
+      ],
+      "4-28": [
+        {
+          year: "1789",
+          description:
+            "Mutiny on the HMS Bounty: Lieutenant William Bligh and 18 sailors are set adrift by the rebellious crew led by Fletcher Christian.",
+        },
+        {
+          year: "1947",
+          description:
+            "Thor Heyerdahl and five crew members set out from Peru on the Kon-Tiki to prove that Polynesians could have traveled from South America.",
+        },
+      ],
+      "4-30": [
+        {
+          year: "1789",
+          description:
+            "George Washington is inaugurated as the first President of the United States.",
+        },
+        {
+          year: "1975",
+          description:
+            "Fall of Saigon: The Vietnam War ends as Communist forces take Saigon, leading to the eventual reunification of Vietnam.",
         },
       ],
       // Add more dates as needed
@@ -115,7 +87,7 @@ export default function ThisDayInHistory() {
     return (
       historicalEventsByDate[dateKey] || [
         {
-          year: currentDate.getFullYear().toString(),
+          year: "2025",
           description: "No major historical events recorded for today",
         },
         {
@@ -127,10 +99,10 @@ export default function ThisDayInHistory() {
   };
 
   return (
-    <section className="bg-amber-50 p-4 rounded-lg mb-8 shadow-md">
+    <section className="bg-amber-50 dark:bg-amber-950 p-6 rounded-lg mb-8 shadow-md">
       <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-3">
-          <h2 className="text-2xl font-bold text-slate-800">
+        <div className="text-center mb-5">
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-amber-100">
             This Day in History: {formattedDate}
           </h2>
         </div>
@@ -139,22 +111,24 @@ export default function ThisDayInHistory() {
           {events.map((event, index) => (
             <div
               key={index}
-              className="bg-white p-3 rounded-lg shadow hover:shadow-md transition-shadow border-l-4 border-blue-600"
+              className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow hover:shadow-md transition-shadow border-l-4 border-blue-600 dark:border-blue-500"
             >
               {event.year && (
-                <div className="text-lg font-bold text-blue-800 mb-1">
+                <div className="text-lg font-bold text-blue-800 dark:text-blue-400 mb-1">
                   {event.year}
                 </div>
               )}
-              <p className="text-slate-700 text-sm">{event.description}</p>
+              <p className="text-slate-700 dark:text-slate-200 text-sm">
+                {event.description}
+              </p>
             </div>
           ))}
         </div>
 
-        <div className="mt-3 text-center">
-          <a
+        <div className="mt-4 text-center">
+          <Link
             href="/history/on-this-day"
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium inline-flex items-center"
           >
             More historical events
             <svg
@@ -169,7 +143,7 @@ export default function ThisDayInHistory() {
                 clipRule="evenodd"
               />
             </svg>
-          </a>
+          </Link>
         </div>
       </div>
     </section>
