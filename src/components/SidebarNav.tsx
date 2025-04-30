@@ -12,8 +12,8 @@ export default function SidebarNav() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const [profileData, setProfileData] = useState<any>(null);
-  const [showSettingsPopup, setShowSettingsPopup] = useState(false);
-  const settingsPopupRef = useRef<HTMLDivElement>(null);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch user profile data for the avatar
   useEffect(() => {
@@ -41,10 +41,10 @@ export default function SidebarNav() {
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
-        settingsPopupRef.current &&
-        !settingsPopupRef.current.contains(event.target as Node)
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(event.target as Node)
       ) {
-        setShowSettingsPopup(false);
+        setShowProfileDropdown(false);
       }
     }
 
@@ -77,7 +77,7 @@ export default function SidebarNav() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      setShowSettingsPopup(false);
+      setShowProfileDropdown(false);
       router.push("/");
     } catch (error) {
       console.error("Error signing out:", error);
@@ -286,9 +286,10 @@ export default function SidebarNav() {
             {user ? (
               /* If user is signed in, show profile section with dropdown */
               <div className="relative">
-                <Link
-                  href="/profile"
-                  className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                {/* Profile button that toggles dropdown */}
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                 >
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-300 flex items-center justify-center text-gray-800 font-medium mr-3">
                     {profileData?.avatar_url ? (
@@ -313,33 +314,45 @@ export default function SidebarNav() {
                         : user?.email}
                     </div>
                   </div>
-                </Link>
-
-                {/* Settings button */}
-                <button
-                  onClick={() => setShowSettingsPopup(!showSettingsPopup)}
-                  className="mt-2 flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-                >
-                  <span className="mr-3">{renderIcon("settings")}</span>
-                  Settings
+                  {/* Add dropdown arrow */}
+                  <svg
+                    className="ml-1 h-5 w-5 text-gray-400"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
                 </button>
 
-                {/* Settings Popup */}
-                {showSettingsPopup && (
+                {/* Profile Dropdown */}
+                {showProfileDropdown && (
                   <div
-                    ref={settingsPopupRef}
+                    ref={profileDropdownRef}
                     className="absolute left-0 bottom-full mb-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-10 overflow-hidden"
                   >
                     <div className="border-b border-gray-200 dark:border-gray-700 py-2 px-4">
                       <h3 className="font-medium text-gray-900 dark:text-white">
-                        Settings
+                        Account
                       </h3>
                     </div>
                     <div className="py-2">
                       <Link
+                        href="/profile"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                        onClick={() => setShowProfileDropdown(false)}
+                      >
+                        Manage Profile
+                      </Link>
+                      <Link
                         href="/profile/account-settings"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                        onClick={() => setShowSettingsPopup(false)}
+                        onClick={() => setShowProfileDropdown(false)}
                       >
                         Account Settings
                       </Link>
