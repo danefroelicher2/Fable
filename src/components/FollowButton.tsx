@@ -60,56 +60,70 @@ export default function FollowButton({
     checkFollowStatus();
   }, [user, targetUserId]);
 
-  // Function to handle follow/unfollow
-  async function handleFollowToggle() {
-    if (!user) {
-      // Redirect to sign in page
-      router.push(
-        `/signin?redirect=${encodeURIComponent(window.location.pathname)}`
-      );
-      return;
-    }
+// Add this to your FollowButton.tsx
+async function handleFollowToggle() {
+  if (!user) {
+    // Redirect to sign in page
+    router.push(
+      `/signin?redirect=${encodeURIComponent(window.location.pathname)}`
+    );
+    return;
+  }
 
-    if (isLoading || checkingFollowStatus) return;
+  if (isLoading || checkingFollowStatus) return;
 
-    // Don't allow following yourself
-    if (user.id === targetUserId) {
-      return;
-    }
+  // Don't allow following yourself
+  if (user.id === targetUserId) {
+    return;
+  }
 
-    setIsLoading(true);
-    try {
-      if (isFollowing) {
-        // Unfollow
-        const { error } = await (supabase as any)
-          .from("follows")
-          .delete()
-          .eq("follower_id", user.id)
-          .eq("following_id", targetUserId);
+  setIsLoading(true);
+  try {
+    if (isFollowing) {
+      // Unfollow
+      const { error } = await (supabase as any)
+        .from("follows")
+        .delete()
+        .eq("follower_id", user.id)
+        .eq("following_id", targetUserId);
 
-        if (error) throw error;
+      if (error) throw error;
 
-        setIsFollowing(false);
-        if (onFollowChange) onFollowChange(false);
-      } else {
-        // Follow
-        const { error } = await (supabase as any).from("follows").insert({
-          follower_id: user.id,
-          following_id: targetUserId,
+      setIsFollowing(false);
+      if (onFollowChange) onFollowChange(false);
+    } else {
+      // Follow
+      const { error } = await (supabase as any).from("follows").insert({
+        follower_id: user.id,
+        following_id: targetUserId,
+        created_at: new Date().toISOString(),
+      });
+
+      if (error) throw error;
+
+      // Create a notification for the target user
+      const { error: notificationError } = await (supabase as any)
+        .from("notifications")
+        .insert({
+          user_id: targetUserId,
+          action_type: "follow",
+          action_user_id: user.id,
           created_at: new Date().toISOString(),
         });
 
-        if (error) throw error;
-
-        setIsFollowing(true);
-        if (onFollowChange) onFollowChange(true);
+      if (notificationError) {
+        console.error("Error creating follow notification:", notificationError);
       }
-    } catch (error) {
-      console.error("Error toggling follow:", error);
-    } finally {
-      setIsLoading(false);
+
+      setIsFollowing(true);
+      if (onFollowChange) onFollowChange(true);
     }
+  } catch (error) {
+    console.error("Error toggling follow:", error);
+  } finally {
+    setIsLoading(false);
   }
+}
 
   // Don't render button if it's the user's own profile or if we're still checking
   if (user?.id === targetUserId) {

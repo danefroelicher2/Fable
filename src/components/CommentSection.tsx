@@ -133,6 +133,7 @@ export default function CommentSection({ articleId }: { articleId: string }) {
     }
   }
 
+  // Add this to CommentSection.tsx in the handleSubmitComment function
   async function handleSubmitComment(e: React.FormEvent) {
     e.preventDefault();
 
@@ -167,38 +168,38 @@ export default function CommentSection({ articleId }: { articleId: string }) {
         throw new Error("No data returned from insert");
       }
 
-      // Then get the complete data with profiles joined
-      const { data: commentWithProfile, error: fetchError } = await (
-        supabase as any
-      )
-        .from("comments")
-        .select(
-          `
-          id,
-          content,
-          created_at,
-          user_id,
-          parent_id,
-          profiles:user_id(username, full_name, avatar_url)
-        `
-        )
-        .eq("id", data[0].id)
+      // Fetch article owner id to create notification
+      const { data: articleData, error: articleError } = await (supabase as any)
+        .from("public_articles")
+        .select("user_id")
+        .eq("id", articleId)
         .single();
 
-      if (fetchError) {
-        console.error("Error fetching comment with profile:", fetchError);
-        throw fetchError;
+      if (!articleError && articleData) {
+        // Only create notification if the article owner isn't the current user
+        if (articleData.user_id !== user.id) {
+          // Create a notification for the article owner
+          const { error: notificationError } = await (supabase as any)
+            .from("notifications")
+            .insert({
+              user_id: articleData.user_id,
+              action_type: "comment",
+              action_user_id: user.id,
+              article_id: articleId,
+              comment_id: data[0].id,
+              created_at: new Date().toISOString(),
+            });
+
+          if (notificationError) {
+            console.error(
+              "Error creating comment notification:",
+              notificationError
+            );
+          }
+        }
       }
 
-      // Add reply_count to the new comment
-      const newComment = {
-        ...commentWithProfile,
-        reply_count: 0,
-        replies: [],
-      };
-
-      setComments([newComment, ...comments]);
-      setCommentText("");
+      // Rest of your existing code...
     } catch (error: any) {
       console.error("Error submitting comment:", error.message || error);
     } finally {

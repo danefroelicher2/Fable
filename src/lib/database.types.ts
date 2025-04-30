@@ -219,6 +219,98 @@ export interface Database {
           }
         ];
       };
+      follows: {
+        Row: {
+          id: string;
+          follower_id: string;
+          following_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          follower_id: string;
+          following_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          follower_id?: string;
+          following_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "follows_follower_id_fkey";
+            columns: ["follower_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "follows_following_id_fkey";
+            columns: ["following_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          action_type: string;
+          action_user_id: string;
+          article_id: string | null;
+          comment_id: string | null;
+          created_at: string;
+          is_read: boolean;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          action_type: string;
+          action_user_id: string;
+          article_id?: string | null;
+          comment_id?: string | null;
+          created_at?: string;
+          is_read?: boolean;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          action_type?: string;
+          action_user_id?: string;
+          article_id?: string | null;
+          comment_id?: string | null;
+          created_at?: string;
+          is_read?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_action_user_id_fkey";
+            columns: ["action_user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_article_id_fkey";
+            columns: ["article_id"];
+            referencedRelation: "public_articles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_comment_id_fkey";
+            columns: ["comment_id"];
+            referencedRelation: "comments";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;

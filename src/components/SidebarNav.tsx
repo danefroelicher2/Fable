@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
+import NotificationBadge from "./NotificationBadge";
 
 export default function SidebarNav() {
   const router = useRouter();
@@ -277,6 +278,11 @@ export default function SidebarNav() {
               >
                 <span className="mr-3">{renderIcon(item.icon)}</span>
                 {item.label}
+                {item.icon === "notification" && (
+                  <div className="relative">
+                    <NotificationBadge className="h-5 w-5 ml-2 absolute -top-1 -right-1" />
+                  </div>
+                )}
               </Link>
             ))}
           </nav>
@@ -428,7 +434,12 @@ export default function SidebarNav() {
                   : "text-gray-700 dark:text-gray-300"
               }`}
             >
-              <span className="h-5 w-5">{renderIcon(item.icon)}</span>
+              <span className="h-5 w-5 relative">
+                {renderIcon(item.icon)}
+                {item.icon === "notification" && (
+                  <NotificationBadge className="h-4 w-4 absolute -top-1 -right-1" />
+                )}
+              </span>
               <span className="text-xs mt-1">{item.label.split(" ")[0]}</span>
             </Link>
           ))}
