@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { setupNotificationsTable } from "@/lib/setupDatabase";
 
 interface FollowButtonProps {
   targetUserId: string;
@@ -100,48 +101,41 @@ export default function FollowButton({
 
         if (error) throw error;
 
-        // Create notification - let's not check if the table exists with system tables
-        // Instead, just try to create the notification and handle any errors gracefully
+        // Try to create a notification
         try {
-          // Based on your database.types.ts, create a notification with all required fields
           const notificationData = {
             user_id: targetUserId,
             action_type: "follow",
             action_user_id: user.id,
             created_at: new Date().toISOString(),
             is_read: false,
-            // These might be nullable but let's set them explicitly
             article_id: null,
             comment_id: null,
           };
 
-          // Log the data we're trying to insert for debugging
-          console.log(
-            "Attempting to create notification with data:",
-            notificationData
-          );
-
+          // Try to insert notification
           const { data, error: notificationError } = await (supabase as any)
             .from("notifications")
             .insert(notificationData);
 
+          // If we get an error, check if it's because the table doesn't exist
           if (notificationError) {
-            // Better error logging with full details
             console.error(
-              "Error creating follow notification:",
+              "Error creating notification:",
               notificationError.message || JSON.stringify(notificationError)
             );
+
+            // Check if the notifications table exists
+            const tableStatus = await setupNotificationsTable();
+
+            if (!tableStatus.success) {
+              console.warn(tableStatus.message);
+            }
           } else {
             console.log("Notification created successfully");
           }
         } catch (notifyError) {
-          // Log any exceptions that might occur
-          console.warn(
-            "Exception when creating notification:",
-            notifyError instanceof Error
-              ? notifyError.message
-              : String(notifyError)
-          );
+          console.warn("Exception when creating notification:", notifyError);
         }
 
         setIsFollowing(true);
