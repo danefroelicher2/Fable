@@ -132,8 +132,70 @@ export default function CommentSection({ articleId }: { articleId: string }) {
       return [];
     }
   }
+  // Add this helper function to your CommentSection component
+  async function createNotification(
+    userId: string,
+    actionType: string,
+    articleId: string,
+    commentId: string
+  ) {
+    try {
+      // Create a notification for the article owner
+      const { error: notificationError } = await (supabase as any)
+        .from("notifications")
+        .insert({
+          user_id: userId,
+          action_type: actionType,
+          action_user_id: user!.id,
+          article_id: articleId,
+          comment_id: commentId,
+          created_at: new Date().toISOString(),
+          is_read: false, // Make sure this field is included if required
+        });
 
-  // Add this to CommentSection.tsx in the handleSubmitComment function
+      if (notificationError) {
+        // More detailed error logging
+        console.error(
+          "Error creating notification:",
+          JSON.stringify(notificationError)
+        );
+      }
+      return { success: !notificationError };
+    } catch (err) {
+      console.error("Exception in notification creation:", err);
+      return { success: false, error: err };
+    }
+  }
+  // Add this effect to your component
+  useEffect(() => {
+    if (articleId) {
+      fetchComments();
+
+      // Set up a realtime subscription for new comments
+      const commentsChannel = supabase
+        .channel(`article-comments-${articleId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "comments",
+            filter: `article_id=eq.${articleId}`,
+          },
+          (payload) => {
+            if (payload.new.user_id !== user?.id) {
+              fetchComments();
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(commentsChannel);
+      };
+    }
+  }, [articleId, user]);
+
   async function handleSubmitComment(e: React.FormEvent) {
     e.preventDefault();
 
@@ -168,38 +230,61 @@ export default function CommentSection({ articleId }: { articleId: string }) {
         throw new Error("No data returned from insert");
       }
 
-      // Fetch article owner id to create notification
+      // Fetch the newly created comment with the profile data
+      const { data: commentWithProfile, error: profileError } = await (
+        supabase as any
+      )
+        .from("comments")
+        .select(
+          `
+        id, 
+        content, 
+        created_at, 
+        user_id, 
+        parent_id,
+        profiles:user_id(username, full_name, avatar_url)
+      `
+        )
+        .eq("id", data[0].id)
+        .single();
+
+      if (profileError) {
+        console.error("Error fetching comment with profile:", profileError);
+      }
+
       const { data: articleData, error: articleError } = await (supabase as any)
         .from("public_articles")
         .select("user_id")
         .eq("id", articleId)
         .single();
 
+      // In handleSubmitComment, replace the notification creation logic with:
       if (!articleError && articleData) {
         // Only create notification if the article owner isn't the current user
         if (articleData.user_id !== user.id) {
-          // Create a notification for the article owner
-          const { error: notificationError } = await (supabase as any)
-            .from("notifications")
-            .insert({
-              user_id: articleData.user_id,
-              action_type: "comment",
-              action_user_id: user.id,
-              article_id: articleId,
-              comment_id: data[0].id,
-              created_at: new Date().toISOString(),
-            });
-
-          if (notificationError) {
-            console.error(
-              "Error creating comment notification:",
-              notificationError
-            );
-          }
+          await createNotification(
+            articleData.user_id,
+            "comment",
+            articleId,
+            data[0].id
+          );
         }
       }
 
-      // Rest of your existing code...
+      // Add the new comment to the state
+      if (commentWithProfile) {
+        setComments((prevComments) => [
+          {
+            ...commentWithProfile,
+            replies: [],
+            reply_count: 0,
+          },
+          ...prevComments,
+        ]);
+      }
+
+      // Clear the comment text
+      setCommentText("");
     } catch (error: any) {
       console.error("Error submitting comment:", error.message || error);
     } finally {
@@ -207,6 +292,7 @@ export default function CommentSection({ articleId }: { articleId: string }) {
     }
   }
 
+  // Improvements for handleSubmitReply function to ensure replies show immediately
   async function handleSubmitReply(parentId: string) {
     if (!user) {
       router.push(
@@ -246,13 +332,13 @@ export default function CommentSection({ articleId }: { articleId: string }) {
         .from("comments")
         .select(
           `
-          id,
-          content,
-          created_at,
-          user_id,
-          parent_id,
-          profiles:user_id(username, full_name, avatar_url)
-        `
+        id,
+        content,
+        created_at,
+        user_id,
+        parent_id,
+        profiles:user_id(username, full_name, avatar_url)
+      `
         )
         .eq("id", data[0].id)
         .single();
@@ -262,28 +348,39 @@ export default function CommentSection({ articleId }: { articleId: string }) {
         throw fetchError;
       }
 
-      // Update the parent comment with the new reply
-      setComments((prevComments) =>
-        prevComments.map((comment) => {
-          if (comment.id === parentId) {
-            // If replies are already loaded, add the new reply
-            if (comment.replies && comment.replies.length > 0) {
-              return {
-                ...comment,
-                replies: [...comment.replies, replyWithProfile],
-                reply_count: (comment.reply_count || 0) + 1,
-              };
-            } else {
-              // Just increment the count if replies aren't loaded
-              return {
-                ...comment,
-                reply_count: (comment.reply_count || 0) + 1,
-              };
+      // Find the comment being replied to
+      const parentComment = comments.find((c) => c.id === parentId);
+      if (parentComment) {
+        // Make sure we expand replies for the parent comment
+        setExpandedReplies((prev) => ({
+          ...prev,
+          [parentId]: true,
+        }));
+
+        // Update the parent comment with the new reply
+        setComments((prevComments) =>
+          prevComments.map((comment) => {
+            if (comment.id === parentId) {
+              // If replies are already loaded, add the new reply
+              if (comment.replies && comment.replies.length > 0) {
+                return {
+                  ...comment,
+                  replies: [...comment.replies, replyWithProfile],
+                  reply_count: (comment.reply_count || 0) + 1,
+                };
+              } else {
+                // If no replies are loaded yet, initialize with this reply
+                return {
+                  ...comment,
+                  replies: [replyWithProfile],
+                  reply_count: (comment.reply_count || 0) + 1,
+                };
+              }
             }
-          }
-          return comment;
-        })
-      );
+            return comment;
+          })
+        );
+      }
 
       // Clear the reply form and close it
       setReplyText("");
