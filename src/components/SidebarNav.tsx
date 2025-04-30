@@ -1,25 +1,67 @@
 // src/components/SidebarNav.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import ProfileDropdown from "./ProfileDropdown";
+import { supabase } from "@/lib/supabase";
 
 export default function SidebarNav() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user } = useAuth();
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const [profileData, setProfileData] = useState<any>(null);
+  const [showSettingsPopup, setShowSettingsPopup] = useState(false);
+  const settingsPopupRef = useRef<HTMLDivElement>(null);
+
+  // Fetch user profile data for the avatar
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("avatar_url, username, full_name")
+          .eq("id", user.id)
+          .single();
+
+        if (!error && data) {
+          setProfileData(data);
+        }
+      } catch (error) {
+        console.error("Error fetching profile data:", error);
+      }
+    };
+    fetchProfileData();
+  }, [user]);
+
+  // Handle clicks outside of dropdown to close it
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        settingsPopupRef.current &&
+        !settingsPopupRef.current.contains(event.target as Node)
+      ) {
+        setShowSettingsPopup(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Updated navigation items
   const navItems = [
     { icon: "home", label: "Home", href: "/" },
+    { icon: "premium", label: "Premium", href: "/premium" },
     { icon: "notification", label: "Notifications", href: "/notifications" },
     { icon: "communities", label: "Communities", href: "/communities" },
     { icon: "bookmark", label: "Bookmarks", href: "/bookmarks" },
-    { icon: "premium", label: "Premium", href: "/premium" },
+    { icon: "drafts", label: "Saved Drafts", href: "/profile/drafts" },
     { icon: "feed", label: "Community Feed", href: "/feed" },
   ];
 
@@ -29,6 +71,17 @@ export default function SidebarNav() {
       return pathname === "/";
     }
     return pathname?.startsWith(href);
+  };
+
+  // Handle signing out
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      setShowSettingsPopup(false);
+      router.push("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   // Render the appropriate icon based on the key
@@ -119,6 +172,46 @@ export default function SidebarNav() {
             />
           </svg>
         );
+      case "settings":
+        return (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+          </svg>
+        );
+      case "drafts":
+        return (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            />
+          </svg>
+        );
       case "feed":
         return (
           <svg
@@ -188,55 +281,100 @@ export default function SidebarNav() {
             ))}
           </nav>
 
-          {/* User Section */}
+          {/* User Section at bottom */}
           <div className="pt-4 mt-auto border-t border-gray-200 dark:border-gray-700">
             {user ? (
-              /* If user is signed in, show ProfileDropdown */
-              <ProfileDropdown />
-            ) : (
-              /* If not signed in, show sign in button */
-              <div className="flex flex-col space-y-2">
+              /* If user is signed in, show profile section with dropdown */
+              <div className="relative">
                 <Link
-                  href="/signin"
+                  href="/profile"
                   className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 mr-3"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
-                    />
-                  </svg>
-                  Sign In
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-300 flex items-center justify-center text-gray-800 font-medium mr-3">
+                    {profileData?.avatar_url ? (
+                      <img
+                        src={profileData.avatar_url}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      user?.email?.charAt(0).toUpperCase() || "U"
+                    )}
+                  </div>
+                  <div className="flex-1 text-left truncate">
+                    <div className="font-medium">
+                      {profileData?.full_name ||
+                        profileData?.username ||
+                        "Profile"}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {user?.email && user.email.length > 18
+                        ? `${user.email.substring(0, 18)}...`
+                        : user?.email}
+                    </div>
+                  </div>
                 </Link>
-                <Link
-                  href="/signin"
-                  className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+
+                {/* Settings button */}
+                <button
+                  onClick={() => setShowSettingsPopup(!showSettingsPopup)}
+                  className="mt-2 flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 mr-3"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                  <span className="mr-3">{renderIcon("settings")}</span>
+                  Settings
+                </button>
+
+                {/* Settings Popup */}
+                {showSettingsPopup && (
+                  <div
+                    ref={settingsPopupRef}
+                    className="absolute left-0 bottom-full mb-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-10 overflow-hidden"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-                    />
-                  </svg>
-                  Create Account
-                </Link>
+                    <div className="border-b border-gray-200 dark:border-gray-700 py-2 px-4">
+                      <h3 className="font-medium text-gray-900 dark:text-white">
+                        Settings
+                      </h3>
+                    </div>
+                    <div className="py-2">
+                      <Link
+                        href="/profile/account-settings"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                        onClick={() => setShowSettingsPopup(false)}
+                      >
+                        Account Settings
+                      </Link>
+                      <button
+                        onClick={handleSignOut}
+                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-700"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
+            ) : (
+              /* If not signed in, show sign in link */
+              <Link
+                href="/signin"
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+                  />
+                </svg>
+                Sign In
+              </Link>
             )}
           </div>
 
