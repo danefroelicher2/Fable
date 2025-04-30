@@ -4,14 +4,18 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { usePathname } from "next/navigation";
 
 interface NotificationBadgeProps {
   className?: string;
 }
 
-export default function NotificationBadge({ className = "" }: NotificationBadgeProps) {
+export default function NotificationBadge({
+  className = "",
+}: NotificationBadgeProps) {
   const { user } = useAuth();
   const [count, setCount] = useState(0);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!user) {
@@ -22,15 +26,20 @@ export default function NotificationBadge({ className = "" }: NotificationBadgeP
     // Fetch unread notification count
     fetchNotificationCount();
 
+    // Auto-dismiss when user visits the notifications page
+    if (pathname === "/notifications" && count > 0) {
+      markAllAsRead();
+    }
+
     // Set up real-time subscription for notifications
     const subscription = supabase
-      .channel('notification_count')
+      .channel("notification_count")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
+          event: "*",
+          schema: "public",
+          table: "notifications",
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
@@ -42,7 +51,7 @@ export default function NotificationBadge({ className = "" }: NotificationBadgeP
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [user]);
+  }, [user, pathname, count]);
 
   async function fetchNotificationCount() {
     try {
@@ -61,10 +70,32 @@ export default function NotificationBadge({ className = "" }: NotificationBadgeP
     }
   }
 
+  async function markAllAsRead() {
+    try {
+      if (!user) return;
+
+      // Update all notifications for the user to read
+      const { error } = await (supabase as any)
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("user_id", user.id)
+        .eq("is_read", false);
+
+      if (error) throw error;
+
+      // Update local state
+      setCount(0);
+    } catch (err) {
+      console.error("Error marking notifications as read:", err);
+    }
+  }
+
   if (count === 0) return null;
 
   return (
-    <div className={`bg-red-600 text-white text-xs rounded-full flex items-center justify-center ${className}`}>
+    <div
+      className={`bg-red-600 text-white text-xs rounded-full flex items-center justify-center ${className}`}
+    >
       {count > 99 ? "99+" : count}
     </div>
   );
