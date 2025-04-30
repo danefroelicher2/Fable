@@ -100,42 +100,49 @@ export default function FollowButton({
 
         if (error) throw error;
 
-        // Try to create a notification, but don't let it block follow functionality
+        // Try to create a notification with more sophisticated error handling
         try {
-          // First check if the notifications table exists by doing a minimal select
-          const { count, error: countError } = await (supabase as any)
+          // Log the structure we're attempting to insert for debugging
+          const notificationData = {
+            user_id: targetUserId,
+            action_type: "follow",
+            action_user_id: user.id,
+            created_at: new Date().toISOString(),
+            // Add default values for potentially required fields
+            is_read: false,
+            // Set article_id and comment_id to null since this is a follow notification
+            article_id: null,
+            comment_id: null,
+          };
+
+          console.log("Attempting to insert notification:", notificationData);
+
+          const { data: notifData, error: notificationError } = await (
+            supabase as any
+          )
             .from("notifications")
-            .select("id", { count: "exact", head: true })
-            .limit(1);
+            .insert(notificationData)
+            .select();
 
-          // Only attempt to create notification if table query succeeded
-          if (!countError) {
-            const { error: notificationError } = await (supabase as any)
-              .from("notifications")
-              .insert({
-                user_id: targetUserId,
-                action_type: "follow",
-                action_user_id: user.id,
-                created_at: new Date().toISOString(),
-              });
+          if (notificationError) {
+            console.error(
+              "Error creating follow notification:",
+              JSON.stringify(notificationError, null, 2)
+            );
 
-            if (notificationError) {
-              console.error(
-                "Error creating follow notification:",
-                JSON.stringify(notificationError)
-              );
+            // Additional diagnostics
+            const { data: tableInfo, error: tableError } = await (
+              supabase as any
+            ).rpc("get_table_definition", { table_name: "notifications" });
+
+            if (!tableError && tableInfo) {
+              console.log("Notifications table structure:", tableInfo);
             }
           } else {
-            console.warn(
-              "Notifications table may not exist, skipping notification creation"
-            );
+            console.log("Notification created successfully:", notifData);
           }
         } catch (notifyError) {
-          // Don't let notification errors interfere with the main follow functionality
-          console.warn(
-            "Could not create notification, but follow was successful:",
-            notifyError
-          );
+          console.warn("Exception creating notification:", notifyError);
         }
 
         setIsFollowing(true);
