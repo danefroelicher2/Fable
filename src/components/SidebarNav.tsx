@@ -56,20 +56,16 @@ export default function SidebarNav() {
   }, []);
 
   // Updated navItems in src/components/SidebarNav.tsx
+  // Updated navItems in SidebarNav.tsx
   const navItems = [
     { icon: "home", label: "Home", href: "/" },
-    { icon: "search", label: "Search", href: "/search" }, // New search item
-    { icon: "us", label: "U.S.", href: "/us" },
-    { icon: "world", label: "World", href: "/world" },
-    { icon: "eras", label: "Eras & Ages", href: "/eras-ages" },
-    {
-      icon: "science",
-      label: "Science & Innovation",
-      href: "/science-innovation",
-    },
-    { icon: "culture", label: "Culture", href: "/culture" },
-    { icon: "honor", label: "HISTORY Honors 250", href: "/history-honors-250" },
+    { icon: "search", label: "Search", href: "/search" }, // Keeping the search feature
+    { icon: "notification", label: "Notifications", href: "/notifications" },
+    { icon: "communities", label: "Communities", href: "/communities" },
+    { icon: "bookmark", label: "Bookmarks", href: "/bookmarks" },
+    { icon: "premium", label: "Premium", href: "/premium" },
     { icon: "feed", label: "Community Feed", href: "/feed" },
+    { icon: "drafts", label: "Drafts", href: "/profile/drafts" },
   ];
 
   // Function to determine if a nav item is active
