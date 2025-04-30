@@ -55,14 +55,20 @@ export default function SidebarNav() {
     };
   }, []);
 
-  // Updated navigation items
+  // Updated navItems in src/components/SidebarNav.tsx
   const navItems = [
     { icon: "home", label: "Home", href: "/" },
-    { icon: "premium", label: "Premium", href: "/premium" },
-    { icon: "notification", label: "Notifications", href: "/notifications" },
-    { icon: "communities", label: "Communities", href: "/communities" },
-    { icon: "bookmark", label: "Bookmarks", href: "/bookmarks" },
-    { icon: "drafts", label: "Saved Drafts", href: "/profile/drafts" },
+    { icon: "search", label: "Search", href: "/search" }, // New search item
+    { icon: "us", label: "U.S.", href: "/us" },
+    { icon: "world", label: "World", href: "/world" },
+    { icon: "eras", label: "Eras & Ages", href: "/eras-ages" },
+    {
+      icon: "science",
+      label: "Science & Innovation",
+      href: "/science-innovation",
+    },
+    { icon: "culture", label: "Culture", href: "/culture" },
+    { icon: "honor", label: "HISTORY Honors 250", href: "/history-honors-250" },
     { icon: "feed", label: "Community Feed", href: "/feed" },
   ];
 
@@ -170,6 +176,24 @@ export default function SidebarNav() {
               strokeLinejoin="round"
               strokeWidth={2}
               d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            />
+          </svg>
+        );
+      // Add this case to the renderIcon function in SidebarNav.tsx
+      case "search":
+        return (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             />
           </svg>
         );
