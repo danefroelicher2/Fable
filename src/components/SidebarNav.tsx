@@ -55,7 +55,7 @@ export default function SidebarNav() {
     };
   }, []);
 
-  // Updated navItems with Home removed, and Search + Profile at the top
+  // Updated navItems with "Drafts" removed
   const navItems = [
     { icon: "search", label: "Search", href: "/search" },
     { icon: "profile", label: "Profile", href: "/profile" },
@@ -64,7 +64,6 @@ export default function SidebarNav() {
     { icon: "bookmark", label: "Bookmarks", href: "/bookmarks" },
     { icon: "premium", label: "Premium", href: "/premium" },
     { icon: "feed", label: "Community Feed", href: "/feed" },
-    { icon: "drafts", label: "Drafts", href: "/profile/drafts" },
   ];
 
   // Function to determine if a nav item is active
@@ -379,6 +378,17 @@ export default function SidebarNav() {
                         onClick={() => setShowProfileDropdown(false)}
                       >
                         Account Settings
+                      </Link>
+                      {/* Added Saved Drafts link to dropdown */}
+                      <Link
+                        href="/profile/drafts"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                        onClick={() => setShowProfileDropdown(false)}
+                      >
+                        <div className="flex items-center">
+                          {renderIcon("drafts")}
+                          <span className="ml-2">Saved Drafts</span>
+                        </div>
                       </Link>
                       <button
                         onClick={handleSignOut}
