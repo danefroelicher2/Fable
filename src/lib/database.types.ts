@@ -191,6 +191,130 @@ export interface Database {
           }
         ];
       };
+      // This will be added to src/lib/database.types.ts
+      communities: {
+        Row: {
+          id: string;
+          name: string;
+          description: string;
+          creator_id: string;
+          image_url: string | null;
+          banner_url: string | null;
+          created_at: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          description: string;
+          creator_id: string;
+          image_url?: string | null;
+          banner_url?: string | null;
+          created_at?: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          description?: string;
+          creator_id?: string;
+          image_url?: string | null;
+          banner_url?: string | null;
+          created_at?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "communities_creator_id_fkey";
+            columns: ["creator_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+
+      community_members: {
+        Row: {
+          id: string;
+          community_id: string;
+          user_id: string;
+          is_admin: boolean;
+          joined_at: string;
+        };
+        Insert: {
+          id?: string;
+          community_id: string;
+          user_id: string;
+          is_admin?: boolean;
+          joined_at?: string;
+        };
+        Update: {
+          id?: string;
+          community_id?: string;
+          user_id?: string;
+          is_admin?: boolean;
+          joined_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey";
+            columns: ["community_id"];
+            referencedRelation: "communities";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "community_members_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+
+      community_posts: {
+        Row: {
+          id: string;
+          community_id: string;
+          user_id: string;
+          title: string;
+          content: string;
+          created_at: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          community_id: string;
+          user_id: string;
+          title: string;
+          content: string;
+          created_at?: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          community_id?: string;
+          user_id?: string;
+          title?: string;
+          content?: string;
+          created_at?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "community_posts_community_id_fkey";
+            columns: ["community_id"];
+            referencedRelation: "communities";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "community_posts_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+
       comments: {
         Row: {
           id: string;
