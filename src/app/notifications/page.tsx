@@ -55,14 +55,14 @@ export default function NotificationsPage() {
 
       if (!user) return;
 
-      // Fetch notifications for the current user
+      // UPDATED: Fixed query with explicit relation definitions
       const { data, error } = await (supabase as any)
         .from("notifications")
         .select(
           `
           *,
-          action_user:action_user_id(username, full_name, avatar_url),
-          article:article_id(title, slug)
+          action_user:profiles(username, full_name, avatar_url),
+          article:public_articles(title, slug)
         `
         )
         .eq("user_id", user.id)
@@ -72,6 +72,7 @@ export default function NotificationsPage() {
         throw error;
       }
 
+      console.log("Fetched notifications:", data);
       setNotifications(data || []);
     } catch (err: any) {
       console.error("Error fetching notifications:", err);
