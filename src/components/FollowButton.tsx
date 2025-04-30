@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { setupNotificationsTable } from "@/lib/setupDatabase";
 
 interface FollowButtonProps {
   targetUserId: string;
@@ -79,6 +78,11 @@ export default function FollowButton({
 
     setIsLoading(true);
     try {
+      console.log(
+        "Toggle follow status:",
+        isFollowing ? "Unfollowing" : "Following"
+      );
+
       if (isFollowing) {
         // Unfollow
         const { error } = await (supabase as any)
@@ -87,8 +91,12 @@ export default function FollowButton({
           .eq("follower_id", user.id)
           .eq("following_id", targetUserId);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error unfollowing:", error);
+          throw error;
+        }
 
+        console.log("Successfully unfollowed");
         setIsFollowing(false);
         if (onFollowChange) onFollowChange(false);
       } else {
@@ -99,43 +107,37 @@ export default function FollowButton({
           created_at: new Date().toISOString(),
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error following:", error);
+          throw error;
+        }
 
-        // Try to create a notification
-        try {
-          const notificationData = {
-            user_id: targetUserId,
-            action_type: "follow",
-            action_user_id: user.id,
-            created_at: new Date().toISOString(),
-            is_read: false,
-            article_id: null,
-            comment_id: null,
-          };
+        console.log("Successfully followed. Creating notification...");
 
-          // Try to insert notification
-          const { data, error: notificationError } = await (supabase as any)
-            .from("notifications")
-            .insert(notificationData);
+        // Create a notification for the target user
+        const notificationData = {
+          user_id: targetUserId,
+          action_type: "follow",
+          action_user_id: user.id,
+          created_at: new Date().toISOString(),
+          is_read: false,
+        };
 
-          // If we get an error, check if it's because the table doesn't exist
-          if (notificationError) {
-            console.error(
-              "Error creating notification:",
-              notificationError.message || JSON.stringify(notificationError)
-            );
+        console.log("Notification data:", notificationData);
 
-            // Check if the notifications table exists
-            const tableStatus = await setupNotificationsTable();
+        const { error: notificationError } = await (supabase as any)
+          .from("notifications")
+          .insert(notificationData);
 
-            if (!tableStatus.success) {
-              console.warn(tableStatus.message);
-            }
-          } else {
-            console.log("Notification created successfully");
-          }
-        } catch (notifyError) {
-          console.warn("Exception when creating notification:", notifyError);
+        if (notificationError) {
+          console.error(
+            "Error creating follow notification:",
+            notificationError
+          );
+          // Don't throw here - we still want to update the follow status
+          // even if notification creation fails
+        } else {
+          console.log("Notification created successfully");
         }
 
         setIsFollowing(true);

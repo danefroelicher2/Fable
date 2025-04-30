@@ -55,25 +55,68 @@ export default function NotificationsPage() {
 
       if (!user) return;
 
-      // UPDATED: Fixed query with explicit relation definitions
-      const { data, error } = await (supabase as any)
+      console.log("Fetching notifications for user:", user.id);
+
+      // First fetch all notifications
+      const { data: notificationsData, error: notificationsError } = await (
+        supabase as any
+      )
         .from("notifications")
-        .select(
-          `
-          *,
-          action_user:profiles(username, full_name, avatar_url),
-          article:public_articles(title, slug)
-        `
-        )
+        .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        throw error;
+      if (notificationsError) throw notificationsError;
+
+      if (!notificationsData || notificationsData.length === 0) {
+        setNotifications([]);
+        return;
       }
 
-      console.log("Fetched notifications:", data);
-      setNotifications(data || []);
+      console.log("Notifications fetched:", notificationsData.length);
+
+      // Then process each notification to get the related user and article info
+      const processedNotifications = await Promise.all(
+        notificationsData.map(async (notification: any) => {
+          // Get action user info
+          let actionUser = null;
+          if (notification.action_user_id) {
+            const { data: userData, error: userError } = await supabase
+              .from("profiles")
+              .select("username, full_name, avatar_url")
+              .eq("id", notification.action_user_id)
+              .single();
+
+            if (!userError) {
+              actionUser = userData;
+            }
+          }
+
+          // Get article info if applicable
+          let article = null;
+          if (notification.article_id) {
+            const { data: articleData, error: articleError } = await (
+              supabase as any
+            )
+              .from("public_articles")
+              .select("title, slug")
+              .eq("id", notification.article_id)
+              .single();
+
+            if (!articleError) {
+              article = articleData;
+            }
+          }
+
+          return {
+            ...notification,
+            action_user: actionUser,
+            article: article,
+          };
+        })
+      );
+
+      setNotifications(processedNotifications);
     } catch (err: any) {
       console.error("Error fetching notifications:", err);
       setError("Failed to load notifications. Please try again.");

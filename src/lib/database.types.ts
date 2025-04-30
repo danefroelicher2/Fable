@@ -18,6 +18,10 @@ export interface Database {
           content: string | null;
           excerpt: string | null;
           category: string | null;
+          slug?: string | null;
+          image_url?: string | null;
+          is_published?: boolean;
+          published_id?: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -28,6 +32,10 @@ export interface Database {
           content?: string | null;
           excerpt?: string | null;
           category?: string | null;
+          slug?: string | null;
+          image_url?: string | null;
+          is_published?: boolean;
+          published_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -38,6 +46,10 @@ export interface Database {
           content?: string | null;
           excerpt?: string | null;
           category?: string | null;
+          slug?: string | null;
+          image_url?: string | null;
+          is_published?: boolean;
+          published_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -57,7 +69,7 @@ export interface Database {
           username: string | null;
           full_name: string | null;
           avatar_url: string | null;
-          bio: string | null; // Keep bio field as it exists in your database
+          bio: string | null;
           website: string | null;
           created_at: string | null;
         };
@@ -67,7 +79,7 @@ export interface Database {
           username?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
-          bio?: string | null; // Keep bio field as it exists in your database
+          bio?: string | null;
           website?: string | null;
           created_at?: string | null;
         };
@@ -77,7 +89,7 @@ export interface Database {
           username?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
-          bio?: string | null; // Keep bio field as it exists in your database
+          bio?: string | null;
           website?: string | null;
           created_at?: string | null;
         };
@@ -184,31 +196,40 @@ export interface Database {
           id: string;
           user_id: string;
           article_id: string;
+          parent_id: string | null;
           content: string;
           created_at: string;
-          updated_at: string;
+          updated_at: string | null;
         };
         Insert: {
           id?: string;
           user_id: string;
           article_id: string;
+          parent_id?: string | null;
           content: string;
           created_at?: string;
-          updated_at?: string;
+          updated_at?: string | null;
         };
         Update: {
           id?: string;
           user_id?: string;
           article_id?: string;
+          parent_id?: string | null;
           content?: string;
           created_at?: string;
-          updated_at?: string;
+          updated_at?: string | null;
         };
         Relationships: [
           {
             foreignKeyName: "comments_article_id_fkey";
             columns: ["article_id"];
             referencedRelation: "public_articles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "comments_parent_id_fkey";
+            columns: ["parent_id"];
+            referencedRelation: "comments";
             referencedColumns: ["id"];
           },
           {

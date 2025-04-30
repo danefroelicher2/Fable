@@ -57,7 +57,6 @@ export default function LikeButton({
   }, [user, articleId]);
 
   // Function to handle like/unlike
-  // Add this to LikeButton.tsx
   async function handleLikeToggle() {
     if (!user) {
       // Redirect to sign in page
@@ -94,36 +93,44 @@ export default function LikeButton({
 
         if (error) throw error;
 
-        // Fetch article owner id to create notification
-        const { data: articleData, error: articleError } = await (
-          supabase as any
-        )
-          .from("public_articles")
-          .select("user_id")
-          .eq("id", articleId)
-          .single();
+        // Try to create a notification for the article owner
+        try {
+          // Fetch article owner id to create notification
+          const { data: articleData, error: articleError } = await (
+            supabase as any
+          )
+            .from("public_articles")
+            .select("user_id")
+            .eq("id", articleId)
+            .single();
 
-        if (!articleError && articleData) {
-          // Only create notification if the article owner isn't the current user
-          if (articleData.user_id !== user.id) {
-            // Create a notification for the article owner
-            const { error: notificationError } = await (supabase as any)
-              .from("notifications")
-              .insert({
-                user_id: articleData.user_id,
-                action_type: "like",
-                action_user_id: user.id,
-                article_id: articleId,
-                created_at: new Date().toISOString(),
-              });
+          if (!articleError && articleData) {
+            // Only create notification if the article owner isn't the current user
+            if (articleData.user_id !== user.id) {
+              // Create a notification for the article owner
+              const { error: notificationError } = await (supabase as any)
+                .from("notifications")
+                .insert({
+                  user_id: articleData.user_id,
+                  action_type: "like",
+                  action_user_id: user.id,
+                  article_id: articleId,
+                  created_at: new Date().toISOString(),
+                  is_read: false,
+                });
 
-            if (notificationError) {
-              console.error(
-                "Error creating like notification:",
-                notificationError
-              );
+              if (notificationError) {
+                console.error(
+                  "Error creating like notification:",
+                  notificationError
+                );
+                // Continue even if notification creation fails
+              }
             }
           }
+        } catch (notifyError) {
+          // Log but don't prevent the like action from completing
+          console.error("Error with notification:", notifyError);
         }
 
         setLikeCount((prev) => prev + 1);
@@ -135,6 +142,7 @@ export default function LikeButton({
       setIsLoading(false);
     }
   }
+
   return (
     <button
       onClick={handleLikeToggle}
