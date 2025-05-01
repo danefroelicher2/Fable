@@ -42,14 +42,10 @@ export default function CommunitiesPage() {
       setLoading(true);
       setError(null);
 
+      // First, fetch communities without trying to join with profiles
       let query = (supabase as any)
         .from("communities")
-        .select(
-          `
-          *,
-          creator:profiles!communities_creator_id_fkey(username, full_name, avatar_url)
-        `
-        )
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (activeTab === "my-communities" && user) {
@@ -80,10 +76,28 @@ export default function CommunitiesPage() {
 
       if (error) throw error;
 
-      // For each community, get the member count
-      const communitiesWithCounts = await Promise.all(
+      // Now, for each community, get the creator's profile separately
+      const communitiesWithCreators = await Promise.all(
         (data || []).map(async (community: Community) => {
           try {
+            // Get creator profile
+            const { data: creatorData, error: creatorError } = await supabase
+              .from("profiles")
+              .select("username, full_name, avatar_url")
+              .eq("id", community.creator_id)
+              .single();
+
+            if (creatorError) {
+              console.warn(
+                `Error fetching creator for community ${community.id}:`,
+                creatorError
+              );
+              return {
+                ...community,
+                creator: null,
+              };
+            }
+
             // Get member count
             const { count: memberCount, error: countError } = await (
               supabase as any
@@ -92,7 +106,12 @@ export default function CommunitiesPage() {
               .select("id", { count: "exact", head: true })
               .eq("community_id", community.id);
 
-            if (countError) throw countError;
+            if (countError) {
+              console.warn(
+                `Error getting member count for community ${community.id}:`,
+                countError
+              );
+            }
 
             // Check if current user is a member
             let isMember = false;
@@ -113,6 +132,7 @@ export default function CommunitiesPage() {
 
             return {
               ...community,
+              creator: creatorData,
               member_count: memberCount || 0,
               is_member: isMember,
             };
@@ -123,6 +143,7 @@ export default function CommunitiesPage() {
             );
             return {
               ...community,
+              creator: null,
               member_count: 0,
               is_member: false,
             };
@@ -130,7 +151,7 @@ export default function CommunitiesPage() {
         })
       );
 
-      setCommunities(communitiesWithCounts);
+      setCommunities(communitiesWithCreators);
     } catch (err) {
       console.error("Error fetching communities:", err);
       setError("Failed to load communities. Please try again.");
