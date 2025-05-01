@@ -48,9 +48,7 @@ export default function CommunityDetailPage() {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"posts" | "members" | "about">(
-    "posts"
-  );
+  const [activeTab, setActiveTab] = useState<"posts" | "members">("posts");
   const [members, setMembers] = useState<any[]>([]);
 
   const communityId = Array.isArray(params?.communityId)
@@ -358,7 +356,7 @@ export default function CommunityDetailPage() {
     }
   }
 
-  // NEW FUNCTION: Handle community deletion
+  // Handle community deletion
   async function handleDeleteCommunity() {
     // Security check - only community creator can delete
     if (!user || !community || user.id !== community.creator_id) {
@@ -432,7 +430,7 @@ export default function CommunityDetailPage() {
     }
   }
 
-  // NEW FUNCTION: Handle post deletion from the community page
+  // Handle post deletion from the community page
   async function handleDeletePost(
     postId: string,
     userId: string,
@@ -664,16 +662,6 @@ export default function CommunityDetailPage() {
               >
                 Members
               </button>
-              <button
-                onClick={() => setActiveTab("about")}
-                className={`px-6 py-3 text-sm font-medium border-b-2 ${
-                  activeTab === "about"
-                    ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500"
-                    : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                }`}
-              >
-                About
-              </button>
             </div>
           </div>
 
@@ -833,40 +821,6 @@ export default function CommunityDetailPage() {
                     ))}
                   </div>
                 )}
-              </div>
-            )}
-
-            {activeTab === "about" && (
-              <div>
-                <h3 className="text-lg font-bold mb-4 dark:text-white">
-                  About This Community
-                </h3>
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                  <p className="text-gray-700 dark:text-gray-300 mb-4">
-                    {community.description}
-                  </p>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    <div className="mb-2">
-                      <span className="font-medium">Created:</span>{" "}
-                      {formatDate(community.created_at)}
-                    </div>
-                    <div className="mb-2">
-                      <span className="font-medium">Members:</span>{" "}
-                      {community.member_count}
-                    </div>
-                    <div>
-                      <span className="font-medium">Creator:</span>{" "}
-                      <Link
-                        href={`/user/${community.creator_id}`}
-                        className="text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        {community.creator?.full_name ||
-                          community.creator?.username ||
-                          "Anonymous"}
-                      </Link>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
           </div>
