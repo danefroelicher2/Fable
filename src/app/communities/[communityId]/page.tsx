@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 interface Community {
   id: string;
@@ -50,6 +51,11 @@ export default function CommunityDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"posts" | "members">("posts");
   const [members, setMembers] = useState<any[]>([]);
+  
+  // State for delete confirmation modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<{ id: string, userId: string } | null>(null);
+  const [showDeleteCommunityModal, setShowDeleteCommunityModal] = useState(false);
 
   const communityId = Array.isArray(params?.communityId)
     ? params.communityId[0]
@@ -363,15 +369,15 @@ export default function CommunityDetailPage() {
       return;
     }
 
-    // Confirm deletion with the user
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this community? This action cannot be undone and will remove all posts and comments."
-    );
-
-    if (!confirmDelete) return;
-
+    // Show the delete community confirmation modal
+    setShowDeleteCommunityModal(true);
+  }
+  
+  // Function to execute the actual community deletion
+  async function executeCommunityDeletion() {
     try {
       setLoading(true);
+      setShowDeleteCommunityModal(false);
 
       // 1. First, delete all comments on community posts
       // First get all post IDs in this community
@@ -443,13 +449,17 @@ export default function CommunityDetailPage() {
       return; // Only post authors can delete posts
     }
 
-    // Confirm deletion
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this post? This action cannot be undone and will remove all comments."
-    );
-
-    if (!confirmDelete) return;
-
+    // Show the delete confirmation modal
+    setPostToDelete({ id: postId, userId });
+    setShowDeleteModal(true);
+  }
+  
+  // Function to execute the actual post deletion
+  async function executePostDeletion() {
+    if (!postToDelete) return;
+    
+    const { id: postId, userId } = postToDelete;
+    
     try {
       // First, delete all comments on this post
       const { error: commentsError } = await (supabase as any)
@@ -476,9 +486,14 @@ export default function CommunityDetailPage() {
 
       // Update the posts list by filtering out the deleted post
       setPosts(posts.filter((post) => post.id !== postId));
+      
+      // Reset the state
+      setPostToDelete(null);
+      setShowDeleteModal(false);
     } catch (err) {
       console.error("Error deleting post:", err);
       alert("Failed to delete post. Please try again.");
+      setShowDeleteModal(false);
     }
   }
 
@@ -827,5 +842,29 @@ export default function CommunityDetailPage() {
         </div>
       </div>
     </div>
+
+    {/* Delete Post Confirmation Modal */}
+    <ConfirmationModal
+      isOpen={showDeleteModal}
+      title="Delete Post"
+      message="Are you sure you want to delete this post? This action cannot be undone and will remove all comments."
+      confirmText="Delete"
+      cancelText="Cancel"
+      onConfirm={executePostDeletion}
+      onCancel={() => setShowDeleteModal(false)}
+      confirmButtonColor="red"
+    />
+    
+    {/* Delete Community Confirmation Modal */}
+    <ConfirmationModal
+      isOpen={showDeleteCommunityModal}
+      title="Delete Community"
+      message="Are you sure you want to delete this community? This action cannot be undone and will remove all posts and comments."
+      confirmText="Delete"
+      cancelText="Cancel"
+      onConfirm={executeCommunityDeletion}
+      onCancel={() => setShowDeleteCommunityModal(false)}
+      confirmButtonColor="red"
+    />
   );
 }
