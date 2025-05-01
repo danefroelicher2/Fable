@@ -65,7 +65,52 @@ export default function CommunityPostPage() {
       fetchPostData();
     }
   }, [communityId, postId, user]);
+  async function handleDeletePost() {
+    if (!user || !post || user.id !== post.user_id) {
+      return; // Only post authors can delete posts
+    }
 
+    // Confirm deletion
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this post? This action cannot be undone and will remove all comments."
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      setLoading(true);
+
+      // First, delete all comments on this post
+      const { error: commentsError } = await (supabase as any)
+        .from("community_post_comments")
+        .delete()
+        .eq("post_id", postId);
+
+      if (commentsError) {
+        console.error("Error deleting post comments:", commentsError);
+        throw commentsError;
+      }
+
+      // Then, delete the post itself
+      const { error: postError } = await (supabase as any)
+        .from("community_posts")
+        .delete()
+        .eq("id", postId)
+        .eq("user_id", user.id); // Extra safety check
+
+      if (postError) {
+        console.error("Error deleting post:", postError);
+        throw postError;
+      }
+
+      // Redirect to community page
+      router.push(`/communities/${communityId}`);
+    } catch (err) {
+      console.error("Error deleting post:", err);
+      alert("Failed to delete post. Please try again.");
+      setLoading(false);
+    }
+  }
   async function fetchPostData() {
     try {
       setLoading(true);
@@ -302,7 +347,24 @@ export default function CommunityPostPage() {
                 </div>
               </Link>
             </div>
+            {user && post.user_id === user.id && (
+              <div className="mt-4 mb-6 flex justify-end">
+                <button
+                  onClick={handleDeletePost}
+                  className="bg-red-600 text-white px-3 py-1 text-sm rounded hover:bg-red-700 transition"
+                  disabled={loading}
+                >
+                  {loading ? "Deleting..." : "Delete Post"}
+                </button>
+              </div>
+            )}
 
+            {/* Post content follows here */}
+            <div className="prose max-w-none mb-6 dark:prose-invert">
+              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                {post.content}
+              </p>
+            </div>
             <div className="prose max-w-none mb-6 dark:prose-invert">
               <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
                 {post.content}

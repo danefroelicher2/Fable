@@ -358,6 +358,132 @@ export default function CommunityDetailPage() {
     }
   }
 
+  // NEW FUNCTION: Handle community deletion
+  async function handleDeleteCommunity() {
+    // Security check - only community creator can delete
+    if (!user || !community || user.id !== community.creator_id) {
+      return;
+    }
+
+    // Confirm deletion with the user
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this community? This action cannot be undone and will remove all posts and comments."
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      setLoading(true);
+
+      // 1. First, delete all comments on community posts
+      // First get all post IDs in this community
+      const { data: postsData, error: postsQueryError } = await (
+        supabase as any
+      )
+        .from("community_posts")
+        .select("id")
+        .eq("community_id", communityId);
+
+      if (postsQueryError) throw postsQueryError;
+
+      // If there are posts, delete their comments
+      if (postsData && postsData.length > 0) {
+        const postIds = postsData.map((post: any) => post.id);
+
+        const { error: commentsError } = await (supabase as any)
+          .from("community_post_comments")
+          .delete()
+          .in("post_id", postIds);
+
+        if (commentsError) throw commentsError;
+      }
+
+      // 2. Delete all community posts
+      const { error: postsError } = await (supabase as any)
+        .from("community_posts")
+        .delete()
+        .eq("community_id", communityId);
+
+      if (postsError) throw postsError;
+
+      // 3. Delete all community members
+      const { error: membersError } = await (supabase as any)
+        .from("community_members")
+        .delete()
+        .eq("community_id", communityId);
+
+      if (membersError) throw membersError;
+
+      // 4. Finally, delete the community itself
+      const { error: communityError } = await (supabase as any)
+        .from("communities")
+        .delete()
+        .eq("id", communityId)
+        .eq("creator_id", user.id); // Additional security check
+
+      if (communityError) throw communityError;
+
+      // Redirect to communities page
+      router.push("/communities");
+    } catch (err) {
+      console.error("Error deleting community:", err);
+      alert("Failed to delete community. Please try again.");
+      setLoading(false);
+    }
+  }
+
+  // NEW FUNCTION: Handle post deletion from the community page
+  async function handleDeletePost(
+    postId: string,
+    userId: string,
+    event: React.MouseEvent
+  ) {
+    // Stop propagation to prevent navigating to the post page
+    event.stopPropagation();
+
+    if (!user || user.id !== userId) {
+      return; // Only post authors can delete posts
+    }
+
+    // Confirm deletion
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this post? This action cannot be undone and will remove all comments."
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      // First, delete all comments on this post
+      const { error: commentsError } = await (supabase as any)
+        .from("community_post_comments")
+        .delete()
+        .eq("post_id", postId);
+
+      if (commentsError) {
+        console.error("Error deleting post comments:", commentsError);
+        throw commentsError;
+      }
+
+      // Then, delete the post itself
+      const { error: postError } = await (supabase as any)
+        .from("community_posts")
+        .delete()
+        .eq("id", postId)
+        .eq("user_id", userId); // Extra safety check
+
+      if (postError) {
+        console.error("Error deleting post:", postError);
+        throw postError;
+      }
+
+      // Update the posts list by filtering out the deleted post
+      setPosts(posts.filter((post) => post.id !== postId));
+    } catch (err) {
+      console.error("Error deleting post:", err);
+      alert("Failed to delete post. Please try again.");
+    }
+  }
+
   // Format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -485,6 +611,19 @@ export default function CommunityDetailPage() {
                     Join Community
                   </button>
                 )}
+
+                {/* DELETE COMMUNITY BUTTON - Only visible to creator */}
+                {community.is_member &&
+                  user &&
+                  community.creator_id === user.id && (
+                    <button
+                      onClick={handleDeleteCommunity}
+                      className="mt-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition w-full"
+                      disabled={loading}
+                    >
+                      {loading ? "Processing..." : "Delete Community"}
+                    </button>
+                  )}
               </div>
             </div>
 
@@ -610,12 +749,28 @@ export default function CommunityDetailPage() {
                         <p className="text-gray-700 dark:text-gray-300">
                           {formatPreview(post.content)}
                         </p>
-                        <Link
-                          href={`/communities/${communityId}/posts/${post.id}`}
-                          className="mt-2 inline-block text-blue-600 dark:text-blue-400 hover:underline text-sm"
-                        >
-                          Read more
-                        </Link>
+
+                        {/* Post Actions with Delete Button */}
+                        <div className="flex justify-between items-center mt-2">
+                          <Link
+                            href={`/communities/${communityId}/posts/${post.id}`}
+                            className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                          >
+                            Read more
+                          </Link>
+
+                          {/* Delete Button (Only visible to post author) */}
+                          {user && user.id === post.user_id && (
+                            <button
+                              onClick={(e) =>
+                                handleDeletePost(post.id, post.user_id, e)
+                              }
+                              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
