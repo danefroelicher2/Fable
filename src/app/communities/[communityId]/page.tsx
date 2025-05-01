@@ -24,7 +24,7 @@ interface Community {
     username: string | null;
     full_name: string | null;
     avatar_url: string | null;
-  };
+  } | null;
 }
 
 interface CommunityPost {
@@ -37,7 +37,7 @@ interface CommunityPost {
     username: string | null;
     full_name: string | null;
     avatar_url: string | null;
-  };
+  } | null;
 }
 
 export default function CommunityDetailPage() {
@@ -77,24 +77,44 @@ export default function CommunityDetailPage() {
       setLoading(true);
       setError(null);
 
-      // Fetch the community details
-      const { data, error } = await (supabase as any)
+      if (!communityId) {
+        setError("Community ID is missing");
+        setLoading(false);
+        return;
+      }
+
+      // Fetch the community details without using the join syntax
+      const { data: communityData, error: communityError } = await (
+        supabase as any
+      )
         .from("communities")
-        .select(
-          `
-          *,
-          creator:profiles!communities_creator_id_fkey(username, full_name, avatar_url)
-        `
-        )
+        .select("*")
         .eq("id", communityId)
         .single();
 
-      if (error) throw error;
+      if (communityError) {
+        console.error("Error fetching community:", communityError);
+        throw communityError;
+      }
 
-      if (!data) {
+      if (!communityData) {
         setError("Community not found");
         setLoading(false);
         return;
+      }
+
+      // Fetch the creator's profile separately
+      const { data: creatorData, error: creatorError } = await supabase
+        .from("profiles")
+        .select("username, full_name, avatar_url")
+        .eq("id", communityData.creator_id)
+        .single();
+
+      if (creatorError) {
+        console.warn(
+          `Error fetching creator for community ${communityId}:`,
+          creatorError
+        );
       }
 
       // Get member count
@@ -103,7 +123,9 @@ export default function CommunityDetailPage() {
         .select("id", { count: "exact", head: true })
         .eq("community_id", communityId);
 
-      if (countError) throw countError;
+      if (countError) {
+        console.warn("Error getting member count:", countError);
+      }
 
       // Get post count
       const { count: postCount, error: postCountError } = await (
@@ -113,7 +135,9 @@ export default function CommunityDetailPage() {
         .select("id", { count: "exact", head: true })
         .eq("community_id", communityId);
 
-      if (postCountError) throw postCountError;
+      if (postCountError) {
+        console.warn("Error getting post count:", postCountError);
+      }
 
       // Check if current user is a member and/or admin
       let isMember = false;
@@ -134,7 +158,8 @@ export default function CommunityDetailPage() {
 
       // Set the community data with the additional information
       setCommunity({
-        ...data,
+        ...communityData,
+        creator: creatorData || null,
         member_count: memberCount || 0,
         post_count: postCount || 0,
         is_member: isMember,
@@ -155,20 +180,54 @@ export default function CommunityDetailPage() {
     try {
       if (!communityId) return;
 
-      const { data, error } = await (supabase as any)
+      // Fetch posts without using the join syntax
+      const { data: postsData, error: postsError } = await (supabase as any)
         .from("community_posts")
-        .select(
-          `
-          *,
-          user:profiles!community_posts_user_id_fkey(username, full_name, avatar_url)
-        `
-        )
+        .select("*")
         .eq("community_id", communityId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (postsError) {
+        console.error("Error fetching community posts:", postsError);
+        throw postsError;
+      }
 
-      setPosts(data || []);
+      // Fetch user profiles for each post separately
+      const postsWithUsers = await Promise.all(
+        (postsData || []).map(async (post: any) => {
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from("profiles")
+              .select("username, full_name, avatar_url")
+              .eq("id", post.user_id)
+              .single();
+
+            if (userError) {
+              console.warn(
+                `Error fetching user for post ${post.id}:`,
+                userError
+              );
+              return {
+                ...post,
+                user: null,
+              };
+            }
+
+            return {
+              ...post,
+              user: userData,
+            };
+          } catch (err) {
+            console.error(`Error processing post ${post.id}:`, err);
+            return {
+              ...post,
+              user: null,
+            };
+          }
+        })
+      );
+
+      setPosts(postsWithUsers);
     } catch (err) {
       console.error("Error fetching community posts:", err);
       // Not setting global error since it shouldn't prevent viewing the community
@@ -179,23 +238,54 @@ export default function CommunityDetailPage() {
     try {
       if (!communityId) return;
 
-      const { data, error } = await (supabase as any)
+      // Fetch community members without using the join syntax
+      const { data: membersData, error: membersError } = await (supabase as any)
         .from("community_members")
-        .select(
-          `
-          id,
-          user_id,
-          is_admin,
-          joined_at,
-          user:profiles!community_members_user_id_fkey(username, full_name, avatar_url)
-        `
-        )
+        .select("id, user_id, is_admin, joined_at")
         .eq("community_id", communityId)
         .order("joined_at", { ascending: false });
 
-      if (error) throw error;
+      if (membersError) {
+        console.error("Error fetching community members:", membersError);
+        throw membersError;
+      }
 
-      setMembers(data || []);
+      // Fetch user profiles for each member separately
+      const membersWithProfiles = await Promise.all(
+        (membersData || []).map(async (member: any) => {
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from("profiles")
+              .select("username, full_name, avatar_url")
+              .eq("id", member.user_id)
+              .single();
+
+            if (userError) {
+              console.warn(
+                `Error fetching user for member ${member.id}:`,
+                userError
+              );
+              return {
+                ...member,
+                user: null,
+              };
+            }
+
+            return {
+              ...member,
+              user: userData,
+            };
+          } catch (err) {
+            console.error(`Error processing member ${member.id}:`, err);
+            return {
+              ...member,
+              user: null,
+            };
+          }
+        })
+      );
+
+      setMembers(membersWithProfiles);
     } catch (err) {
       console.error("Error fetching community members:", err);
     }

@@ -19,11 +19,11 @@ interface Post {
     username: string | null;
     full_name: string | null;
     avatar_url: string | null;
-  };
+  } | null;
   community?: {
     name: string;
     image_url: string | null;
-  };
+  } | null;
 }
 
 interface Comment {
@@ -37,7 +37,7 @@ interface Comment {
     username: string | null;
     full_name: string | null;
     avatar_url: string | null;
-  };
+  } | null;
 }
 
 export default function CommunityPostPage() {
@@ -71,29 +71,62 @@ export default function CommunityPostPage() {
       setLoading(true);
       setError(null);
 
-      // Fetch the post details
-      const { data, error } = await (supabase as any)
+      if (!communityId || !postId) {
+        setError("Missing required parameters");
+        setLoading(false);
+        return;
+      }
+
+      // Fetch the post details without using join syntax
+      const { data: postData, error: postError } = await (supabase as any)
         .from("community_posts")
-        .select(
-          `
-          *,
-          user:profiles!community_posts_user_id_fkey(username, full_name, avatar_url),
-          community:communities!community_posts_community_id_fkey(name, image_url)
-        `
-        )
+        .select("*")
         .eq("id", postId)
         .eq("community_id", communityId)
         .single();
 
-      if (error) throw error;
+      if (postError) {
+        console.error("Error fetching post:", postError);
+        throw postError;
+      }
 
-      if (!data) {
+      if (!postData) {
         setError("Post not found");
         setLoading(false);
         return;
       }
 
-      setPost(data);
+      // Fetch post author profile
+      const { data: userData, error: userError } = await supabase
+        .from("profiles")
+        .select("username, full_name, avatar_url")
+        .eq("id", postData.user_id)
+        .single();
+
+      if (userError) {
+        console.warn("Error fetching post author:", userError);
+      }
+
+      const { data: communityData, error: communityError } = await (
+        supabase as any
+      )
+        .from("communities")
+        .select("name, image_url")
+        .eq("id", postData.community_id)
+        .single();
+
+      if (communityError) {
+        console.warn("Error fetching community:", communityError);
+      }
+
+      // Combine the data
+      const fullPost = {
+        ...postData,
+        user: userData || null,
+        community: communityData || null,
+      };
+
+      setPost(fullPost);
 
       // Fetch comments for this post
       fetchComments();
@@ -123,20 +156,56 @@ export default function CommunityPostPage() {
     try {
       if (!postId) return;
 
-      const { data, error } = await (supabase as any)
+      // Fetch comments without using join syntax
+      const { data: commentsData, error: commentsError } = await (
+        supabase as any
+      )
         .from("community_post_comments")
-        .select(
-          `
-          *,
-          user:profiles!community_post_comments_user_id_fkey(username, full_name, avatar_url)
-        `
-        )
+        .select("*")
         .eq("post_id", postId)
         .order("created_at", { ascending: true });
 
-      if (error) throw error;
+      if (commentsError) {
+        console.error("Error fetching comments:", commentsError);
+        throw commentsError;
+      }
 
-      setComments(data || []);
+      // For each comment, fetch the author profile
+      const commentsWithUsers = await Promise.all(
+        (commentsData || []).map(async (comment: any) => {
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from("profiles")
+              .select("username, full_name, avatar_url")
+              .eq("id", comment.user_id)
+              .single();
+
+            if (userError) {
+              console.warn(
+                `Error fetching user for comment ${comment.id}:`,
+                userError
+              );
+              return {
+                ...comment,
+                user: null,
+              };
+            }
+
+            return {
+              ...comment,
+              user: userData,
+            };
+          } catch (err) {
+            console.error(`Error processing comment ${comment.id}:`, err);
+            return {
+              ...comment,
+              user: null,
+            };
+          }
+        })
+      );
+
+      setComments(commentsWithUsers);
     } catch (err) {
       console.error("Error fetching comments:", err);
     }
@@ -163,29 +232,27 @@ export default function CommunityPostPage() {
           content: commentText.trim(),
           post_id: postId,
           user_id: user.id,
+          created_at: new Date().toISOString(),
         })
         .select();
 
       if (error) throw error;
 
-      // Then get the complete data with profiles joined
-      const { data: commentWithProfile, error: fetchError } = await (
-        supabase as any
-      )
-        .from("community_post_comments")
-        .select(
-          `
-          *,
-          user:profiles!community_post_comments_user_id_fkey(username, full_name, avatar_url)
-        `
-        )
-        .eq("id", data[0].id)
+      // Fetch the user profile for the new comment
+      const { data: userData, error: userError } = await supabase
+        .from("profiles")
+        .select("username, full_name, avatar_url")
+        .eq("id", user.id)
         .single();
 
-      if (fetchError) throw fetchError;
-
       // Add the new comment to the list
-      setComments((prev) => [...prev, commentWithProfile]);
+      setComments([
+        ...comments,
+        {
+          ...data[0],
+          user: userError ? null : userData,
+        },
+      ]);
 
       // Clear the comment form
       setCommentText("");

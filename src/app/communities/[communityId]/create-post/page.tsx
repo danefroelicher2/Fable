@@ -43,7 +43,7 @@ export default function CreateCommunityPostPage() {
         return;
       }
 
-      // Get community info
+      // Get community info without using join syntax
       const { data: communityData, error: communityError } = await (
         supabase as any
       )
@@ -52,7 +52,11 @@ export default function CreateCommunityPostPage() {
         .eq("id", communityId)
         .single();
 
-      if (communityError) throw communityError;
+      if (communityError) {
+        console.error("Error fetching community:", communityError);
+        throw communityError;
+      }
+
       setCommunity(communityData);
 
       // Check if user is a member
@@ -63,7 +67,10 @@ export default function CreateCommunityPostPage() {
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (memberError) throw memberError;
+      if (memberError) {
+        console.error("Error checking membership:", memberError);
+        throw memberError;
+      }
 
       if (!memberData) {
         setError("You must be a member of this community to create posts");
@@ -121,7 +128,10 @@ export default function CreateCommunityPostPage() {
         .select()
         .single();
 
-      if (postError) throw postError;
+      if (postError) {
+        console.error("Error creating post:", postError);
+        throw postError;
+      }
 
       // Redirect to the post page
       router.push(`/communities/${communityId}/posts/${data.id}`);
@@ -159,12 +169,15 @@ export default function CreateCommunityPostPage() {
             >
               Return to Community
             </Link>
-            <Link
-              href={`/communities/${communityId}/join`}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Join Community
-            </Link>
+            {/* Only show Join Community link if logged in */}
+            {user && (
+              <Link
+                href={`/communities/${communityId}`}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Join Community
+              </Link>
+            )}
           </div>
         </div>
       </div>
