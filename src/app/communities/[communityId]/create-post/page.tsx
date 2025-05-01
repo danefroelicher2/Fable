@@ -133,8 +133,7 @@ export default function CreateCommunityPostPage() {
         throw postError;
       }
 
-      // Redirect to the post page
-      router.push(`/communities/${communityId}/posts/${data.id}`);
+      router.push(`/communities/${communityId}`);
     } catch (err: any) {
       console.error("Error creating post:", err);
       setError(err.message || "Failed to create post");
