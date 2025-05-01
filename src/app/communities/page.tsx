@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import CategoryTabsModule from "@/components/CategoryTabsModule"; // Using the CSS modules version
 
 interface Community {
   id: string;
@@ -21,6 +22,7 @@ interface Community {
     full_name: string | null;
     avatar_url: string | null;
   };
+  category?: string; // Add category field
 }
 
 export default function CommunitiesPage() {
@@ -32,10 +34,11 @@ export default function CommunitiesPage() {
   const [activeTab, setActiveTab] = useState<"discover" | "my-communities">(
     "discover"
   );
+  const [activeCategory, setActiveCategory] = useState("all"); // Track active category
 
   useEffect(() => {
     fetchCommunities();
-  }, [user, activeTab]);
+  }, [user, activeTab, activeCategory]); // Re-fetch when category changes
 
   async function fetchCommunities() {
     try {
@@ -70,6 +73,11 @@ export default function CommunitiesPage() {
           setLoading(false);
           return;
         }
+      }
+
+      // Apply category filter if not "all"
+      if (activeCategory !== "all") {
+        query = query.eq("category", activeCategory);
       }
 
       const { data, error } = await query;
@@ -160,6 +168,12 @@ export default function CommunitiesPage() {
     }
   }
 
+  // Handle category change
+  const handleCategoryChange = (category: string) => {
+    setActiveCategory(category);
+  };
+
+  // Other functions remain the same (handleJoinCommunity, formatDate, etc.)
   async function handleJoinCommunity(communityId: string) {
     if (!user) {
       router.push(`/signin?redirect=${encodeURIComponent("/communities")}`);
@@ -292,6 +306,16 @@ export default function CommunitiesPage() {
           </div>
         </div>
 
+        {/* Add Category Tabs here - only show in Discover tab */}
+        {activeTab === "discover" && (
+          <div className="bg-black py-2 -mx-4 px-4">
+            <CategoryTabsModule
+              activeCategory={activeCategory}
+              onCategoryChange={handleCategoryChange}
+            />
+          </div>
+        )}
+
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, index) => (
@@ -321,8 +345,9 @@ export default function CommunitiesPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
             {activeTab === "discover" ? (
               <p className="text-gray-600 dark:text-gray-300 mb-6">
-                No communities have been created yet. Be the first to create
-                one!
+                {activeCategory === "all"
+                  ? "No communities have been created yet. Be the first to create one!"
+                  : `No communities found in the ${activeCategory} category. Be the first to create one!`}
               </p>
             ) : (
               <>
