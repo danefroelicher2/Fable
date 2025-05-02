@@ -41,16 +41,37 @@ export default function TabbedFeed() {
 
   async function fetchArticles() {
     setLoading(true);
+    setError(null); // Clear any previous errors
 
     try {
+      console.log("Fetching articles with category:", selectedCategory);
+
+      // Step 1: Check if the public_articles table exists and use type assertion to bypass type checking
+      try {
+        // First, let's test a simple query to see if the table exists
+        const { data: testData, error: testError } = await (supabase as any)
+          .from("public_articles")
+          .select("id")
+          .limit(1);
+
+        if (testError) {
+          console.error("Error testing table access:", testError);
+          throw new Error(`Table access error: ${testError.message}`);
+        }
+
+        console.log("Table access test successful:", testData);
+      } catch (testErr) {
+        console.error("Table test failed:", testErr);
+        setError("Cannot access articles. Database table may not exist.");
+        setLoading(false);
+        return;
+      }
+
+      // Step 2: Try fetching with a simpler query first
+      // Use type assertion (as any) to bypass TypeScript issues
       let query = (supabase as any)
         .from("public_articles")
-        .select(
-          `
-          *,
-          profiles:user_id(id, username, full_name, avatar_url)
-        `
-        )
+        .select("*")
         .eq("is_published", true)
         .order("published_at", { ascending: false });
 
@@ -58,17 +79,71 @@ export default function TabbedFeed() {
         query = query.eq("category", selectedCategory);
       }
 
-      const { data, error } = await query;
+      const { data: articlesOnly, error: articlesError } = await query;
 
-      if (error) {
-        console.error("Supabase query error:", error);
-        throw error;
+      if (articlesError) {
+        console.error("Error fetching basic articles:", articlesError);
+        throw articlesError;
       }
 
-      console.log("Articles fetched:", data?.length || 0);
-      setArticles(data || []);
-    } catch (error) {
+      console.log(
+        "Basic articles fetched successfully:",
+        articlesOnly?.length || 0
+      );
+
+      // Step 3: Now try to fetch profiles for each article
+      const articlesWithProfiles = [];
+
+      for (const article of articlesOnly || []) {
+        try {
+          // Fetch the profile for this article - use type assertion to bypass TypeScript checking
+          const { data: profileData, error: profileError } = await (
+            supabase as any
+          )
+            .from("profiles")
+            .select("id, username, full_name, avatar_url")
+            .eq("id", article.user_id)
+            .single();
+
+          if (profileError) {
+            console.warn(
+              "Could not fetch profile for article:",
+              article.id,
+              profileError
+            );
+            // Still add the article, but without profile data
+            articlesWithProfiles.push({
+              ...article,
+              profiles: null,
+            });
+          } else {
+            // Add article with profile data
+            articlesWithProfiles.push({
+              ...article,
+              profiles: profileData,
+            });
+          }
+        } catch (profileErr) {
+          console.warn(
+            "Error processing profile for article:",
+            article.id,
+            profileErr
+          );
+          articlesWithProfiles.push({
+            ...article,
+            profiles: null,
+          });
+        }
+      }
+
+      console.log(
+        "Articles with profiles processed:",
+        articlesWithProfiles.length
+      );
+      setArticles(articlesWithProfiles);
+    } catch (error: any) {
       console.error("Error fetching articles:", error);
+      setError(`Failed to load articles: ${error.message || "Unknown error"}`);
       setArticles([]);
     } finally {
       setLoading(false);
@@ -146,6 +221,17 @@ export default function TabbedFeed() {
               ))}
             </select>
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+              <p>{error}</p>
+              <p className="text-sm mt-2">
+                Please make sure your Supabase database is correctly set up with
+                the required tables and relationships.
+              </p>
+            </div>
+          )}
 
           {/* Articles Grid for "For You" */}
           {loading ? (

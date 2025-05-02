@@ -16,8 +16,7 @@ interface Article {
   view_count: number;
   image_url?: string | null;
   user_id: string;
-  profiles?: {
-    id: string;
+  user_info?: {
     username: string | null;
     full_name: string | null;
     avatar_url: string | null;
@@ -47,16 +46,15 @@ export default function PublicFeed() {
 
   async function fetchArticles() {
     setLoading(true);
+    setError(null);
 
     try {
+      console.log("Fetching articles for category:", selectedCategory);
+
+      // Step 1: Fetch the articles without trying to join with profiles
       let query = (supabase as any)
         .from("public_articles")
-        .select(
-          `
-          *,
-          profiles:user_id(id, username, full_name, avatar_url)
-        `
-        )
+        .select("*")
         .eq("is_published", true)
         .order("published_at", { ascending: false });
 
@@ -64,17 +62,56 @@ export default function PublicFeed() {
         query = query.eq("category", selectedCategory);
       }
 
-      const { data, error } = await query;
+      const { data: articlesData, error: articlesError } = await query;
 
-      if (error) {
-        console.error("Supabase query error:", error);
-        throw error;
+      if (articlesError) {
+        console.error("Error fetching articles:", articlesError);
+        throw articlesError;
       }
 
-      console.log("Articles fetched:", data?.length || 0);
-      setArticles(data || []);
-    } catch (error) {
+      if (!articlesData || articlesData.length === 0) {
+        console.log("No articles found");
+        setArticles([]);
+        setLoading(false);
+        return;
+      }
+
+      console.log(`Found ${articlesData.length} articles`);
+
+      // Step 2: For each article, fetch the user information separately
+      const articlesWithUserInfo = await Promise.all(
+        articlesData.map(async (article: any) => {
+          try {
+            // Get user profile for this article
+            const { data: userData, error: userError } = await (supabase as any)
+              .from("profiles")
+              .select("username, full_name, avatar_url")
+              .eq("id", article.user_id)
+              .single();
+
+            if (userError) {
+              console.warn(
+                `Could not fetch user for article ${article.id}:`,
+                userError
+              );
+              return { ...article, user_info: null };
+            }
+
+            return { ...article, user_info: userData };
+          } catch (err) {
+            console.warn(
+              `Error processing user for article ${article.id}:`,
+              err
+            );
+            return { ...article, user_info: null };
+          }
+        })
+      );
+
+      setArticles(articlesWithUserInfo);
+    } catch (error: any) {
       console.error("Error fetching articles:", error);
+      setError(`Failed to load articles: ${error.message || "Unknown error"}`);
       setArticles([]);
     } finally {
       setLoading(false);
@@ -82,21 +119,16 @@ export default function PublicFeed() {
   }
 
   async function fetchFollowingArticles(pageNum: number) {
-    try {
-      if (!user) {
-        // If not logged in, don't try to fetch
-        setFollowingLoading(false);
-        return;
-      }
+    if (!user) {
+      setFollowingLoading(false);
+      return;
+    }
 
+    try {
       setFollowingLoading(true);
       setError(null);
 
-      console.log(
-        `Fetching following articles for user ${user.id}, page ${pageNum}`
-      );
-
-      // First get list of users the current user follows
+      // Step 1: Get users that the current user follows
       const { data: followingData, error: followingError } = await (
         supabase as any
       )
@@ -104,9 +136,10 @@ export default function PublicFeed() {
         .select("following_id")
         .eq("follower_id", user.id);
 
-      if (followingError) throw followingError;
+      if (followingError) {
+        throw followingError;
+      }
 
-      // If not following anyone, show empty state
       if (!followingData || followingData.length === 0) {
         console.log("User is not following anyone");
         setFollowingArticles([]);
@@ -115,13 +148,10 @@ export default function PublicFeed() {
         return;
       }
 
-      // Extract the user IDs the user is following
-      const followingIds = followingData.map(
-        (follow: { following_id: string }) => follow.following_id
-      );
-      console.log("Following IDs:", followingIds);
+      // Extract user IDs that the current user is following
+      const followingIds = followingData.map((row: any) => row.following_id);
 
-      // Fetch articles from followed users with pagination
+      // Step 2: Fetch articles from users that the current user follows
       const from = (pageNum - 1) * articlesPerPage;
       const to = from + articlesPerPage - 1;
 
@@ -129,37 +159,64 @@ export default function PublicFeed() {
         supabase as any
       )
         .from("public_articles")
-        .select(
-          `
-          *,
-          profiles:user_id(id, username, full_name, avatar_url)
-        `
-        )
+        .select("*")
         .in("user_id", followingIds)
         .eq("is_published", true)
         .order("published_at", { ascending: false })
         .range(from, to);
 
-      if (articlesError) throw articlesError;
-
-      console.log(
-        `Found ${articlesData?.length || 0} articles from followed users`
-      );
+      if (articlesError) {
+        throw articlesError;
+      }
 
       // Determine if there are more articles to load
-      setHasMore(articlesData?.length === articlesPerPage);
+      setHasMore(articlesData.length === articlesPerPage);
+
+      // Step 3: For each article, fetch the user information separately
+      const articlesWithUserInfo = await Promise.all(
+        articlesData.map(async (article: any) => {
+          try {
+            // Get user profile for this article
+            const { data: userData, error: userError } = await (supabase as any)
+              .from("profiles")
+              .select("username, full_name, avatar_url")
+              .eq("id", article.user_id)
+              .single();
+
+            if (userError) {
+              console.warn(
+                `Could not fetch user for article ${article.id}:`,
+                userError
+              );
+              return { ...article, user_info: null };
+            }
+
+            return { ...article, user_info: userData };
+          } catch (err) {
+            console.warn(
+              `Error processing user for article ${article.id}:`,
+              err
+            );
+            return { ...article, user_info: null };
+          }
+        })
+      );
 
       // If loading more, append to existing articles
       if (pageNum > 1) {
-        setFollowingArticles((prev) => [...prev, ...(articlesData || [])]);
+        setFollowingArticles((prev) => [...prev, ...articlesWithUserInfo]);
       } else {
-        setFollowingArticles(articlesData || []);
+        setFollowingArticles(articlesWithUserInfo);
       }
 
       setPage(pageNum);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching following articles:", err);
-      setError("Failed to load articles from people you follow");
+      setError(
+        `Failed to load articles from people you follow: ${
+          err.message || "Unknown error"
+        }`
+      );
     } finally {
       setFollowingLoading(false);
     }
@@ -180,7 +237,7 @@ export default function PublicFeed() {
     });
   };
 
-  // Categories matching your existing ones
+  // Categories list
   const categories = [
     { value: "all", label: "All Categories" },
     { value: "ancient-history", label: "Ancient History" },
@@ -300,25 +357,25 @@ export default function PublicFeed() {
                 className="flex items-center mb-2 group"
               >
                 <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-2 overflow-hidden">
-                  {article.profiles?.avatar_url ? (
+                  {article.user_info?.avatar_url ? (
                     <img
-                      src={article.profiles.avatar_url}
-                      alt={article.profiles.username || "User"}
+                      src={article.user_info.avatar_url}
+                      alt={article.user_info.username || "User"}
                       className="h-full w-full object-cover"
                     />
                   ) : (
                     <span>
                       {(
-                        article.profiles?.username?.charAt(0) ||
-                        article.profiles?.full_name?.charAt(0) ||
+                        article.user_info?.username?.charAt(0) ||
+                        article.user_info?.full_name?.charAt(0) ||
                         "U"
                       ).toUpperCase()}
                     </span>
                   )}
                 </div>
                 <span className="text-sm text-gray-600 group-hover:text-blue-600">
-                  {article.profiles?.full_name ||
-                    article.profiles?.username ||
+                  {article.user_info?.full_name ||
+                    article.user_info?.username ||
                     "Anonymous"}
                 </span>
               </Link>
@@ -421,7 +478,7 @@ export default function PublicFeed() {
 
       {/* Tab Content */}
       {activeTab === "forYou" ? (
-        <>
+        <div>
           {/* Category Filter - only shown for "For You" tab */}
           <div className="mb-8">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -440,12 +497,23 @@ export default function PublicFeed() {
             </select>
           </div>
 
-          {/* For You tab content */}
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+              <p>{error}</p>
+              <p className="text-sm mt-2">
+                If this is your first time setting up, make sure your Supabase
+                database has the public_articles table.
+              </p>
+            </div>
+          )}
+
+          {/* Articles Grid for "For You" */}
           {renderArticleGrid(articles, loading)}
-        </>
+        </div>
       ) : (
-        <>
-          {/* Following tab content */}
+        <div>
+          {/* Following Tab Content */}
           {!user ? (
             <div className="text-center py-10 bg-white rounded-lg shadow-md">
               <h2 className="text-2xl font-bold mb-4">
@@ -463,6 +531,13 @@ export default function PublicFeed() {
             </div>
           ) : (
             <>
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+                  <p>{error}</p>
+                </div>
+              )}
+
               {renderArticleGrid(followingArticles, followingLoading)}
 
               {/* "Load More" button for Following tab */}
@@ -479,7 +554,7 @@ export default function PublicFeed() {
               )}
             </>
           )}
-        </>
+        </div>
       )}
     </div>
   );
