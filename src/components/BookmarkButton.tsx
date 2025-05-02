@@ -44,17 +44,19 @@ export default function BookmarkButton({
           query = query.eq("article_id", articleId);
         }
 
-        const { data, error } = await query
-          .eq("user_id", user.id)
-          .maybeSingle();
+        // Add user_id filter to the query
+        query = query.eq("user_id", user.id);
+
+        // Execute the query without maybeSingle()
+        const { data, error } = await query;
 
         if (error) {
           console.error("Error checking bookmark status:", error);
           throw error;
         }
 
-        console.log("Bookmark check result:", data); // Debug output
-        setIsBookmarked(!!data);
+        // Check if any bookmarks were found
+        setIsBookmarked(data && data.length > 0);
       } catch (error) {
         console.error("Error checking bookmark status:", error);
       } finally {
@@ -79,7 +81,6 @@ export default function BookmarkButton({
     try {
       if (isBookmarked) {
         // Remove bookmark
-        console.log("Attempting to delete bookmark"); // Debug
         let query = (supabase as any).from("bookmarks").delete();
 
         if (postId) {
@@ -88,56 +89,26 @@ export default function BookmarkButton({
           query = query.eq("article_id", articleId);
         }
 
-        const { error, data } = await query.eq("user_id", user.id);
+        const { error } = await query.eq("user_id", user.id);
 
-        if (error) {
-          console.error("Error deleting bookmark:", error);
-          throw error;
-        }
+        if (error) throw error;
 
-        console.log("Delete result:", data); // Debug
         setIsBookmarked(false);
       } else {
         // Add bookmark
-        console.log(
-          "Attempting to add bookmark for",
-          postId ? `post: ${postId}` : `article: ${articleId}`
-        );
-
-        // Get the current user's JWT
-        const { data: authData } = await (supabase as any).auth.getSession();
-        const userId = authData?.session?.user?.id;
-
-        if (!userId) {
-          throw new Error("User ID not found in session");
-        }
-
-        const bookmarkData = {
-          user_id: userId, // Using the ID directly from the auth session
+        const { error } = await (supabase as any).from("bookmarks").insert({
+          user_id: user.id,
           post_id: postId || null,
           article_id: articleId || null,
           created_at: new Date().toISOString(),
-        };
+        });
 
-        console.log("Bookmark data:", bookmarkData);
+        if (error) throw error;
 
-        const { error, data } = await (supabase as any)
-          .from("bookmarks")
-          .insert(bookmarkData)
-          .select();
-
-        if (error) {
-          console.error("Error creating bookmark:", error);
-          throw error;
-        }
-
-        console.log("Insert result:", data); // Debug
         setIsBookmarked(true);
       }
     } catch (error) {
       console.error("Error toggling bookmark:", error);
-      // Keep the UI state consistent if there's an error
-      // (don't change isBookmarked if the operation failed)
     } finally {
       setLoading(false);
     }
