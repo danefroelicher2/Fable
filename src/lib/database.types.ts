@@ -191,51 +191,7 @@ export interface Database {
           }
         ];
       };
-      // New bookmarks table
-      bookmarks: {
-        Row: {
-          id: string;
-          user_id: string;
-          article_id: string | null;
-          community_post_id: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          article_id?: string | null;
-          community_post_id?: string | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          article_id?: string | null;
-          community_post_id?: string | null;
-          created_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "bookmarks_user_id_fkey";
-            columns: ["user_id"];
-            referencedRelation: "users";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "bookmarks_article_id_fkey";
-            columns: ["article_id"];
-            referencedRelation: "public_articles";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "bookmarks_community_post_id_fkey";
-            columns: ["community_post_id"];
-            referencedRelation: "community_posts";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-      // This will be added to src/lib/database.types.ts
+
       communities: {
         Row: {
           id: string;
@@ -457,6 +413,50 @@ export interface Database {
             foreignKeyName: "comments_user_id_fkey";
             columns: ["user_id"];
             referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      // Add this to src/lib/database.types.ts inside the Tables section:
+      bookmarks: {
+        Row: {
+          id: string;
+          user_id: string;
+          article_id: string | null;
+          post_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          article_id?: string | null;
+          post_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          article_id?: string | null;
+          post_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "bookmarks_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bookmarks_article_id_fkey";
+            columns: ["article_id"];
+            referencedRelation: "public_articles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bookmarks_post_id_fkey";
+            columns: ["post_id"];
+            referencedRelation: "community_posts";
             referencedColumns: ["id"];
           }
         ];

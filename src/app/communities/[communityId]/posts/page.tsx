@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import ConfirmationModal from "@/components/ConfirmationModal";
+import BookmarkButton from "@/components/BookmarkButton";
 
 interface Post {
   id: string;
@@ -52,7 +52,6 @@ export default function CommunityPostPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMember, setIsMember] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const communityId = Array.isArray(params?.communityId)
     ? params.communityId[0]
@@ -67,58 +66,6 @@ export default function CommunityPostPage() {
       fetchPostData();
     }
   }, [communityId, postId, user]);
-
-  // Trigger the delete confirmation modal
-  function handleDeletePost() {
-    if (!user || !post || user.id !== post.user_id) {
-      return; // Only post authors can delete posts
-    }
-
-    // Show the confirmation modal
-    setShowDeleteModal(true);
-  }
-
-  // Actually perform the deletion
-  async function executePostDeletion() {
-    if (!user || !post || user.id !== post.user_id) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setShowDeleteModal(false);
-
-      // First, delete all comments on this post
-      const { error: commentsError } = await (supabase as any)
-        .from("community_post_comments")
-        .delete()
-        .eq("post_id", postId);
-
-      if (commentsError) {
-        console.error("Error deleting post comments:", commentsError);
-        throw commentsError;
-      }
-
-      // Then, delete the post itself
-      const { error: postError } = await (supabase as any)
-        .from("community_posts")
-        .delete()
-        .eq("id", postId)
-        .eq("user_id", user.id); // Extra safety check
-
-      if (postError) {
-        console.error("Error deleting post:", postError);
-        throw postError;
-      }
-
-      // Redirect to community page
-      router.push(`/communities/${communityId}`);
-    } catch (err) {
-      console.error("Error deleting post:", err);
-      alert("Failed to delete post. Please try again.");
-      setLoading(false);
-    }
-  }
 
   async function fetchPostData() {
     try {
@@ -250,6 +197,69 @@ export default function CommunityPostPage() {
     }
   }
 
+  async function handleDeletePost() {
+    if (!user || !post || user.id !== post.user_id) {
+      return; // Only post authors can delete posts
+    }
+
+    // Confirm deletion
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this post? This action cannot be undone and will remove all comments."
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      setLoading(true);
+
+      // First, delete all comments on this post
+      const { error: commentsError } = await (supabase as any)
+        .from("community_post_comments")
+        .delete()
+        .eq("post_id", postId);
+
+      if (commentsError) {
+        console.error("Error deleting post comments:", commentsError);
+        throw commentsError;
+      }
+
+      // Delete any bookmarks for this post
+      try {
+        const { error: bookmarksError } = await (supabase as any)
+          .from("bookmarks")
+          .delete()
+          .eq("post_id", postId);
+
+        if (bookmarksError) {
+          console.error("Error deleting post bookmarks:", bookmarksError);
+          // Continue even if bookmarks deletion fails
+        }
+      } catch (bookmarkErr) {
+        console.error("Error with bookmarks deletion:", bookmarkErr);
+        // Continue with post deletion even if bookmarks deletion fails
+      }
+
+      // Then, delete the post itself
+      const { error: postError } = await (supabase as any)
+        .from("community_posts")
+        .delete()
+        .eq("id", postId)
+        .eq("user_id", user.id); // Extra safety check
+
+      if (postError) {
+        console.error("Error deleting post:", postError);
+        throw postError;
+      }
+
+      // Redirect to community page
+      router.push(`/communities/${communityId}`);
+    } catch (err) {
+      console.error("Error deleting post:", err);
+      alert("Failed to delete post. Please try again.");
+      setLoading(false);
+    }
+  }
+
   // Format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -356,8 +366,14 @@ export default function CommunityPostPage() {
                 </div>
               </Link>
             </div>
-            {user && post.user_id === user.id && (
-              <div className="mt-4 mb-6 flex justify-end">
+
+            {/* Post Actions */}
+            <div className="flex items-center mb-6 justify-between">
+              <div className="flex items-center">
+                <BookmarkButton postId={postId} className="mr-4" />
+              </div>
+
+              {user && post.user_id === user.id && (
                 <button
                   onClick={handleDeletePost}
                   className="bg-red-600 text-white px-3 py-1 text-sm rounded hover:bg-red-700 transition"
@@ -365,10 +381,9 @@ export default function CommunityPostPage() {
                 >
                   {loading ? "Deleting..." : "Delete Post"}
                 </button>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* Post content follows here */}
             <div className="prose max-w-none mb-6 dark:prose-invert">
               <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
                 {post.content}
@@ -486,18 +501,6 @@ export default function CommunityPostPage() {
             )}
           </div>
         </div>
-
-        {/* Delete Confirmation Modal */}
-        <ConfirmationModal
-          isOpen={showDeleteModal}
-          title="Delete Post"
-          message="Are you sure you want to delete this post? This action cannot be undone and will remove all comments."
-          confirmText="Delete"
-          cancelText="Cancel"
-          onConfirm={executePostDeletion}
-          onCancel={() => setShowDeleteModal(false)}
-          confirmButtonColor="red"
-        />
       </div>
     </div>
   );
