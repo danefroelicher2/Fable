@@ -27,14 +27,21 @@ export default function BookmarkButton({
 
   // Check if the post/article is already bookmarked
   useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
     async function checkBookmarkStatus() {
       if (!user || (!postId && !articleId)) {
-        setChecking(false);
+        if (isMounted) {
+          setChecking(false);
+        }
         return;
       }
 
       try {
-        setChecking(true);
+        if (isMounted) {
+          setChecking(true);
+        }
 
         let query = (supabase as any).from("bookmarks").select("id");
 
@@ -56,15 +63,25 @@ export default function BookmarkButton({
         }
 
         // Check if any bookmarks were found
-        setIsBookmarked(data && data.length > 0);
+        if (isMounted) {
+          setIsBookmarked(data && data.length > 0);
+        }
       } catch (error) {
         console.error("Error checking bookmark status:", error);
       } finally {
-        setChecking(false);
+        if (isMounted) {
+          setChecking(false);
+        }
       }
     }
 
     checkBookmarkStatus();
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
   }, [user, postId, articleId]);
 
   async function handleToggleBookmark() {

@@ -35,128 +35,141 @@ export default function BookmarksPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
     // Redirect if not authenticated
     if (!user && !loading) {
       router.push("/signin?redirect=" + encodeURIComponent("/bookmarks"));
       return;
     }
 
-    if (user) {
-      fetchBookmarks();
-    }
-  }, [user, router]);
+    async function loadBookmarks() {
+      if (!user) return;
 
-  async function fetchBookmarks() {
-    try {
-      setLoading(true);
-      setError(null);
+      try {
+        if (isMounted) setLoading(true);
 
-      // Add null check for user
-      if (!user) {
-        setError("You must be logged in to view bookmarks");
-        setLoading(false);
-        return;
-      }
+        // Fetch bookmarks with article and post information
+        const { data: bookmarkData, error: bookmarkError } = await (
+          supabase as any
+        )
+          .from("bookmarks")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
 
-      // Fetch bookmarks with article and post information
-      const { data: bookmarkData, error: bookmarkError } = await (
-        supabase as any
-      )
-        .from("bookmarks")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        if (bookmarkError) throw bookmarkError;
 
-      if (bookmarkError) throw bookmarkError;
+        // Initialize an array to hold processed bookmarks
+        const processedBookmarks: BookmarkedItem[] = [];
 
-      // Initialize an array to hold processed bookmarks
-      const processedBookmarks: BookmarkedItem[] = [];
+        // Process each bookmark
+        for (const bookmark of bookmarkData || []) {
+          // Check if component is still mounted before continuing the loop
+          if (!isMounted) break;
 
-      // Process each bookmark
-      for (const bookmark of bookmarkData || []) {
-        if (bookmark.post_id) {
-          // Fetch post details
-          const { data: postData, error: postError } = await (supabase as any)
-            .from("community_posts")
-            .select(
+          if (bookmark.post_id) {
+            // Fetch post details
+            const { data: postData, error: postError } = await (supabase as any)
+              .from("community_posts")
+              .select(
+                `
+                id, title, content, created_at, user_id, community_id
               `
-              id, title, content, created_at, user_id, community_id
-            `
+              )
+              .eq("id", bookmark.post_id)
+              .single();
+
+            if (postError) {
+              console.error("Error fetching post:", postError);
+              continue;
+            }
+
+            if (postData && isMounted) {
+              // Fetch user profile
+              const { data: userData } = await supabase
+                .from("profiles")
+                .select("username, full_name, avatar_url")
+                .eq("id", postData.user_id)
+                .single();
+
+              // Fetch community name
+              const { data: communityData } = await (supabase as any)
+                .from("communities")
+                .select("name")
+                .eq("id", postData.community_id)
+                .single();
+
+              processedBookmarks.push({
+                ...postData,
+                type: "post",
+                user: userData || null,
+                community: communityData || null,
+              });
+            }
+          } else if (bookmark.article_id) {
+            // Fetch article details
+            const { data: articleData, error: articleError } = await (
+              supabase as any
             )
-            .eq("id", bookmark.post_id)
-            .single();
-
-          if (postError) {
-            console.error("Error fetching post:", postError);
-            continue;
-          }
-
-          if (postData) {
-            // Fetch user profile
-            const { data: userData } = await supabase
-              .from("profiles")
-              .select("username, full_name, avatar_url")
-              .eq("id", postData.user_id)
-              .single();
-
-            // Fetch community name
-            const { data: communityData } = await (supabase as any)
-              .from("communities")
-              .select("name")
-              .eq("id", postData.community_id)
-              .single();
-
-            processedBookmarks.push({
-              ...postData,
-              type: "post",
-              user: userData || null,
-              community: communityData || null,
-            });
-          }
-        } else if (bookmark.article_id) {
-          // Fetch article details
-          const { data: articleData, error: articleError } = await (
-            supabase as any
-          )
-            .from("public_articles")
-            .select(
+              .from("public_articles")
+              .select(
+                `
+                id, title, content, created_at, user_id, slug
               `
-              id, title, content, created_at, user_id, slug
-            `
-            )
-            .eq("id", bookmark.article_id)
-            .single();
-
-          if (articleError) {
-            console.error("Error fetching article:", articleError);
-            continue;
-          }
-
-          if (articleData) {
-            // Fetch user profile
-            const { data: userData } = await supabase
-              .from("profiles")
-              .select("username, full_name, avatar_url")
-              .eq("id", articleData.user_id)
+              )
+              .eq("id", bookmark.article_id)
               .single();
 
-            processedBookmarks.push({
-              ...articleData,
-              type: "article",
-              user: userData || null,
-            });
+            if (articleError) {
+              console.error("Error fetching article:", articleError);
+              continue;
+            }
+
+            if (articleData && isMounted) {
+              // Fetch user profile
+              const { data: userData } = await supabase
+                .from("profiles")
+                .select("username, full_name, avatar_url")
+                .eq("id", articleData.user_id)
+                .single();
+
+              processedBookmarks.push({
+                ...articleData,
+                type: "article",
+                user: userData || null,
+              });
+            }
           }
         }
-      }
 
-      setBookmarks(processedBookmarks);
-    } catch (err) {
-      console.error("Error fetching bookmarks:", err);
-      setError("Failed to load bookmarks. Please try again.");
-    } finally {
-      setLoading(false);
+        if (isMounted) {
+          setBookmarks(processedBookmarks);
+          setError(null);
+        }
+      } catch (err) {
+        console.error("Error fetching bookmarks:", err);
+        if (isMounted) {
+          setError("Failed to load bookmarks. Please try again.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     }
-  }
+
+    if (user) {
+      loadBookmarks();
+    }
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [user, router]);
 
   // Format date
   const formatDate = (dateString: string) => {
