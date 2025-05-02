@@ -191,6 +191,50 @@ export interface Database {
           }
         ];
       };
+      // New bookmarks table
+      bookmarks: {
+        Row: {
+          id: string;
+          user_id: string;
+          article_id: string | null;
+          community_post_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          article_id?: string | null;
+          community_post_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          article_id?: string | null;
+          community_post_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "bookmarks_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bookmarks_article_id_fkey";
+            columns: ["article_id"];
+            referencedRelation: "public_articles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bookmarks_community_post_id_fkey";
+            columns: ["community_post_id"];
+            referencedRelation: "community_posts";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       // This will be added to src/lib/database.types.ts
       communities: {
         Row: {
@@ -202,6 +246,7 @@ export interface Database {
           banner_url: string | null;
           created_at: string;
           updated_at: string | null;
+          category: string | null;
         };
         Insert: {
           id?: string;
@@ -212,6 +257,7 @@ export interface Database {
           banner_url?: string | null;
           created_at?: string;
           updated_at?: string | null;
+          category?: string | null;
         };
         Update: {
           id?: string;
@@ -222,6 +268,7 @@ export interface Database {
           banner_url?: string | null;
           created_at?: string;
           updated_at?: string | null;
+          category?: string | null;
         };
         Relationships: [
           {
@@ -310,6 +357,56 @@ export interface Database {
             foreignKeyName: "community_posts_user_id_fkey";
             columns: ["user_id"];
             referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+
+      community_post_comments: {
+        Row: {
+          id: string;
+          post_id: string;
+          user_id: string;
+          content: string;
+          parent_id: string | null;
+          created_at: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          user_id: string;
+          content: string;
+          parent_id?: string | null;
+          created_at?: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          post_id?: string;
+          user_id?: string;
+          content?: string;
+          parent_id?: string | null;
+          created_at?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "community_post_comments_post_id_fkey";
+            columns: ["post_id"];
+            referencedRelation: "community_posts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "community_post_comments_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "community_post_comments_parent_id_fkey";
+            columns: ["parent_id"];
+            referencedRelation: "community_post_comments";
             referencedColumns: ["id"];
           }
         ];
