@@ -11,6 +11,8 @@ interface BookmarkButtonProps {
   articleId?: string;
   className?: string;
   color?: "light" | "dark";
+  size?: "sm" | "md" | "lg";
+  showText?: boolean;
 }
 
 export default function BookmarkButton({
@@ -18,6 +20,8 @@ export default function BookmarkButton({
   articleId,
   className = "",
   color = "light",
+  size = "md",
+  showText = false,
 }: BookmarkButtonProps) {
   const { user } = useAuth();
   const router = useRouter();
@@ -54,7 +58,7 @@ export default function BookmarkButton({
         // Add user_id filter to the query
         query = query.eq("user_id", user.id);
 
-        // Execute the query without maybeSingle()
+        // Execute the query
         const { data, error } = await query;
 
         if (error) {
@@ -131,11 +135,18 @@ export default function BookmarkButton({
     }
   }
 
+  // Size classes for the icon
+  const sizeClasses = {
+    sm: "h-4 w-4",
+    md: "h-5 w-5",
+    lg: "h-6 w-6",
+  };
+
   return (
     <button
       onClick={handleToggleBookmark}
       disabled={loading || checking}
-      className={`transition-colors focus:outline-none ${
+      className={`flex items-center transition-colors focus:outline-none ${
         isBookmarked
           ? "text-yellow-500"
           : color === "light"
@@ -148,7 +159,7 @@ export default function BookmarkButton({
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        className={`h-5 w-5 transition-transform ${
+        className={`${sizeClasses[size]} transition-transform ${
           isBookmarked ? "fill-current" : "fill-none stroke-current stroke-2"
         }`}
         viewBox="0 0 24 24"
@@ -159,6 +170,10 @@ export default function BookmarkButton({
           d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
         />
       </svg>
+
+      {showText && (
+        <span className="ml-2 text-sm">{isBookmarked ? "Saved" : "Save"}</span>
+      )}
     </button>
   );
 }

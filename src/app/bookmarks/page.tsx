@@ -17,7 +17,7 @@ interface BookmarkedItem {
   user_id: string;
   community_id?: string;
   slug?: string;
-  user?: {
+  user_info?: {
     username: string | null;
     full_name: string | null;
     avatar_url: string | null;
@@ -33,51 +33,58 @@ export default function BookmarksPage() {
   const [bookmarks, setBookmarks] = useState<BookmarkedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<"all" | "articles" | "community">("all");
 
   useEffect(() => {
-    let isMounted = true;
-    const controller = new AbortController();
-
     // Redirect if not authenticated
     if (!user && !loading) {
       router.push("/signin?redirect=" + encodeURIComponent("/bookmarks"));
       return;
     }
 
-    async function loadBookmarks() {
-      if (!user) return;
+    if (user) {
+      loadBookmarks();
+    }
+  }, [user, router, activeFilter]);
 
-      try {
-        if (isMounted) setLoading(true);
+  async function loadBookmarks() {
+    if (!user) return;
 
-        // Fetch bookmarks with article and post information
-        const { data: bookmarkData, error: bookmarkError } = await (
-          supabase as any
-        )
-          .from("bookmarks")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
+    try {
+      setLoading(true);
+      setError(null);
 
-        if (bookmarkError) throw bookmarkError;
+      // Fetch bookmarks with article and post information
+      const { data: bookmarkData, error: bookmarkError } = await (supabase as any)
+        .from("bookmarks")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
-        // Initialize an array to hold processed bookmarks
-        const processedBookmarks: BookmarkedItem[] = [];
+      if (bookmarkError) throw bookmarkError;
 
-        // Process each bookmark
-        for (const bookmark of bookmarkData || []) {
-          // Check if component is still mounted before continuing the loop
-          if (!isMounted) break;
+      // Initialize an array to hold processed bookmarks
+      const processedBookmarks: BookmarkedItem[] = [];
 
-          if (bookmark.post_id) {
+      // Process each bookmark based on the active filter
+      for (const bookmark of bookmarkData || []) {
+        // Skip based on filter
+        if (
+          (activeFilter === "articles" && !bookmark.article_id) ||
+          (activeFilter === "community" && !bookmark.post_id)
+        ) {
+          continue;
+        }
+
+        if (bookmark.post_id) {
+          // For community posts
+          try {
             // Fetch post details
             const { data: postData, error: postError } = await (supabase as any)
               .from("community_posts")
-              .select(
-                `
+              .select(`
                 id, title, content, created_at, user_id, community_id
-              `
-              )
+              `)
               .eq("id", bookmark.post_id)
               .single();
 
@@ -86,7 +93,7 @@ export default function BookmarksPage() {
               continue;
             }
 
-            if (postData && isMounted) {
+            if (postData) {
               // Fetch user profile
               const { data: userData } = await supabase
                 .from("profiles")
@@ -104,21 +111,22 @@ export default function BookmarksPage() {
               processedBookmarks.push({
                 ...postData,
                 type: "post",
-                user: userData || null,
+                user_info: userData || null,
                 community: communityData || null,
               });
             }
-          } else if (bookmark.article_id) {
+          } catch (postErr) {
+            console.error("Error processing post bookmark:", postErr);
+          }
+        } else if (bookmark.article_id) {
+          // For published articles
+          try {
             // Fetch article details
-            const { data: articleData, error: articleError } = await (
-              supabase as any
-            )
+            const { data: articleData, error: articleError } = await (supabase as any)
               .from("public_articles")
-              .select(
-                `
-                id, title, content, created_at, user_id, slug
-              `
-              )
+              .select(`
+                id, title, content, created_at, user_id, slug, published_at
+              `)
               .eq("id", bookmark.article_id)
               .single();
 
@@ -127,7 +135,7 @@ export default function BookmarksPage() {
               continue;
             }
 
-            if (articleData && isMounted) {
+            if (articleData) {
               // Fetch user profile
               const { data: userData } = await supabase
                 .from("profiles")
@@ -138,38 +146,23 @@ export default function BookmarksPage() {
               processedBookmarks.push({
                 ...articleData,
                 type: "article",
-                user: userData || null,
+                user_info: userData || null,
               });
             }
+          } catch (articleErr) {
+            console.error("Error processing article bookmark:", articleErr);
           }
         }
-
-        if (isMounted) {
-          setBookmarks(processedBookmarks);
-          setError(null);
-        }
-      } catch (err) {
-        console.error("Error fetching bookmarks:", err);
-        if (isMounted) {
-          setError("Failed to load bookmarks. Please try again.");
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
       }
-    }
 
-    if (user) {
-      loadBookmarks();
+      setBookmarks(processedBookmarks);
+    } catch (err: any) {
+      console.error("Error fetching bookmarks:", err);
+      setError("Failed to load bookmarks. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    // Cleanup function
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, [user, router]);
+  }
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -192,6 +185,23 @@ export default function BookmarksPage() {
       return `/articles/${item.slug || item.id}`;
     } else {
       return `/communities/${item.community_id}/posts/${item.id}`;
+    }
+  };
+
+  // Get the type badge for an item
+  const getTypeBadge = (item: BookmarkedItem) => {
+    if (item.type === "article") {
+      return (
+        <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+          Article
+        </span>
+      );
+    } else {
+      return (
+        <span className="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
+          Community Post
+        </span>
+      );
     }
   };
 
@@ -223,7 +233,42 @@ export default function BookmarksPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 dark:text-white">Bookmarks</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold dark:text-white">Bookmarks</h1>
+          
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setActiveFilter("all")}
+              className={`px-3 py-1 rounded-md text-sm ${
+                activeFilter === "all"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setActiveFilter("articles")}
+              className={`px-3 py-1 rounded-md text-sm ${
+                activeFilter === "articles"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              }`}
+            >
+              Articles
+            </button>
+            <button
+              onClick={() => setActiveFilter("community")}
+              className={`px-3 py-1 rounded-md text-sm ${
+                activeFilter === "community"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              }`}
+            >
+              Community
+            </button>
+          </div>
+        </div>
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 dark:bg-red-900 dark:border-red-700 dark:text-red-300">
@@ -234,11 +279,35 @@ export default function BookmarksPage() {
         {bookmarks.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              You don't have any bookmarks yet.
+              {activeFilter === "all" 
+                ? "You don't have any bookmarks yet." 
+                : activeFilter === "articles" 
+                  ? "You don't have any bookmarked articles yet."
+                  : "You don't have any bookmarked community posts yet."
+              }
             </p>
             <p className="text-gray-600 dark:text-gray-300">
-              Start exploring and bookmarking posts and articles that interest
-              you.
+              {activeFilter === "all" || activeFilter === "articles" ? (
+                <>
+                  Start exploring and bookmarking content that interests you.{" "}
+                  <Link 
+                    href="/feed" 
+                    className="text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Check out the community feed
+                  </Link>
+                </>
+              ) : (
+                <>
+                  Start exploring and bookmarking content that interests you.{" "}
+                  <Link 
+                    href="/communities" 
+                    className="text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Explore communities
+                  </Link>
+                </>
+              )}
             </p>
           </div>
         ) : (
@@ -251,6 +320,17 @@ export default function BookmarksPage() {
                 <div className="p-6">
                   <div className="flex justify-between items-start">
                     <div>
+                      <div className="flex space-x-2 mb-2">
+                        {getTypeBadge(item)}
+                        {item.type === "post" && item.community && (
+                          <Link
+                            href={`/communities/${item.community_id}`}
+                            className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs hover:bg-green-200"
+                          >
+                            {item.community.name}
+                          </Link>
+                        )}
+                      </div>
                       <h3 className="text-xl font-bold mb-2 text-gray-800 dark:text-white">
                         <Link
                           href={getItemPath(item)}
@@ -259,57 +339,52 @@ export default function BookmarksPage() {
                           {item.title}
                         </Link>
                       </h3>
-                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
-                        <Link
-                          href={`/user/${item.user_id}`}
-                          className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 mr-3"
-                        >
-                          <div className="h-6 w-6 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 mr-2 overflow-hidden">
-                            {item.user?.avatar_url ? (
-                              <img
-                                src={item.user.avatar_url}
-                                alt={item.user?.username || "User"}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <span>
-                                {(
-                                  item.user?.username ||
-                                  item.user?.full_name ||
-                                  "U"
-                                )
-                                  .charAt(0)
-                                  .toUpperCase()}
-                              </span>
-                            )}
-                          </div>
-                          {item.user?.full_name ||
-                            item.user?.username ||
-                            "Anonymous"}
-                        </Link>
-                        <span className="mx-2">•</span>
-                        <span>{formatDate(item.created_at)}</span>
-                        {item.type === "post" && item.community && (
-                          <>
-                            <span className="mx-2">•</span>
-                            <Link
-                              href={`/communities/${item.community_id}`}
-                              className="hover:text-blue-600 dark:hover:text-blue-400"
-                            >
-                              {item.community.name}
-                            </Link>
-                          </>
-                        )}
-                      </div>
                     </div>
+                    
                     <BookmarkButton
                       postId={item.type === "post" ? item.id : undefined}
                       articleId={item.type === "article" ? item.id : undefined}
+                      size="md"
+                      showText
                     />
                   </div>
+                  
+                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    <Link
+                      href={`/user/${item.user_id}`}
+                      className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 mr-3"
+                    >
+                      <div className="h-6 w-6 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 mr-2 overflow-hidden">
+                        {item.user_info?.avatar_url ? (
+                          <img
+                            src={item.user_info.avatar_url}
+                            alt={item.user_info?.username || "User"}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span>
+                            {(
+                              item.user_info?.username ||
+                              item.user_info?.full_name ||
+                              "U"
+                            )
+                              .charAt(0)
+                              .toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      {item.user_info?.full_name ||
+                        item.user_info?.username ||
+                        "Anonymous"}
+                    </Link>
+                    <span className="mx-2">•</span>
+                    <span>{formatDate(item.type === 'article' ? (item as any).published_at || item.created_at : item.created_at)}</span>
+                  </div>
+                  
                   <p className="text-gray-700 dark:text-gray-300 mb-3">
                     {formatPreview(item.content)}
                   </p>
+                  
                   <Link
                     href={getItemPath(item)}
                     className="text-blue-600 dark:text-blue-400 hover:underline text-sm"

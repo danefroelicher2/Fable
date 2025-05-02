@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import BookmarkButton from "@/components/BookmarkButton";
 
 interface Article {
   id: string;
@@ -251,6 +252,106 @@ export default function PublicFeed() {
     { value: "modern-history", label: "Modern History" },
   ];
 
+  // Article Card Component
+  const ArticleCard = ({ article }: { article: Article }) => {
+    return (
+      <div className="bg-white rounded-lg shadow-md overflow-hidden article-card">
+        <div className="h-48 bg-slate-200 overflow-hidden">
+          {article.image_url ? (
+            <img
+              src={article.image_url}
+              alt={article.title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-slate-500">
+              <span className="text-center p-4">{article.title}</span>
+            </div>
+          )}
+        </div>
+        <div className="p-4">
+          <div className="flex justify-between items-start">
+            <Link href={`/articles/${article.slug}`}>
+              <h2 className="text-xl font-bold mb-2 hover:text-blue-600">
+                {article.title}
+              </h2>
+            </Link>
+
+            {/* Bookmark Button */}
+            <BookmarkButton
+              articleId={article.id}
+              color="light"
+              className="mt-1"
+            />
+          </div>
+
+          <Link
+            href={`/user/${article.user_id}`}
+            className="flex items-center mb-2 group"
+          >
+            <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-2 overflow-hidden">
+              {article.user_info?.avatar_url ? (
+                <img
+                  src={article.user_info.avatar_url}
+                  alt={article.user_info.username || "User"}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span>
+                  {(
+                    article.user_info?.username?.charAt(0) ||
+                    article.user_info?.full_name?.charAt(0) ||
+                    "U"
+                  ).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <span className="text-sm text-gray-600 group-hover:text-blue-600">
+              {article.user_info?.full_name ||
+                article.user_info?.username ||
+                "Anonymous"}
+            </span>
+          </Link>
+
+          <p className="text-gray-600 text-sm mb-2">
+            {formatDate(article.published_at)}
+          </p>
+
+          <p className="text-gray-700 mb-3 line-clamp-3">
+            {article.excerpt || "No excerpt available"}
+          </p>
+
+          <div className="flex justify-between items-center mt-4">
+            <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+              {categories.find((c) => c.value === article.category)?.label ||
+                article.category ||
+                "Uncategorized"}
+            </span>
+
+            <div className="flex items-center text-sm text-gray-500">
+              <span className="flex items-center mr-3">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-1"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                  <path
+                    fillRule="evenodd"
+                    d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                {article.view_count || 0}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderArticleGrid = (
     articlesToShow: Article[],
     isLoadingState: boolean
@@ -328,95 +429,7 @@ export default function PublicFeed() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {articlesToShow.map((article: Article) => (
-          <div
-            key={article.id}
-            className="bg-white rounded-lg shadow-md overflow-hidden article-card"
-          >
-            <div className="h-48 bg-slate-200 overflow-hidden">
-              {article.image_url ? (
-                <img
-                  src={article.image_url}
-                  alt={article.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-slate-500">
-                  <span className="text-center p-4">{article.title}</span>
-                </div>
-              )}
-            </div>
-            <div className="p-4">
-              <Link href={`/articles/${article.slug}`}>
-                <h2 className="text-xl font-bold mb-2 hover:text-blue-600">
-                  {article.title}
-                </h2>
-              </Link>
-
-              <Link
-                href={`/user/${article.user_id}`}
-                className="flex items-center mb-2 group"
-              >
-                <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-2 overflow-hidden">
-                  {article.user_info?.avatar_url ? (
-                    <img
-                      src={article.user_info.avatar_url}
-                      alt={article.user_info.username || "User"}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span>
-                      {(
-                        article.user_info?.username?.charAt(0) ||
-                        article.user_info?.full_name?.charAt(0) ||
-                        "U"
-                      ).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <span className="text-sm text-gray-600 group-hover:text-blue-600">
-                  {article.user_info?.full_name ||
-                    article.user_info?.username ||
-                    "Anonymous"}
-                </span>
-              </Link>
-
-              <p className="text-gray-600 text-sm mb-2">
-                {formatDate(article.published_at)}
-              </p>
-
-              <p className="text-gray-700 mb-3 line-clamp-3">
-                {article.excerpt || "No excerpt available"}
-              </p>
-
-              <div className="flex justify-between items-center mt-4">
-                <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                  {categories.find((c) => c.value === article.category)
-                    ?.label ||
-                    article.category ||
-                    "Uncategorized"}
-                </span>
-
-                <div className="flex items-center text-sm text-gray-500">
-                  <span className="flex items-center mr-3">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 mr-1"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                      <path
-                        fillRule="evenodd"
-                        d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    {article.view_count || 0}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ArticleCard key={article.id} article={article} />
         ))}
       </div>
     );
