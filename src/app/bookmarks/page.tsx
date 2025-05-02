@@ -33,7 +33,9 @@ export default function BookmarksPage() {
   const [bookmarks, setBookmarks] = useState<BookmarkedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<"all" | "articles" | "community">("all");
+  const [activeFilter, setActiveFilter] = useState<
+    "all" | "articles" | "community"
+  >("all");
 
   useEffect(() => {
     // Redirect if not authenticated
@@ -55,7 +57,9 @@ export default function BookmarksPage() {
       setError(null);
 
       // Fetch bookmarks with article and post information
-      const { data: bookmarkData, error: bookmarkError } = await (supabase as any)
+      const { data: bookmarkData, error: bookmarkError } = await (
+        supabase as any
+      )
         .from("bookmarks")
         .select("*")
         .eq("user_id", user.id)
@@ -82,9 +86,11 @@ export default function BookmarksPage() {
             // Fetch post details
             const { data: postData, error: postError } = await (supabase as any)
               .from("community_posts")
-              .select(`
+              .select(
+                `
                 id, title, content, created_at, user_id, community_id
-              `)
+              `
+              )
               .eq("id", bookmark.post_id)
               .single();
 
@@ -121,12 +127,16 @@ export default function BookmarksPage() {
         } else if (bookmark.article_id) {
           // For published articles
           try {
-            // Fetch article details
-            const { data: articleData, error: articleError } = await (supabase as any)
+            // Fetch article details - using updated_at instead of created_at
+            const { data: articleData, error: articleError } = await (
+              supabase as any
+            )
               .from("public_articles")
-              .select(`
-                id, title, content, created_at, user_id, slug, published_at
-              `)
+              .select(
+                `
+                id, title, content, updated_at, user_id, slug, published_at
+              `
+              )
               .eq("id", bookmark.article_id)
               .single();
 
@@ -136,6 +146,12 @@ export default function BookmarksPage() {
             }
 
             if (articleData) {
+              // Map updated_at to created_at for consistent UI rendering
+              const processedArticleData = {
+                ...articleData,
+                created_at: articleData.updated_at || articleData.published_at,
+              };
+
               // Fetch user profile
               const { data: userData } = await supabase
                 .from("profiles")
@@ -144,7 +160,7 @@ export default function BookmarksPage() {
                 .single();
 
               processedBookmarks.push({
-                ...articleData,
+                ...processedArticleData,
                 type: "article",
                 user_info: userData || null,
               });
@@ -235,7 +251,7 @@ export default function BookmarksPage() {
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold dark:text-white">Bookmarks</h1>
-          
+
           <div className="flex space-x-2">
             <button
               onClick={() => setActiveFilter("all")}
@@ -279,19 +295,18 @@ export default function BookmarksPage() {
         {bookmarks.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              {activeFilter === "all" 
-                ? "You don't have any bookmarks yet." 
-                : activeFilter === "articles" 
-                  ? "You don't have any bookmarked articles yet."
-                  : "You don't have any bookmarked community posts yet."
-              }
+              {activeFilter === "all"
+                ? "You don't have any bookmarks yet."
+                : activeFilter === "articles"
+                ? "You don't have any bookmarked articles yet."
+                : "You don't have any bookmarked community posts yet."}
             </p>
             <p className="text-gray-600 dark:text-gray-300">
               {activeFilter === "all" || activeFilter === "articles" ? (
                 <>
                   Start exploring and bookmarking content that interests you.{" "}
-                  <Link 
-                    href="/feed" 
+                  <Link
+                    href="/feed"
                     className="text-blue-600 dark:text-blue-400 hover:underline"
                   >
                     Check out the community feed
@@ -300,8 +315,8 @@ export default function BookmarksPage() {
               ) : (
                 <>
                   Start exploring and bookmarking content that interests you.{" "}
-                  <Link 
-                    href="/communities" 
+                  <Link
+                    href="/communities"
                     className="text-blue-600 dark:text-blue-400 hover:underline"
                   >
                     Explore communities
@@ -340,7 +355,7 @@ export default function BookmarksPage() {
                         </Link>
                       </h3>
                     </div>
-                    
+
                     <BookmarkButton
                       postId={item.type === "post" ? item.id : undefined}
                       articleId={item.type === "article" ? item.id : undefined}
@@ -348,7 +363,7 @@ export default function BookmarksPage() {
                       showText
                     />
                   </div>
-                  
+
                   <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
                     <Link
                       href={`/user/${item.user_id}`}
@@ -378,13 +393,19 @@ export default function BookmarksPage() {
                         "Anonymous"}
                     </Link>
                     <span className="mx-2">•</span>
-                    <span>{formatDate(item.type === 'article' ? (item as any).published_at || item.created_at : item.created_at)}</span>
+                    <span>
+                      {formatDate(
+                        item.type === "article"
+                          ? (item as any).published_at || item.created_at
+                          : item.created_at
+                      )}
+                    </span>
                   </div>
-                  
+
                   <p className="text-gray-700 dark:text-gray-300 mb-3">
                     {formatPreview(item.content)}
                   </p>
-                  
+
                   <Link
                     href={getItemPath(item)}
                     className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
