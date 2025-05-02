@@ -7,6 +7,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import ConfirmationModal from "@/components/ConfirmationModal";
+import BookmarkButton from "@/components/BookmarkButton";
 
 interface Community {
   id: string;
@@ -402,6 +403,22 @@ export default function CommunityDetailPage() {
         throw commentsError;
       }
 
+      // Delete any bookmarks for this post
+      try {
+        const { error: bookmarksError } = await (supabase as any)
+          .from("bookmarks")
+          .delete()
+          .eq("post_id", postId);
+
+        if (bookmarksError) {
+          console.error("Error deleting post bookmarks:", bookmarksError);
+          // Continue even if bookmarks deletion fails
+        }
+      } catch (bookmarkErr) {
+        console.error("Error with bookmarks deletion:", bookmarkErr);
+        // Continue with post deletion even if bookmarks deletion fails
+      }
+
       // Then, delete the post itself
       const { error: postError } = await (supabase as any)
         .from("community_posts")
@@ -773,17 +790,21 @@ export default function CommunityDetailPage() {
                             Read more
                           </Link>
 
-                          {/* Delete Button (Only visible to post author) */}
-                          {user && user.id === post.user_id && (
-                            <button
-                              onClick={(e) =>
-                                handleDeletePost(post.id, post.user_id, e)
-                              }
-                              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm"
-                            >
-                              Delete
-                            </button>
-                          )}
+                          <div className="flex items-center">
+                            <BookmarkButton postId={post.id} className="mr-2" />
+
+                            {/* Delete Button (Only visible to post author) */}
+                            {user && user.id === post.user_id && (
+                              <button
+                                onClick={(e) =>
+                                  handleDeletePost(post.id, post.user_id, e)
+                                }
+                                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
