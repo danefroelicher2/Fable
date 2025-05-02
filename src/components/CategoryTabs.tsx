@@ -1,8 +1,7 @@
-// src/components/CategoryTabs.tsx
+// src/components/CategoryTabsModule.tsx
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import "./CategoryTabs.css"; // Import the custom CSS
 
@@ -11,7 +10,7 @@ interface CategoryTabsProps {
   onCategoryChange?: (category: string) => void;
 }
 
-export default function CategoryTabs({
+export default function CategoryTabsModule({
   activeCategory = "all",
   onCategoryChange,
 }: CategoryTabsProps) {

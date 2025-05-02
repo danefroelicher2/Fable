@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import styles from "./CategoryTabs.module.css";
+import "./CategoryTabs.css"; // Using regular CSS import
 
 interface CategoryTabsProps {
   activeCategory?: string;
@@ -54,7 +54,7 @@ export default function CategoryTabsModule({
 
       // Scroll active category into view on initial render
       setTimeout(() => {
-        const activeElement = container.querySelector(`.${styles.tabActive}`);
+        const activeElement = container.querySelector(`.category-tab-active`);
         if (activeElement) {
           const containerRect = container.getBoundingClientRect();
           const activeRect = activeElement.getBoundingClientRect();
@@ -99,12 +99,12 @@ export default function CategoryTabsModule({
   };
 
   return (
-    <div className={styles.container}>
+    <div className="category-container">
       {/* Left scroll button - only show when there's content to scroll to */}
       {showLeftArrow && (
         <button
           onClick={scrollLeft}
-          className={`${styles.scrollButton} ${styles.scrollButtonLeft}`}
+          className="scroll-button scroll-button-left"
           aria-label="Scroll left"
         >
           <svg
@@ -125,26 +125,23 @@ export default function CategoryTabsModule({
       )}
 
       {/* Left fade effect */}
-      {showLeftArrow && <div className={styles.scrollFadeLeft}></div>}
+      {showLeftArrow && <div className="scroll-fade-left"></div>}
 
       {/* Scrollable container */}
-      <div
-        ref={containerRef}
-        className={`${styles.scrollContainer} ${styles.scrollbarHide}`}
-      >
-        <div className={styles.tabsRow}>
+      <div ref={containerRef} className="scroll-container scrollbar-hide">
+        <div className="tabs-row">
           {categories.map((category) => (
             <button
               key={category.id}
               onClick={() => handleCategoryClick(category.id)}
               className={`
-                ${styles.tabButton} 
+                tab-button 
                 ${
                   activeCategory === category.id
-                    ? styles.tabActive
-                    : styles.tabDefault
+                    ? "category-tab-active"
+                    : "tab-default"
                 }
-                ${styles.categoryTab}
+                category-tab
               `}
             >
               {category.name}
@@ -154,13 +151,13 @@ export default function CategoryTabsModule({
       </div>
 
       {/* Right fade effect */}
-      {showRightArrow && <div className={styles.scrollFadeRight}></div>}
+      {showRightArrow && <div className="scroll-fade-right"></div>}
 
       {/* Right scroll button - only show when there's more content to scroll to */}
       {showRightArrow && (
         <button
           onClick={scrollRight}
-          className={`${styles.scrollButton} ${styles.scrollButtonRight}`}
+          className="scroll-button scroll-button-right"
           aria-label="Scroll right"
         >
           <svg

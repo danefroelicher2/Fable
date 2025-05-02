@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import CategoryTabsModule from "@/components/CategoryTabsModule"; // Using the CSS modules version
+import CategoryTabsModule from "@/components/CategoryTabsModule"; // Using the updated component
 
 interface Community {
   id: string;
