@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import "./CategoryTabs.css"; // Using regular CSS import
+import "./CategoryTabs.css"; // Import the custom CSS
 
 interface CategoryTabsProps {
   activeCategory?: string;
@@ -21,17 +21,16 @@ export default function CategoryTabsModule({
 
   // Category data similar to Twitter's interface
   const categories = [
-    { id: "all", name: "All" },
-    { id: "sports", name: "Sports" },
     { id: "technology", name: "Technology" },
-    { id: "art", name: "Art" },
     { id: "entertainment", name: "Entertainment" },
+    { id: "education", name: "Education" },
+    { id: "sports", name: "Sports" },
+    { id: "history", name: "History" },
     { id: "gaming", name: "Gaming" },
+    { id: "science", name: "Science" },
+    { id: "art", name: "Art" },
     { id: "politics", name: "Politics" },
     { id: "food", name: "Food" },
-    { id: "science", name: "Science" },
-    { id: "education", name: "Education" },
-    { id: "history", name: "History" },
   ];
 
   // Check scroll position on mount and on resize
@@ -54,7 +53,7 @@ export default function CategoryTabsModule({
 
       // Scroll active category into view on initial render
       setTimeout(() => {
-        const activeElement = container.querySelector(`.category-tab-active`);
+        const activeElement = container.querySelector(`.active-category`);
         if (activeElement) {
           const containerRect = container.getBoundingClientRect();
           const activeRect = activeElement.getBoundingClientRect();
@@ -99,12 +98,12 @@ export default function CategoryTabsModule({
   };
 
   return (
-    <div className="category-container">
+    <div className="relative w-full mb-1">
       {/* Left scroll button - only show when there's content to scroll to */}
       {showLeftArrow && (
         <button
           onClick={scrollLeft}
-          className="scroll-button scroll-button-left"
+          className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-gray-900 bg-opacity-70 hover:bg-gray-800 text-white rounded-full p-1 shadow-md transition-all"
           aria-label="Scroll left"
         >
           <svg
@@ -128,21 +127,21 @@ export default function CategoryTabsModule({
       {showLeftArrow && <div className="scroll-fade-left"></div>}
 
       {/* Scrollable container */}
-      <div ref={containerRef} className="scroll-container scrollbar-hide">
-        <div className="tabs-row">
+      <div
+        ref={containerRef}
+        id="category-tabs-container"
+        className="overflow-x-auto scrollbar-hide whitespace-nowrap py-1 pl-0 pr-8"
+      >
+        <div className="inline-flex gap-2">
           {categories.map((category) => (
             <button
               key={category.id}
               onClick={() => handleCategoryClick(category.id)}
-              className={`
-                tab-button 
-                ${
-                  activeCategory === category.id
-                    ? "category-tab-active"
-                    : "tab-default"
-                }
-                category-tab
-              `}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                activeCategory === category.id
+                  ? "bg-blue-600 text-white active-category"
+                  : "bg-gray-800 text-white hover:bg-gray-700"
+              }`}
             >
               {category.name}
             </button>
@@ -157,7 +156,7 @@ export default function CategoryTabsModule({
       {showRightArrow && (
         <button
           onClick={scrollRight}
-          className="scroll-button scroll-button-right"
+          className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-gray-900 bg-opacity-70 hover:bg-gray-800 text-white rounded-full p-1 shadow-md transition-all"
           aria-label="Scroll right"
         >
           <svg

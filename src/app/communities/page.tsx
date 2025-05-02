@@ -308,7 +308,7 @@ export default function CommunitiesPage() {
 
         {/* Add Category Tabs here - only show in Discover tab */}
         {activeTab === "discover" && (
-          <div className="bg-black py-2 -mx-4 px-4">
+          <div className="py-0 px-0">
             <CategoryTabsModule
               activeCategory={activeCategory}
               onCategoryChange={handleCategoryChange}
