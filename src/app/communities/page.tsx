@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import CategoryTabsModule from "@/components/CategoryTabsModule"; // Using the updated component
 
 interface Community {
   id: string;
@@ -22,7 +21,7 @@ interface Community {
     full_name: string | null;
     avatar_url: string | null;
   };
-  category?: string; // Add category field
+  category?: string;
 }
 
 export default function CommunitiesPage() {
@@ -34,11 +33,32 @@ export default function CommunitiesPage() {
   const [activeTab, setActiveTab] = useState<"discover" | "my-communities">(
     "discover"
   );
-  const [activeCategory, setActiveCategory] = useState("all"); // Track active category
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [isInCategory, setIsInCategory] = useState(false);
+
+  // Complete list of categories
+  const categories = [
+    { id: "technology", name: "Technology" },
+    { id: "entertainment", name: "Entertainment" },
+    { id: "education", name: "Education" },
+    { id: "sports", name: "Sports" },
+    { id: "art", name: "Art" },
+    { id: "politics", name: "Politics" },
+    { id: "food", name: "Food" },
+    { id: "science", name: "Science" },
+    { id: "history", name: "History" },
+    { id: "gaming", name: "Gaming" },
+    { id: "health", name: "Health" },
+    { id: "travel", name: "Travel" },
+  ];
 
   useEffect(() => {
     fetchCommunities();
-  }, [user, activeTab, activeCategory]); // Re-fetch when category changes
+  }, [user, activeTab, activeCategory]);
+
+  useEffect(() => {
+    setIsInCategory(activeCategory !== "all");
+  }, [activeCategory]);
 
   async function fetchCommunities() {
     try {
@@ -173,7 +193,11 @@ export default function CommunitiesPage() {
     setActiveCategory(category);
   };
 
-  // Other functions remain the same (handleJoinCommunity, formatDate, etc.)
+  // Handle back to main view
+  const handleBackToMain = () => {
+    setActiveCategory("all");
+  };
+
   async function handleJoinCommunity(communityId: string) {
     if (!user) {
       router.push(`/signin?redirect=${encodeURIComponent("/communities")}`);
@@ -259,9 +283,9 @@ export default function CommunitiesPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container mx-auto py-4 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
           <div>
             <h1 className="text-3xl font-bold mb-2 dark:text-white">
               Communities
@@ -281,7 +305,7 @@ export default function CommunitiesPage() {
         </div>
 
         {/* Tabs */}
-        <div className="mb-8 border-b border-gray-200 dark:border-gray-700">
+        <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex">
             <button
               onClick={() => setActiveTab("discover")}
@@ -306,13 +330,51 @@ export default function CommunitiesPage() {
           </div>
         </div>
 
-        {/* Add Category Tabs here - only show in Discover tab */}
+        {/* Category navigation area */}
         {activeTab === "discover" && (
-          <div className="py-0 px-0">
-            <CategoryTabsModule
-              activeCategory={activeCategory}
-              onCategoryChange={handleCategoryChange}
-            />
+          <div className="py-0 px-0 mb-4">
+            <div className="relative overflow-x-auto scrollbar-hide py-1">
+              <div className="flex whitespace-nowrap space-x-3">
+                {/* Up Arrow (only when in a specific category) */}
+                {isInCategory && (
+                  <button
+                    onClick={handleBackToMain}
+                    className="flex-shrink-0 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-colors flex items-center justify-center"
+                    aria-label="Back to all communities"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 10l7-7m0 0l7 7m-7-7v18"
+                      />
+                    </svg>
+                  </button>
+                )}
+
+                {/* Category tabs - now always displayed */}
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => handleCategoryChange(category.id)}
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                      activeCategory === category.id
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-800 text-white hover:bg-gray-700"
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 

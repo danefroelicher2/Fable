@@ -1,4 +1,5 @@
-// src/app/communities/create/page.tsx
+// src/app/communities/create/page.tsx - Modified version with topic selection
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -13,10 +14,26 @@ export default function CreateCommunityPage() {
   const { user } = useAuth();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState(""); // Added category state
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // Category options - matching the ones from the tabs
+  const categoryOptions = [
+    { id: "", name: "Select a topic (optional)" },
+    { id: "sports", name: "Sports" },
+    { id: "technology", name: "Technology" },
+    { id: "art", name: "Art" },
+    { id: "entertainment", name: "Entertainment" },
+    { id: "gaming", name: "Gaming" },
+    { id: "politics", name: "Politics" },
+    { id: "food", name: "Food" },
+    { id: "science", name: "Science" },
+    { id: "education", name: "Education" },
+    { id: "history", name: "History" },
+  ];
 
   useEffect(() => {
     // Redirect if not authenticated
@@ -52,7 +69,7 @@ export default function CreateCommunityPage() {
     setError(null);
 
     try {
-      // Insert the new community
+      // Insert the new community with category field
       const { data, error: createError } = await (supabase as any)
         .from("communities")
         .insert({
@@ -60,6 +77,7 @@ export default function CreateCommunityPage() {
           description: description.trim(),
           creator_id: user.id,
           image_url: imageUrl,
+          category: category || null, // Use the selected category or null if none selected
           created_at: new Date().toISOString(),
         })
         .select()
@@ -155,6 +173,31 @@ export default function CreateCommunityPage() {
               required
               disabled={loading}
             />
+          </div>
+
+          <div className="mb-4">
+            <label
+              htmlFor="category"
+              className="block text-gray-700 font-medium mb-2 dark:text-gray-300"
+            >
+              Choose a Topic
+            </label>
+            <select
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              disabled={loading}
+            >
+              {categoryOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
+              This will help people find your community in topic categories
+            </p>
           </div>
 
           <div className="mb-6">
