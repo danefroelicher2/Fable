@@ -113,7 +113,7 @@ export default function UserPublishedArticles({
     return (
       <div className="animate-pulse">
         {displayType === "grid" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[...Array(limit)].map((_, index) => (
               <div
                 key={index}
@@ -173,7 +173,7 @@ export default function UserPublishedArticles({
   if (displayType === "grid") {
     return (
       <div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {articles.map((article) => (
             <Link
               key={article.id}

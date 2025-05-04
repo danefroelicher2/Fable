@@ -1,4 +1,4 @@
-// src/app/user/[userId]/page.tsx
+// src/app/profile/[userId]/articles/page.tsx (if it exists)
 "use client";
 
 import { useState, useEffect } from "react";
@@ -91,7 +91,7 @@ export default function UserProfilePage() {
       // Query for the user profile
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, full_name, avatar_url, social_links")
+        .select("id, username, full_name, avatar_url")
         .eq("id", userId)
         .single();
 
@@ -510,8 +510,8 @@ export default function UserProfilePage() {
             </Link>
           </div>
         ) : displayType === "grid" ? (
-          // Instagram-style grid display
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          // Instagram-style grid of articles - Changed to 4 columns
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {articles.map((article) => (
               <Link
                 key={article.id}
@@ -528,7 +528,9 @@ export default function UserProfilePage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-slate-500 p-4">
-                      <p className="text-center font-medium">{article.title}</p>
+                      <p className="text-center font-medium line-clamp-3">
+                        {article.title}
+                      </p>
                     </div>
                   )}
 
@@ -626,7 +628,7 @@ export default function UserProfilePage() {
                               clipRule="evenodd"
                             />
                           </svg>
-                          {article.view_count || 0}
+                          {article.view_count}
                         </span>
                         <span className="flex items-center">
                           <svg

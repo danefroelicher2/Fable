@@ -55,10 +55,9 @@ export default function SidebarNav() {
     };
   }, []);
 
-  // Updated navItems to move Profile right after Search and remove Drafts
   const navItems = [
     { icon: "search", label: "Search", href: "/search" },
-    { icon: "user", label: "Profile", href: "/profile" }, // Added profile right after search
+    { icon: "user", label: "Profile", href: "/profile" },
     { icon: "notification", label: "Notifications", href: "/notifications" },
     { icon: "communities", label: "Communities", href: "/communities" },
     { icon: "bookmark", label: "Bookmarks", href: "/bookmarks" },

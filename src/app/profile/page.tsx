@@ -646,7 +646,7 @@ export default function ProfilePage() {
         {/* Profile Header */}
         <div className="bg-white p-8 rounded-lg shadow-md mb-6">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">Manage Your Profile</h1>
+            <h1 className="text-3xl font-bold">Edit Profile</h1>
             <div className="flex space-x-3">
               <button
                 onClick={viewPublicProfile}

@@ -3,10 +3,13 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext"; // Add this import
+import ProfileNavLink from "./ProfileNavLink"; // Import our new component
 
 export default function ClientSidebarContent() {
   const pathname = usePathname();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const { user } = useAuth(); // Add this to get the current user
 
   const navItems = [
     { icon: "home", label: "Home", href: "/" },
@@ -21,16 +24,50 @@ export default function ClientSidebarContent() {
     { icon: "culture", label: "Culture", href: "/culture" },
     { icon: "honor", label: "HISTORY Honors 250", href: "/history-honors-250" },
     { icon: "feed", label: "Community Feed", href: "/feed" },
+    // Add profile link using the custom component
+    {
+      icon: "profile",
+      label: "Profile",
+      href: user ? `/user/${user.id}` : "/signin?redirect=/profile",
+      isProfileLink: true, // Flag to use our custom component
+    },
   ];
 
+  // Function to determine if a nav item is active
   const isActive = (href: string) => {
     if (href === "/") {
       return pathname === "/";
     }
+    // For profile links, check if the pathname includes '/user/'
+    if (href.includes("/user/") && pathname?.includes("/user/")) {
+      return true;
+    }
     return pathname?.startsWith(href);
   };
 
+  // Render the appropriate icon based on the key
   const renderIcon = (icon: string) => {
+    if (icon === "profile") {
+      // Special profile icon
+      return (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+          />
+        </svg>
+      );
+    }
+
+    // Default icon for other nav items
     return (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -63,18 +100,34 @@ export default function ClientSidebarContent() {
           </Link>
 
           <nav className="flex-1 space-y-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={`flex items-center px-3 py-3 text-lg font-medium rounded-full hover:bg-gray-100 transition-colors ${
-                  isActive(item.href) ? "text-black font-bold" : "text-gray-700"
-                }`}
-              >
-                <span className="mr-4">{renderIcon(item.icon)}</span>
-                {item.label}
-              </Link>
-            ))}
+            {navItems.map((item) =>
+              item.isProfileLink ? (
+                <ProfileNavLink
+                  key={item.label}
+                  className={`flex items-center px-3 py-3 text-lg font-medium rounded-full hover:bg-gray-100 transition-colors ${
+                    isActive(item.href)
+                      ? "text-black font-bold"
+                      : "text-gray-700"
+                  }`}
+                  icon={renderIcon(item.icon)}
+                >
+                  {item.label}
+                </ProfileNavLink>
+              ) : (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`flex items-center px-3 py-3 text-lg font-medium rounded-full hover:bg-gray-100 transition-colors ${
+                    isActive(item.href)
+                      ? "text-black font-bold"
+                      : "text-gray-700"
+                  }`}
+                >
+                  <span className="mr-4">{renderIcon(item.icon)}</span>
+                  {item.label}
+                </Link>
+              )
+            )}
           </nav>
 
           <Link
@@ -103,7 +156,7 @@ export default function ClientSidebarContent() {
       {/* Mobile bottom navigation */}
       <div className="md:hidden fixed inset-x-0 bottom-0 bg-white border-t border-gray-200 z-50">
         <nav className="flex justify-around">
-          {navItems.slice(0, 5).map((item) => (
+          {navItems.slice(0, 4).map((item) => (
             <Link
               key={item.label}
               href={item.href}
@@ -115,26 +168,15 @@ export default function ClientSidebarContent() {
               <span className="text-xs mt-1">{item.label}</span>
             </Link>
           ))}
-          <button
-            onClick={() => setIsSearchOpen(!isSearchOpen)}
-            className="flex flex-col items-center py-3 px-2 text-gray-700"
+          {/* Add profile link as last item in mobile nav */}
+          <ProfileNavLink
+            className={`flex flex-col items-center py-3 px-2 ${
+              pathname?.includes("/user/") ? "text-red-600" : "text-gray-700"
+            }`}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            <span className="text-xs mt-1">Search</span>
-          </button>
+            <span className="h-6 w-6">{renderIcon("profile")}</span>
+            <span className="text-xs mt-1">Profile</span>
+          </ProfileNavLink>
         </nav>
       </div>
     </>
