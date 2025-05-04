@@ -2,16 +2,23 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import ProfileDropdown from "./ProfileDropdown";
+import { useState } from "react";
 
 export default function SidebarNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user } = useAuth();
 
   // Get the URL for the user's public profile
   const publicProfileUrl = user ? `/user/${user.id}` : "/signin";
+
+  // Function to handle post creation
+  const handlePostClick = () => {
+    router.push("/write");
+  };
 
   return (
     <nav className="bg-gray-900 text-white h-screen w-64 fixed">
@@ -162,7 +169,6 @@ export default function SidebarNav() {
           <span>Premium</span>
         </Link>
 
-        {/* Moved from Account section */}
         <Link
           href="/profile/drafts"
           className={`flex items-center px-4 py-3 ${
@@ -217,9 +223,19 @@ export default function SidebarNav() {
           </svg>
           <span>Account Settings</span>
         </Link>
+
+        {/* Post Button - X Style */}
+        <div className="px-4 py-3">
+          <button
+            onClick={handlePostClick}
+            className="bg-white hover:bg-gray-200 text-gray-900 font-bold py-3 px-4 rounded-full w-full transition-colors"
+          >
+            Post
+          </button>
+        </div>
       </div>
 
-      {/* Profile Dropdown - now at the bottom with just Sign Out */}
+      {/* Profile Dropdown - at the bottom with just Sign Out */}
       <div className="absolute bottom-0 left-0 right-0 border-t border-gray-800 p-4">
         <div className="flex items-center">
           <div className="text-gray-400">Account</div>
