@@ -114,7 +114,7 @@ export default function PinnedPosts({
           {[...Array(4)].map((_, index) => (
             <div
               key={index}
-              className="bg-gray-200 dark:bg-gray-700 h-40 rounded"
+              className="bg-gray-200 dark:bg-gray-700 aspect-square rounded"
             ></div>
           ))}
         </div>
@@ -150,8 +150,23 @@ export default function PinnedPosts({
         <Link
           key={article.id}
           href={`/articles/${article.slug}`}
-          className="bg-gray-100 text-center rounded p-4 relative flex flex-col items-center justify-center hover:bg-gray-200 transition-colors group"
+          className="block bg-gray-100 rounded overflow-hidden hover:shadow-md transition-shadow relative group"
         >
+          {/* Square cover image */}
+          <div className="aspect-square bg-gray-200 relative">
+            {article.image_url ? (
+              <img
+                src={article.image_url}
+                alt={article.title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-500 p-2">
+                <span className="text-center text-sm">{article.title}</span>
+              </div>
+            )}
+          </div>
+
           {/* Pinned Indicator */}
           <div className="absolute top-2 right-2 z-10">
             <div className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full flex items-center">
@@ -167,23 +182,23 @@ export default function PinnedPosts({
             </div>
           </div>
 
-          {/* Category Badge (if needed) */}
+          {/* Category tag if exists */}
           {article.category && (
-            <div className="mb-2 text-center">
+            <div className="absolute top-2 left-2 z-10">
               <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
                 {article.category}
               </span>
             </div>
           )}
 
-          {/* Title */}
-          <div className="text-blue-600 text-sm sm:text-base font-medium">
-            {article.title}
-          </div>
-
-          {/* Date */}
-          <div className="text-xs text-gray-500 mt-1">
-            {formatDate(article.published_at)}
+          {/* Title and date below image */}
+          <div className="p-3">
+            <h3 className="text-gray-800 font-medium text-sm line-clamp-2">
+              {article.title}
+            </h3>
+            <p className="text-gray-500 text-xs mt-1">
+              {formatDate(article.published_at)}
+            </p>
           </div>
 
           {/* Bottom actions - only show unpin for current user */}
