@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { getUserFavorites } from "@/lib/favoritesUtils";
 
 interface Article {
   id: string;
@@ -33,8 +34,17 @@ export default function FavoriteArticles({ userId }: FavoriteArticlesProps) {
     try {
       setLoading(true);
 
-      // In a real implementation, you would have a favorites or pinned table
-      // For now, we'll just fetch the most recent 4 articles as a placeholder
+      // Get favorite article IDs from localStorage
+      const favoriteIds = getUserFavorites(userId);
+
+      if (favoriteIds.length === 0) {
+        // No favorites set, don't show anything
+        setArticles([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch the favorite articles based on the IDs
       const { data, error } = await (supabase as any)
         .from("public_articles")
         .select(
@@ -47,14 +57,17 @@ export default function FavoriteArticles({ userId }: FavoriteArticlesProps) {
           published_at
         `
         )
-        .eq("user_id", userId)
-        .eq("is_published", true)
-        .order("published_at", { ascending: false })
-        .limit(4);
+        .in("id", favoriteIds)
+        .eq("is_published", true);
 
       if (error) throw error;
 
-      setArticles(data || []);
+      // Ensure articles are in the same order as favoriteIds
+      const orderedArticles = favoriteIds
+        .map((id) => data.find((article: Article) => article.id === id))
+        .filter(Boolean); // Remove any undefined entries
+
+      setArticles(orderedArticles || []);
     } catch (err) {
       console.error("Error fetching favorite articles:", err);
       setError("Failed to load favorite articles");
