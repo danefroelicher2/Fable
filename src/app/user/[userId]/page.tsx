@@ -10,6 +10,7 @@ import UserPublishedArticles from "@/components/UserPublishedArticles";
 import FavoriteArticles from "@/components/FavoriteArticles";
 import FollowButton from "@/components/FollowButton";
 import FollowStats from "@/components/FollowStats";
+import PinnedPosts from "@/components/PinnedPosts";
 
 interface Profile {
   id: string;
@@ -184,7 +185,17 @@ export default function PublicUserProfilePage() {
             </div>
           </div>
         </div>
-
+        {/* Pinned Posts Section */}
+        {profile && (
+          <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+            <div className="px-6 pt-6">
+              <h2 className="text-2xl font-bold mb-4">Pinned Posts</h2>
+            </div>
+            <div className="p-6">
+              <PinnedPosts userId={profile.id} isCurrentUser={isCurrentUser} />
+            </div>
+          </div>
+        )}
         {/* Favorite Articles Section */}
         {profile && <FavoriteArticles userId={profile.id} />}
 
