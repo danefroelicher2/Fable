@@ -186,10 +186,11 @@ export default function PublicUserProfilePage() {
           </div>
         </div>
         {/* Pinned Posts Section */}
+
         {profile && (
           <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-            <div className="px-6 pt-6">
-              <h2 className="text-2xl font-bold mb-4">Pinned Posts</h2>
+            <div className="px-6 py-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold">Pinned Posts</h2>
             </div>
             <div className="p-6">
               <PinnedPosts userId={profile.id} isCurrentUser={isCurrentUser} />

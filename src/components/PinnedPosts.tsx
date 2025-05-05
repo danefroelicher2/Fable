@@ -109,13 +109,15 @@ export default function PinnedPosts({
 
   if (loading) {
     return (
-      <div className="animate-pulse space-y-4">
-        {[...Array(Math.min(4, 2))].map((_, index) => (
-          <div
-            key={index}
-            className="bg-gray-200 dark:bg-gray-700 h-48 rounded-lg"
-          ></div>
-        ))}
+      <div className="animate-pulse">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, index) => (
+            <div
+              key={index}
+              className="bg-gray-200 dark:bg-gray-700 h-40 rounded"
+            ></div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -143,85 +145,64 @@ export default function PinnedPosts({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {pinnedArticles.map((article) => (
-          <div
-            key={article.id}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden relative group"
-          >
-            {/* Pin indicator */}
-            <div className="absolute top-3 right-3 z-10">
-              <div className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full flex items-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-3 w-3 mr-1"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path d="M11.39 1.578a1 1 0 0 0-.78 0L2.5 5.5v9l8.11 3.922a1 1 0 0 0 .78 0L19.5 14.5v-9l-8.11-3.922z" />
-                </svg>
-                <span>Pinned</span>
-              </div>
-            </div>
-
-            {article.image_url ? (
-              <div className="h-32 bg-gray-200 dark:bg-gray-700">
-                <img
-                  src={article.image_url}
-                  alt={article.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ) : (
-              <div className="h-32 bg-gradient-to-r from-blue-500 to-blue-700 flex items-center justify-center text-white">
-                <div className="text-center p-4">
-                  <span className="text-lg font-bold">
-                    {article.category || "Article"}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <div className="p-4">
-              <h3 className="text-lg font-bold mb-1 line-clamp-2">
-                <Link
-                  href={`/articles/${article.slug}`}
-                  className="text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400"
-                >
-                  {article.title}
-                </Link>
-              </h3>
-              <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                {formatDate(article.published_at)}
-              </div>
-              {article.excerpt && (
-                <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-3">
-                  {article.excerpt}
-                </p>
-              )}
-
-              {/* Pin/Unpin button for current user */}
-              {isCurrentUser && (
-                <button
-                  onClick={() => handleTogglePin(article.id)}
-                  className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium flex items-center"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-1"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path d="M11.39 1.578a1 1 0 0 0-.78 0L2.5 5.5v9l8.11 3.922a1 1 0 0 0 .78 0L19.5 14.5v-9l-8.11-3.922z" />
-                  </svg>
-                  Unpin Article
-                </button>
-              )}
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {pinnedArticles.map((article) => (
+        <Link
+          key={article.id}
+          href={`/articles/${article.slug}`}
+          className="bg-gray-100 text-center rounded p-4 relative flex flex-col items-center justify-center hover:bg-gray-200 transition-colors group"
+        >
+          {/* Pinned Indicator */}
+          <div className="absolute top-2 right-2 z-10">
+            <div className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full flex items-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-3 w-3 mr-1"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path d="M11.39 1.578a1 1 0 0 0-.78 0L2.5 5.5v9l8.11 3.922a1 1 0 0 0 .78 0L19.5 14.5v-9l-8.11-3.922z" />
+              </svg>
+              <span>Pinned</span>
             </div>
           </div>
-        ))}
-      </div>
+
+          {/* Category Badge (if needed) */}
+          {article.category && (
+            <div className="mb-2 text-center">
+              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                {article.category}
+              </span>
+            </div>
+          )}
+
+          {/* Title */}
+          <div className="text-blue-600 text-sm sm:text-base font-medium">
+            {article.title}
+          </div>
+
+          {/* Date */}
+          <div className="text-xs text-gray-500 mt-1">
+            {formatDate(article.published_at)}
+          </div>
+
+          {/* Bottom actions - only show unpin for current user */}
+          {isCurrentUser && (
+            <div className="absolute bottom-0 left-0 right-0 bg-white bg-opacity-90 py-1 opacity-0 group-hover:opacity-100 transition-opacity flex justify-center">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleTogglePin(article.id);
+                }}
+                className="text-blue-600 hover:text-blue-800 text-xs"
+              >
+                Unpin Article
+              </button>
+            </div>
+          )}
+        </Link>
+      ))}
     </div>
   );
 }

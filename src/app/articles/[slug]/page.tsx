@@ -7,6 +7,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import CommentSection from "@/components/CommentSection";
+import { togglePinnedPost, isArticlePinned } from "@/lib/pinnedPostUtils";
 
 export default function ArticlePage() {
   const params = useParams();
@@ -18,6 +19,8 @@ export default function ArticlePage() {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [notFoundTriggered, setNotFoundTriggered] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  const [pinError, setPinError] = useState<string | null>(null);
 
   // Extract slug from params
   const slugParam = params.slug;
@@ -32,6 +35,10 @@ export default function ArticlePage() {
   useEffect(() => {
     if (article?.id && user) {
       checkIfLiked();
+
+      // Check if article is pinned
+      const pinned = isArticlePinned(user.id, article.id);
+      setIsPinned(pinned);
     }
   }, [article, user]);
 
@@ -152,6 +159,34 @@ export default function ArticlePage() {
     }
   }
 
+  // Function to handle pinning/unpinning an article
+  const handleTogglePin = () => {
+    if (!user || !article?.id) {
+      router.push(
+        `/signin?redirect=${encodeURIComponent(`/articles/${slug}`)}`
+      );
+      return;
+    }
+
+    // Only allow pinning of own articles
+    if (user.id !== article.user_id) {
+      setPinError("You can only pin your own articles");
+      setTimeout(() => setPinError(null), 3000);
+      return;
+    }
+
+    setPinError(null);
+    const success = togglePinnedPost(user.id, article.id);
+
+    if (success) {
+      setIsPinned(!isPinned);
+    } else if (!isPinned) {
+      // Show error message that max pins reached
+      setPinError("You can only pin up to 4 articles");
+      setTimeout(() => setPinError(null), 3000);
+    }
+  };
+
   // Render not-found if the article doesn't exist
   if (notFoundTriggered) {
     return (
@@ -174,6 +209,7 @@ export default function ArticlePage() {
     );
   }
 
+  // Loading state
   if (loading) {
     return (
       <div className="container mx-auto py-10 px-4">
@@ -198,6 +234,12 @@ export default function ArticlePage() {
   return (
     <div className="container mx-auto py-10 px-4">
       <div className="max-w-3xl mx-auto">
+        {pinError && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {pinError}
+          </div>
+        )}
+
         <h1 className="text-4xl font-bold mb-4 dark:text-white">
           {article.title}
         </h1>
@@ -220,7 +262,7 @@ export default function ArticlePage() {
             <div>
               {author?.id ? (
                 <Link
-                  href={`/profile/${author.id}`}
+                  href={`/user/${author.id}`}
                   className="font-medium hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
                 >
                   {author?.full_name || author?.username || "Anonymous"}
@@ -295,6 +337,35 @@ export default function ArticlePage() {
                 {likeCount} {likeCount === 1 ? "Like" : "Likes"}
               </span>
             </button>
+
+            {/* Pin/Unpin button - only visible to article author */}
+            {user && user.id === article.user_id && (
+              <button
+                onClick={handleTogglePin}
+                className={`flex items-center ${
+                  isPinned
+                    ? "text-blue-600 dark:text-blue-500"
+                    : "text-gray-600 dark:text-gray-400"
+                } hover:text-blue-500 dark:hover:text-blue-400 transition-colors ml-4`}
+                aria-label={
+                  isPinned ? "Unpin this article" : "Pin this article"
+                }
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 transition-transform hover:scale-110"
+                  fill={isPinned ? "currentColor" : "none"}
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={isPinned ? "1" : "2"}
+                >
+                  <path d="M11.39 1.578a1 1 0 0 0-.78 0L2.5 5.5v9l8.11 3.922a1 1 0 0 0 .78 0L19.5 14.5v-9l-8.11-3.922z" />
+                </svg>
+                <span className="ml-2">
+                  {isPinned ? "Pinned" : "Pin Article"}
+                </span>
+              </button>
+            )}
           </div>
 
           <div className="text-gray-600 dark:text-gray-400 text-sm flex items-center">
