@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import FollowStats from "@/components/FollowStats";
+import ManageFavorites from "@/components/ManageFavorites";
 
 interface Profile {
   id: string;
@@ -45,7 +46,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"articles" | "stats">("articles");
+  const [activeTab, setActiveTab] = useState<"profile" | "articles" | "favorites" | "stats">("profile");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [articles, setArticles] = useState<any[]>([]);
   const [isLoadingArticles, setIsLoadingArticles] = useState(false);
@@ -829,6 +830,26 @@ export default function ProfilePage() {
           <div className="flex border-b">
             <button
               className={`px-6 py-3 font-medium ${
+                activeTab === "profile"
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-600 hover:text-gray-800"
+              }`}
+              onClick={() => setActiveTab("profile")}
+            >
+              Profile Overview
+            </button>
+            <button
+              className={`px-6 py-3 font-medium ${
+                activeTab === "favorites"
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-600 hover:text-gray-800"
+              }`}
+              onClick={() => setActiveTab("favorites")}
+            >
+              Manage Favorites
+            </button>
+            <button
+              className={`px-6 py-3 font-medium ${
                 activeTab === "articles"
                   ? "text-blue-600 border-b-2 border-blue-600"
                   : "text-gray-600 hover:text-gray-800"
@@ -850,6 +871,25 @@ export default function ProfilePage() {
           </div>
 
           <div className="p-6">
+            {activeTab === "profile" && (
+              <div>
+                <h2 className="text-2xl font-bold mb-6">Profile Information</h2>
+                <p className="mb-4">
+                  Your profile information is visible to other users. You can edit your profile details by clicking the "Edit Profile" button above.
+                </p>
+                <p className="mb-4">
+                  Visit your public profile to see how others view your profile page.
+                </p>
+              </div>
+            )}
+
+            {activeTab === "favorites" && (
+              <div>
+                <h2 className="text-2xl font-bold mb-6">Manage Favorite Articles</h2>
+                <ManageFavorites />
+              </div>
+            )}
+
             {activeTab === "articles" && (
               <div>
                 <div className="flex justify-between items-center mb-6">
@@ -921,22 +961,6 @@ export default function ProfilePage() {
                               </h3>
 
                               <div className="flex items-center space-x-3 mt-2">
-                                <span className="flex items-center">
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-4 w-4 mr-1"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                  >
-                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                  {article.view_count}
-                                </span>
                                 <span className="flex items-center">
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -1057,3 +1081,20 @@ export default function ProfilePage() {
     </div>
   );
 }
+1"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                  >
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                  {article.view_count}
+                                </span>
+                                <span className="flex items-center">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4 mr-

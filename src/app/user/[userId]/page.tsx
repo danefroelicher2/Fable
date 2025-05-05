@@ -7,6 +7,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import UserPublishedArticles from "@/components/UserPublishedArticles";
+import FavoriteArticles from "@/components/FavoriteArticles";
 import FollowButton from "@/components/FollowButton";
 import FollowStats from "@/components/FollowStats";
 
@@ -184,11 +185,12 @@ export default function PublicUserProfilePage() {
           </div>
         </div>
 
+        {/* Favorite Articles Section */}
+        {profile && <FavoriteArticles userId={profile.id} />}
+
+        {/* Recent Articles Section - Now without the heading */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
           <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Published Articles</h2>
-            </div>
             {profile && (
               <UserPublishedArticles userId={profile.id} displayType="grid" />
             )}
