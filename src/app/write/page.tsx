@@ -16,14 +16,11 @@ export default function WritePage() {
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [excerpt, setExcerpt] = useState("");
-  const [category, setCategory] = useState("");
   const [coverImage, setCoverImage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [slug, setSlug] = useState("");
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [publishedId, setPublishedId] = useState<string | null>(null);
 
@@ -80,10 +77,11 @@ export default function WritePage() {
       const draftData: Draft = {
         title,
         content,
-        excerpt,
-        category,
+        excerpt:
+          content.substring(0, 150) + (content.length > 150 ? "..." : ""),
+        category: "general",
         image_url: coverImage,
-        slug: slug || generateSlug(title),
+        slug: generateSlug(title),
       };
 
       const savedDraft = await saveDraft(draftData);
@@ -109,10 +107,8 @@ export default function WritePage() {
   };
 
   const handlePublish = async () => {
-    if (!title.trim() || !content.trim() || !category) {
-      setError(
-        "Please fill in title, content, and select a category before publishing"
-      );
+    if (!title.trim() || !content.trim()) {
+      setError("Please fill in title and content before publishing");
       return;
     }
 
@@ -121,20 +117,17 @@ export default function WritePage() {
     setMessage("");
 
     try {
-      // First save as a draft to get an ID
-      const draftSlug = slug || generateSlug(title);
-
-      // Use excerpt or generate one from content if not provided
-      const finalExcerpt =
-        excerpt ||
-        (content.length > 150 ? content.substring(0, 150) + "..." : content);
+      // Auto-generate these values
+      const draftSlug = generateSlug(title);
+      const autoExcerpt =
+        content.length > 150 ? content.substring(0, 150) + "..." : content;
 
       // Save as draft first
       const draftData: Draft = {
         title,
         content,
-        excerpt: finalExcerpt,
-        category,
+        excerpt: autoExcerpt,
+        category: "general", // Default category
         image_url: coverImage,
         slug: draftSlug,
       };
@@ -247,90 +240,12 @@ export default function WritePage() {
               value={title}
               onChange={(e) => {
                 setTitle(e.target.value);
-                // Generate a slug when the title changes if one doesn't exist
-                if (!slug) {
-                  setSlug(generateSlug(e.target.value));
-                }
               }}
               className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="Enter a compelling title for your article"
               required
               disabled={isRedirecting}
             />
-          </div>
-
-          <div className="mb-6">
-            <label
-              htmlFor="slug"
-              className="block text-gray-700 font-medium mb-2"
-            >
-              URL Slug (optional)
-            </label>
-            <div className="flex items-center">
-              <span className="text-gray-500 mr-2">/articles/</span>
-              <input
-                type="text"
-                id="slug"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                className="flex-1 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                placeholder="custom-url-slug"
-                disabled={isRedirecting}
-              />
-            </div>
-            <p className="text-gray-500 text-sm mt-1">
-              Leave blank to generate automatically from title
-            </p>
-          </div>
-
-          <div className="mb-6">
-            <label
-              htmlFor="excerpt"
-              className="block text-gray-700 font-medium mb-2"
-            >
-              Excerpt
-            </label>
-            <textarea
-              id="excerpt"
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-              rows={3}
-              placeholder="Provide a brief summary of your article (will appear in previews)"
-              disabled={isRedirecting}
-            />
-            <p className="text-gray-500 text-sm mt-1">
-              If left empty, an excerpt will be automatically generated from the
-              first part of your content.
-            </p>
-          </div>
-
-          <div className="mb-6">
-            <label
-              htmlFor="category"
-              className="block text-gray-700 font-medium mb-2"
-            >
-              Category
-            </label>
-            <select
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-              required
-              disabled={isRedirecting}
-            >
-              <option value="">Select a category</option>
-              <option value="ancient-history">Ancient History</option>
-              <option value="medieval-period">Medieval Period</option>
-              <option value="renaissance">Renaissance</option>
-              <option value="early-modern-period">Early Modern Period</option>
-              <option value="industrial-age">Industrial Age</option>
-              <option value="20th-century">20th Century</option>
-              <option value="world-wars">World Wars</option>
-              <option value="cold-war-era">Cold War Era</option>
-              <option value="modern-history">Modern History</option>
-            </select>
           </div>
 
           <div className="mb-6">
