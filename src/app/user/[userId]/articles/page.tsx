@@ -1,4 +1,4 @@
-// src/app/profile/[userId]/articles/page.tsx (if it exists)
+// src/app/user/[userId]/articles/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -14,11 +14,6 @@ interface Profile {
   username: string | null;
   full_name: string | null;
   avatar_url: string | null;
-  social_links?: {
-    instagram?: string | null;
-    facebook?: string | null;
-    x?: string | null;
-  } | null;
 }
 
 interface Article {
@@ -33,7 +28,7 @@ interface Article {
   like_count?: number;
 }
 
-export default function UserProfilePage() {
+export default function UserArticlesPage() {
   const params = useParams();
   const router = useRouter();
   const userId = typeof params?.userId === "string" ? params.userId : null;
@@ -46,11 +41,10 @@ export default function UserProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [displayType, setDisplayType] = useState<"grid" | "list">("grid");
   const [isCurrentUser, setIsCurrentUser] = useState(false);
-  const [bio, setBio] = useState<string>("");
 
   // Add console logging for debugging
   useEffect(() => {
-    console.log("User profile page mounted with userId:", userId);
+    console.log("User articles page mounted with userId:", userId);
 
     if (!userId) {
       console.error("No userId provided in URL params");
@@ -106,14 +100,6 @@ export default function UserProfilePage() {
 
       console.log("Profile fetched:", data);
       setProfile(data);
-
-      // Load bio from localStorage if available
-      if (typeof window !== "undefined") {
-        const savedBio = localStorage.getItem("userBio_" + userId);
-        if (savedBio) {
-          setBio(savedBio);
-        }
-      }
     } catch (err: any) {
       console.error("Error fetching profile:", err);
       setError(err.message);
@@ -141,7 +127,7 @@ export default function UserProfilePage() {
       console.log(`Total articles found: ${count}`);
       setTotalArticles(count || 0);
 
-      // Fetch articles
+      // Fetch all articles
       const { data, error } = await (supabase as any)
         .from("public_articles")
         .select(
@@ -221,72 +207,6 @@ export default function UserProfilePage() {
     }
   };
 
-  // Helper function to format social media links
-  const formatSocialLinks = (links: any) => {
-    if (!links) return [];
-
-    const formattedLinks = [];
-
-    if (links.instagram) {
-      formattedLinks.push({
-        name: "Instagram",
-        url: links.instagram.startsWith("http")
-          ? links.instagram
-          : `https://instagram.com/${links.instagram}`,
-        icon: (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-          </svg>
-        ),
-      });
-    }
-
-    if (links.facebook) {
-      formattedLinks.push({
-        name: "Facebook",
-        url: links.facebook.startsWith("http")
-          ? links.facebook
-          : `https://facebook.com/${links.facebook}`,
-        icon: (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z" />
-          </svg>
-        ),
-      });
-    }
-
-    if (links.x) {
-      formattedLinks.push({
-        name: "X",
-        url: links.x.startsWith("http")
-          ? links.x
-          : `https://twitter.com/${links.x}`,
-        icon: (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
-          </svg>
-        ),
-      });
-    }
-
-    return formattedLinks;
-  };
-
   // Error state
   if (error) {
     return (
@@ -340,105 +260,48 @@ export default function UserProfilePage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Profile Header */}
-      <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md mb-8">
-        <div className="flex flex-col md:flex-row">
-          <div className="md:w-1/3 mb-6 md:mb-0 flex justify-center">
-            <div className="h-48 w-48 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden">
-              {profile.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt={profile.username || "User"}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span className="text-6xl">
-                  {(profile.full_name || profile.username || "U")
-                    .charAt(0)
-                    .toUpperCase()}
-                </span>
-              )}
-            </div>
+      {/* Profile Header (simplified) */}
+      <div className="max-w-5xl mx-auto bg-white p-6 rounded-lg shadow-md mb-6">
+        <div className="flex items-center">
+          <div className="h-16 w-16 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden mr-4">
+            {profile.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt={profile.username || "User"}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="text-xl">
+                {(profile.full_name || profile.username || "U")
+                  .charAt(0)
+                  .toUpperCase()}
+              </span>
+            )}
+          </div>
+          <div>
+            <h1 className="text-xl font-bold">
+              {profile.full_name || profile.username || "Anonymous User"}'s
+              Articles
+            </h1>
+            {profile.username && (
+              <p className="text-gray-600">@{profile.username}</p>
+            )}
           </div>
 
-          <div className="md:w-2/3 md:pl-8">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2">
-              <h1 className="text-3xl font-bold">
-                {profile.full_name || profile.username || "Anonymous User"}
-              </h1>
-
-              {!isCurrentUser && <FollowButton targetUserId={profile.id} />}
-            </div>
-
-            {profile.username && (
-              <p className="text-gray-600 mb-4">@{profile.username}</p>
-            )}
-
-            {bio && (
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold mb-1">Bio</h3>
-                <p className="text-gray-700 whitespace-pre-line">{bio}</p>
-              </div>
-            )}
-
-            {/* Social Media Links */}
-            {profile.social_links &&
-              Object.values(profile.social_links).some((link) => link) && (
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold mb-1">Connect</h3>
-                  <div className="flex space-x-4">
-                    {formatSocialLinks(profile.social_links).map(
-                      (link, index) => (
-                        <a
-                          key={index}
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center text-gray-700 hover:text-blue-600 transition-colors"
-                          aria-label={`Connect on ${link.name}`}
-                        >
-                          <span className="mr-2">{link.icon}</span>
-                          <span>{link.name}</span>
-                        </a>
-                      )
-                    )}
-                  </div>
-                </div>
-              )}
-
-            {/* Stats section */}
-            <div className="mb-4">
-              <FollowStats userId={profile.id} className="mb-2" />
-
-              {isCurrentUser && (
-                <Link
-                  href="/profile"
-                  className="text-blue-600 hover:text-blue-800 flex items-center mt-2"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-1"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                    />
-                  </svg>
-                  Edit Your Profile
-                </Link>
-              )}
-            </div>
+          <div className="ml-auto">
+            {!isCurrentUser && <FollowButton targetUserId={profile.id} />}
+            <Link
+              href={`/user/${profile.id}`}
+              className="text-blue-600 hover:text-blue-800 ml-4"
+            >
+              View Profile
+            </Link>
           </div>
         </div>
       </div>
 
       {/* Articles Section */}
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+      <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className="text-2xl font-bold">Published Articles</h2>
@@ -510,16 +373,16 @@ export default function UserProfilePage() {
             </Link>
           </div>
         ) : displayType === "grid" ? (
-          // Instagram-style grid of articles - Changed to 4 columns
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          // Grid display with 4 columns
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {articles.map((article) => (
               <Link
                 key={article.id}
                 href={`/articles/${article.slug}`}
-                className="block aspect-square bg-gray-100 relative overflow-hidden group"
+                className="block bg-gray-100 rounded overflow-hidden hover:shadow-md transition-shadow"
               >
-                {/* Square Article Thumbnail */}
-                <div className="w-full h-full bg-slate-200 relative">
+                {/* Square cover image */}
+                <div className="aspect-square bg-gray-200 relative">
                   {article.image_url ? (
                     <img
                       src={article.image_url}
@@ -527,53 +390,29 @@ export default function UserProfilePage() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-500 p-4">
-                      <p className="text-center font-medium line-clamp-3">
+                    <div className="w-full h-full flex items-center justify-center text-gray-500 p-2">
+                      <span className="text-center text-sm">
                         {article.title}
-                      </p>
+                      </span>
                     </div>
                   )}
 
-                  {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white p-4">
-                    <h3 className="font-bold text-center mb-2 line-clamp-2">
-                      {article.title}
-                    </h3>
+                  {/* Category tag */}
+                  {article.category && (
+                    <span className="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                      {article.category}
+                    </span>
+                  )}
+                </div>
 
-                    <div className="flex items-center space-x-3 mt-2">
-                      <span className="flex items-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 mr-1"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                          <path
-                            fillRule="evenodd"
-                            d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        {article.view_count || 0}
-                      </span>
-                      <span className="flex items-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 mr-1"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        {article.like_count || 0}
-                      </span>
-                    </div>
-                  </div>
+                {/* Title and date below image */}
+                <div className="p-3">
+                  <h3 className="text-gray-800 font-medium text-sm line-clamp-2">
+                    {article.title}
+                  </h3>
+                  <p className="text-gray-500 text-xs mt-1">
+                    {formatDate(article.published_at)}
+                  </p>
                 </div>
               </Link>
             ))}
