@@ -92,6 +92,7 @@ export default function PublicUserProfilePage() {
     );
   }
 
+  // src/app/user/[userId]/page.tsx (continued from previous artifact)
   if (error) {
     return (
       <div className="container mx-auto py-8 px-4">
@@ -189,7 +190,7 @@ export default function PublicUserProfilePage() {
 
         {profile && (
           <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-            <div className="px-6 py-6 border-b border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-2xl font-bold">Pinned Posts</h2>
             </div>
             <div className="p-6">
@@ -200,11 +201,18 @@ export default function PublicUserProfilePage() {
         {/* Favorite Articles Section */}
         {profile && <FavoriteArticles userId={profile.id} />}
 
-        {/* Recent Articles Section - Now without the heading */}
+        {/* Published Articles Section */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-2xl font-bold">Published Articles</h2>
+          </div>
           <div className="p-6">
             {profile && (
-              <UserPublishedArticles userId={profile.id} displayType="grid" />
+              <UserPublishedArticles
+                userId={profile.id}
+                displayType="grid"
+                limit={12}
+              />
             )}
           </div>
         </div>

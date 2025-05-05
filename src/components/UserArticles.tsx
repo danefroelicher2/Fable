@@ -130,67 +130,40 @@ export default function UserArticles({
 
   return (
     <div className="space-y-4">
-      {articles.map((article) => (
-        <div
-          key={article.id}
-          className="bg-white rounded-lg shadow-md overflow-hidden"
-        >
-          <div className="p-6">
-            <h3 className="text-xl font-bold mb-2">
-              <Link
-                href={`/articles/${article.slug}`}
-                className="text-gray-800 hover:text-blue-600"
-              >
+      {/* Grid of 4 articles per row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {articles.map((article) => (
+          <Link
+            key={article.id}
+            href={`/articles/${article.slug}`}
+            className="block bg-gray-100 rounded overflow-hidden hover:shadow-md transition-shadow"
+          >
+            {/* Square placeholder for article */}
+            <div className="aspect-square bg-gray-200 relative flex items-center justify-center">
+              <span className="text-center text-gray-500 px-2 text-sm">
                 {article.title}
-              </Link>
-            </h3>
-            <div className="flex justify-between text-sm text-gray-600 mb-3">
-              <span>{new Date(article.published_at).toLocaleDateString()}</span>
-              <div className="flex space-x-3">
-                <span className="flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-1"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                    <path
-                      fillRule="evenodd"
-                      d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {article.view_count}
-                </span>
-                <span className="flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-1"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {article.like_count || 0}
-                </span>
-              </div>
-            </div>
-            <p className="text-gray-700">{article.excerpt}</p>
-            <div className="mt-4">
+              </span>
+
+              {/* Category tag if exists */}
               {article.category && (
-                <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                <span className="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
                   {article.category}
                 </span>
               )}
             </div>
-          </div>
-        </div>
-      ))}
+
+            {/* Title and date below image */}
+            <div className="p-3">
+              <h3 className="text-gray-800 font-medium text-sm line-clamp-2">
+                {article.title}
+              </h3>
+              <p className="text-gray-500 text-xs mt-1">
+                {new Date(article.published_at).toLocaleDateString()}
+              </p>
+            </div>
+          </Link>
+        ))}
+      </div>
 
       {showViewAll && articles.length > 0 && (
         <div className="text-center mt-6">
