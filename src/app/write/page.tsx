@@ -144,7 +144,7 @@ export default function WritePage() {
       if (published) {
         setPublishedId(published);
         setMessage(
-          "Article published successfully! Redirecting to your profile..."
+          "Article published successfully! Redirecting to your public profile..."
         );
         setIsRedirecting(true);
 
@@ -153,9 +153,10 @@ export default function WritePage() {
           messageRef.current.scrollIntoView({ behavior: "smooth" });
         }
 
-        // Redirect to the profile page after a delay
+        // Redirect to the public profile page after a delay
         setTimeout(() => {
-          router.push("/profile");
+          // Modified to redirect to public profile page
+          router.push(`/user/${user.id}`);
         }, 2500);
       } else {
         throw new Error("Failed to publish article");
@@ -298,97 +299,6 @@ export default function WritePage() {
               >
                 Content
               </label>
-              <div>
-                <button
-                  type="button"
-                  className="text-blue-600 hover:text-blue-800 text-sm mr-3"
-                  onClick={() => {
-                    if (editorRef.current) {
-                      const textarea = editorRef.current;
-                      const startPos = textarea.selectionStart;
-                      const endPos = textarea.selectionEnd;
-                      const selectedText = content.substring(startPos, endPos);
-
-                      // If text is selected, wrap it in bold markdown
-                      if (startPos !== endPos) {
-                        const newContent =
-                          content.substring(0, startPos) +
-                          `**${selectedText}**` +
-                          content.substring(endPos);
-
-                        setContent(newContent);
-                      } else {
-                        // If no selection, insert placeholder
-                        const newContent =
-                          content.substring(0, startPos) +
-                          "**bold text**" +
-                          content.substring(endPos);
-
-                        setContent(newContent);
-                      }
-                    }
-                  }}
-                  disabled={isRedirecting}
-                >
-                  Bold
-                </button>
-                <button
-                  type="button"
-                  className="text-blue-600 hover:text-blue-800 text-sm mr-3"
-                  onClick={() => {
-                    if (editorRef.current) {
-                      const textarea = editorRef.current;
-                      const startPos = textarea.selectionStart;
-                      const endPos = textarea.selectionEnd;
-                      const selectedText = content.substring(startPos, endPos);
-
-                      // If text is selected, wrap it in italic markdown
-                      if (startPos !== endPos) {
-                        const newContent =
-                          content.substring(0, startPos) +
-                          `*${selectedText}*` +
-                          content.substring(endPos);
-
-                        setContent(newContent);
-                      } else {
-                        // If no selection, insert placeholder
-                        const newContent =
-                          content.substring(0, startPos) +
-                          "*italic text*" +
-                          content.substring(endPos);
-
-                        setContent(newContent);
-                      }
-                    }
-                  }}
-                  disabled={isRedirecting}
-                >
-                  Italic
-                </button>
-                <button
-                  type="button"
-                  className="text-blue-600 hover:text-blue-800 text-sm"
-                  onClick={() => {
-                    if (editorRef.current) {
-                      const textarea = editorRef.current;
-                      const startPos = textarea.selectionStart;
-
-                      // Insert heading at the beginning of the line
-                      const lineStart =
-                        content.lastIndexOf("\n", startPos - 1) + 1;
-                      const newContent =
-                        content.substring(0, lineStart) +
-                        "## " +
-                        content.substring(lineStart);
-
-                      setContent(newContent);
-                    }
-                  }}
-                  disabled={isRedirecting}
-                >
-                  Heading
-                </button>
-              </div>
             </div>
 
             <div className="mb-2">
@@ -422,10 +332,6 @@ export default function WritePage() {
               required
               disabled={isRedirecting}
             />
-            <p className="text-gray-500 text-sm mt-2">
-              Tip: Use Markdown for formatting. *italic* for italics, **bold**
-              for bold, ## for headings.
-            </p>
           </div>
 
           <div className="flex justify-end space-x-4">

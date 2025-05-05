@@ -4,10 +4,12 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+// This function only handles creating posts in the public_articles table
+// It doesn't affect the saveDraft functionality
 async function createPublicArticle(
   content: string,
   title: string,
-  imageUrl?: string | null
+  category?: string
 ) {
   try {
     const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -16,32 +18,29 @@ async function createPublicArticle(
       throw new Error("You must be logged in to create an article");
     }
 
-    // Auto-generate these values
-    const slug =
-      title
-        .toLowerCase()
-        .replace(/[^\w\s]/gi, "")
-        .replace(/\s+/g, "-") +
-      "-" +
-      Date.now().toString().slice(-6);
+    // Generate a slug from the title
+    const slug = title
+      .toLowerCase()
+      .replace(/[^\w\s]/gi, "")
+      .replace(/\s+/g, "-");
 
+    // Create an excerpt from the content (first 150 characters)
     const excerpt =
       content.substring(0, 150) + (content.length > 150 ? "..." : "");
 
-    // Insert into public_articles table
+    // Insert into public_articles instead of posts
     const { data, error } = await (supabase as any)
       .from("public_articles")
       .insert({
         user_id: userData.user.id,
         title,
         content,
-        excerpt: excerpt,
-        category: "general", // Default category
+        excerpt,
+        category: category || "general", // Default category if none provided
         slug,
         is_published: true,
         published_at: new Date().toISOString(),
         view_count: 0,
-        image_url: imageUrl,
       })
       .select("*")
       .single();
@@ -63,9 +62,9 @@ export default function CreatePostForm({
 }: {
   onPostCreated?: () => void;
 }) {
-  const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -87,12 +86,11 @@ export default function CreatePostForm({
     setError(null);
 
     try {
-      await createPublicArticle(content, title, coverImage);
+      await createPublicArticle(content, title, category || undefined);
 
-      // Reset form
-      setTitle("");
       setContent("");
-      setCoverImage(null);
+      setTitle("");
+      setCategory("");
       setSuccess(true);
 
       // Call the callback if provided
@@ -109,19 +107,9 @@ export default function CreatePostForm({
     }
   };
 
-  // Mock function for the upload cover image button
-  const handleImageUpload = () => {
-    // In a real implementation, this would open a file picker or similar
-    // For now, just setting a placeholder image URL
-    setCoverImage("https://via.placeholder.com/800x400");
-    // You would normally handle file upload to Supabase storage here
-  };
-
   return (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-2xl font-bold mb-6 text-white">
-        Write a New Article
-      </h1>
+    <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+      <h2 className="text-2xl font-bold mb-4">Create a New Post</h2>
 
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -131,97 +119,52 @@ export default function CreatePostForm({
 
       {success && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          Article published successfully!
+          Post created successfully!
         </div>
       )}
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-6 rounded-lg shadow-md space-y-6"
-      >
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="title" className="block text-gray-700 mb-2">
-            Title
-          </label>
+          <label className="block text-gray-700 mb-2">Title</label>
           <input
-            id="title"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full p-2 border rounded"
-            placeholder="Enter a compelling title for your article"
+            placeholder="Add a title to your post"
             required
           />
         </div>
 
         <div>
-          <label htmlFor="coverImage" className="block text-gray-700 mb-2">
-            Cover Image
+          <label className="block text-gray-700 mb-2">
+            Category (Optional)
           </label>
-          <button
-            type="button"
-            onClick={handleImageUpload}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full p-2 border rounded"
           >
-            Upload Cover Image
-          </button>
-          <p className="text-sm text-gray-500 mt-1">
-            Upload an eye-catching cover image for your article (max 2MB, JPEG
-            or PNG)
-          </p>
-
-          {coverImage && (
-            <div className="mt-2">
-              <img
-                src={coverImage}
-                alt="Cover preview"
-                className="max-h-40 rounded border"
-              />
-            </div>
-          )}
+            <option value="">Select a category</option>
+            <option value="ancient-history">Ancient History</option>
+            <option value="medieval-period">Medieval Period</option>
+            <option value="renaissance">Renaissance</option>
+            <option value="early-modern-period">Early Modern Period</option>
+            <option value="industrial-age">Industrial Age</option>
+            <option value="20th-century">20th Century</option>
+            <option value="world-wars">World Wars</option>
+            <option value="cold-war-era">Cold War Era</option>
+            <option value="modern-history">Modern History</option>
+          </select>
         </div>
 
         <div>
-          <div className="flex justify-between items-center mb-2">
-            <label htmlFor="content" className="block text-gray-700">
-              Content
-            </label>
-            <div className="space-x-2">
-              <button
-                type="button"
-                className="text-blue-600 hover:text-blue-800"
-                onClick={() => {
-                  setContent(content + "**bold text**");
-                }}
-              >
-                Bold
-              </button>
-              <button
-                type="button"
-                className="text-blue-600 hover:text-blue-800"
-                onClick={() => {
-                  setContent(content + "*italic text*");
-                }}
-              >
-                Italic
-              </button>
-              <button
-                type="button"
-                className="text-blue-600 hover:text-blue-800"
-                onClick={() => {
-                  setContent(content + "\n## Heading\n");
-                }}
-              >
-                Heading
-              </button>
-            </div>
-          </div>
+          <label className="block text-gray-700 mb-2">Content</label>
           <textarea
-            id="content"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="w-full p-2 border rounded min-h-[200px]"
-            placeholder="Write your article content here..."
+            className="w-full p-2 border rounded h-32"
+            placeholder="Write your post content..."
             required
           />
         </div>
@@ -231,7 +174,7 @@ export default function CreatePostForm({
           disabled={loading}
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-blue-300"
         >
-          {loading ? "Publishing..." : "Publish Article"}
+          {loading ? "Posting..." : "Create Post"}
         </button>
       </form>
     </div>
