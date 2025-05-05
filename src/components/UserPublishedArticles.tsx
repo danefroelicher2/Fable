@@ -13,6 +13,7 @@ interface Article {
   category: string | null;
   published_at: string;
   view_count: number;
+  image_url?: string | null;
   like_count?: number;
 }
 
@@ -69,7 +70,8 @@ export default function UserPublishedArticles({
           excerpt, 
           category, 
           published_at, 
-          view_count
+          view_count,
+          image_url
         `
         )
         .eq("user_id", userId)
@@ -138,7 +140,7 @@ export default function UserPublishedArticles({
     return (
       <div className="animate-pulse space-y-4">
         {displayType === "grid" ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[...Array(limit)].map((_, index) => (
               <div
                 key={index}
@@ -188,28 +190,43 @@ export default function UserPublishedArticles({
   return (
     <div>
       {displayType === "grid" ? (
-        // Grid display
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        // Updated grid display with 4 columns
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {articles.map((article) => (
             <Link
               key={article.id}
               href={`/articles/${article.slug}`}
-              className="bg-gray-100 text-center rounded p-4 flex flex-col items-center justify-center hover:bg-gray-200 transition-colors"
+              className="block bg-gray-100 rounded overflow-hidden hover:shadow-md transition-shadow"
             >
-              {article.category && (
-                <div className="mb-2 text-center">
-                  <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+              {/* Square cover image */}
+              <div className="aspect-square bg-gray-200 relative">
+                {article.image_url ? (
+                  <img
+                    src={article.image_url}
+                    alt={article.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-500 p-2">
+                    <span className="text-center text-sm">{article.title}</span>
+                  </div>
+                )}
+                {/* Category tag */}
+                {article.category && (
+                  <span className="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
                     {article.category}
                   </span>
-                </div>
-              )}
-
-              <div className="text-blue-600 text-sm sm:text-base font-medium">
-                {article.title}
+                )}
               </div>
 
-              <div className="text-xs text-gray-500 mt-1">
-                {formatDate(article.published_at)}
+              {/* Title and date below image */}
+              <div className="p-3">
+                <h3 className="text-gray-800 font-medium text-sm line-clamp-2">
+                  {article.title}
+                </h3>
+                <p className="text-gray-500 text-xs mt-1">
+                  {formatDate(article.published_at)}
+                </p>
               </div>
             </Link>
           ))}
@@ -222,60 +239,75 @@ export default function UserPublishedArticles({
               key={article.id}
               className="bg-white rounded-lg shadow-md overflow-hidden"
             >
-              <div className="p-6">
-                <h3 className="text-xl font-bold mb-2">
-                  <Link
-                    href={`/articles/${article.slug}`}
-                    className="text-gray-800 hover:text-blue-600"
-                  >
-                    {article.title}
-                  </Link>
-                </h3>
-                <div className="flex justify-between text-sm text-gray-600 mb-3">
-                  <span>{formatDate(article.published_at)}</span>
-                  <div className="flex space-x-3">
-                    <span className="flex items-center">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 mr-1"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                        <path
-                          fillRule="evenodd"
-                          d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      {article.view_count}
-                    </span>
-                    <span className="flex items-center">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 mr-1"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      {article.like_count || 0}
-                    </span>
+              <div className="md:flex">
+                {article.image_url && (
+                  <div className="md:w-1/3">
+                    <div className="h-48 md:h-full bg-slate-200">
+                      <img
+                        src={article.image_url}
+                        alt={article.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                   </div>
-                </div>
-                {article.excerpt && (
-                  <p className="text-gray-700">{article.excerpt}</p>
                 )}
-                <div className="mt-4">
-                  {article.category && (
-                    <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                      {article.category}
-                    </span>
+                <div
+                  className={`p-6 ${article.image_url ? "md:w-2/3" : "w-full"}`}
+                >
+                  <h3 className="text-xl font-bold mb-2">
+                    <Link
+                      href={`/articles/${article.slug}`}
+                      className="text-gray-800 hover:text-blue-600"
+                    >
+                      {article.title}
+                    </Link>
+                  </h3>
+                  <div className="flex justify-between text-sm text-gray-600 mb-3">
+                    <span>{formatDate(article.published_at)}</span>
+                    <div className="flex space-x-3">
+                      <span className="flex items-center">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 mr-1"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                          <path
+                            fillRule="evenodd"
+                            d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        {article.view_count}
+                      </span>
+                      <span className="flex items-center">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 mr-1"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        {article.like_count || 0}
+                      </span>
+                    </div>
+                  </div>
+                  {article.excerpt && (
+                    <p className="text-gray-700">{article.excerpt}</p>
                   )}
+                  <div className="mt-4">
+                    {article.category && (
+                      <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                        {article.category}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
