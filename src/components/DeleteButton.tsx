@@ -32,7 +32,29 @@ export default function DeleteButton({
       setIsDeleting(true);
       setError(null);
 
-      // Delete the article from the database
+      // First, delete all related bookmarks
+      const { error: bookmarksError } = await (supabase as any)
+        .from("bookmarks")
+        .delete()
+        .eq("article_id", articleId);
+
+      if (bookmarksError) {
+        console.error("Error deleting bookmarks:", bookmarksError);
+        throw bookmarksError;
+      }
+
+      // Also delete any likes that reference this article
+      const { error: likesError } = await (supabase as any)
+        .from("likes")
+        .delete()
+        .eq("article_id", articleId);
+
+      if (likesError) {
+        console.error("Error deleting likes:", likesError);
+        throw likesError;
+      }
+
+      // Finally, delete the article itself
       const { error } = await (supabase as any)
         .from("public_articles")
         .delete()
