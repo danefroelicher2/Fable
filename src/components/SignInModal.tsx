@@ -1,4 +1,6 @@
 // src/components/SignInModal.tsx
+// We need to update the modal container to have a higher z-index and prevent interaction with elements below it
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -29,10 +31,14 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
 
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      // Add this to prevent scrolling when modal is open
+      document.body.style.overflow = "hidden";
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      // Restore scrolling when modal is closed
+      document.body.style.overflow = "";
     };
   }, [isOpen, onClose]);
 
@@ -85,10 +91,14 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] backdrop-blur-sm">
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50"
+        onClick={onClose}
+      ></div>
       <div
         ref={modalRef}
-        className="bg-black border border-gray-800 rounded-xl w-full max-w-md p-6 relative"
+        className="bg-black border border-gray-800 rounded-xl w-full max-w-md p-6 relative z-[10000]"
       >
         {/* Close button */}
         <button
