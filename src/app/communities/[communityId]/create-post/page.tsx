@@ -1,93 +1,83 @@
+// Updated version of the component that creates posts in a community
+// Based on src/app/communities/[communityId]/create-post/page.tsx or an equivalent component
+
 "use client";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
-interface Community {
-  id: string;
-  name: string;
-  image_url: string | null;
-}
-
 export default function CreateCommunityPostPage() {
-  const params = useParams();
+  const { communityId } = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const [community, setCommunity] = useState<Community | null>(null);
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [posting, setPosting] = useState(false);
+  const [community, setCommunity] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [isMember, setIsMember] = useState(false);
 
-  const communityId = Array.isArray(params?.communityId)
-    ? params.communityId[0]
-    : params?.communityId;
-
   useEffect(() => {
     if (communityId) {
-      checkCommunity();
+      fetchCommunityDetails();
+      checkMembership();
     }
   }, [communityId, user]);
 
-  async function checkCommunity() {
+  async function fetchCommunityDetails() {
     try {
       setLoading(true);
-      setError(null);
 
-      if (!user) {
-        setError("You must be signed in to create a post");
-        return;
-      }
-
-      // Get community info without using join syntax
-      const { data: communityData, error: communityError } = await (
-        supabase as any
-      )
+      // Fetch the community details
+      const { data, error } = await (supabase as any)
         .from("communities")
-        .select("id, name, image_url")
+        .select("id, name, description, creator_id")
         .eq("id", communityId)
         .single();
 
-      if (communityError) {
-        console.error("Error fetching community:", communityError);
-        throw communityError;
-      }
+      if (error) throw error;
 
-      setCommunity(communityData);
+      setCommunity(data);
+    } catch (err) {
+      console.error("Error fetching community:", err);
+      setError("Failed to load community details");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-      // Check if user is a member
-      const { data: memberData, error: memberError } = await (supabase as any)
+  async function checkMembership() {
+    try {
+      if (!user) return false;
+
+      const { data, error } = await (supabase as any)
         .from("community_members")
         .select("id")
         .eq("community_id", communityId)
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (memberError) {
-        console.error("Error checking membership:", memberError);
-        throw memberError;
-      }
+      if (error) throw error;
 
-      if (!memberData) {
-        setError("You must be a member of this community to create posts");
-        setIsMember(false);
-      } else {
-        setIsMember(true);
-      }
+      setIsMember(!!data);
+      return !!data;
     } catch (err) {
-      console.error("Error checking community:", err);
-      setError("Failed to load community information");
-    } finally {
-      setLoading(false);
+      console.error("Error checking membership:", err);
+      return false;
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  // New function that creates both a community post and a public article
+  async function createPostAndPublicArticle() {
+    if (!title.trim() || !content.trim()) {
+      setError("Title and content are required");
+      return;
+    }
 
     if (!user) {
       router.push(
@@ -97,174 +87,224 @@ export default function CreateCommunityPostPage() {
     }
 
     if (!isMember) {
-      setError("You must be a member of this community to create posts");
+      setError("You must be a member of this community to post");
       return;
     }
 
-    if (!title.trim()) {
-      setError("Please enter a post title");
-      return;
-    }
-
-    if (!content.trim()) {
-      setError("Please enter post content");
-      return;
-    }
-
-    setSubmitting(true);
+    setPosting(true);
     setError(null);
 
     try {
-      // Insert the new community post
-      const { data, error: postError } = await (supabase as any)
+      // First create the community post
+      const { data: postData, error: postError } = await (supabase as any)
         .from("community_posts")
         .insert({
-          community_id: communityId,
+          title,
+          content,
           user_id: user.id,
-          title: title.trim(),
-          content: content.trim(),
+          community_id: communityId,
           created_at: new Date().toISOString(),
         })
-        .select()
+        .select("*")
         .single();
 
-      if (postError) {
-        console.error("Error creating post:", postError);
-        throw postError;
-      }
+      if (postError) throw postError;
 
-      router.push(`/communities/${communityId}`);
+      // Now create a corresponding public article
+      // Use the community name as the category with a prefix
+      const slug =
+        title
+          .toLowerCase()
+          .replace(/[^\w\s]/gi, "")
+          .replace(/\s+/g, "-") +
+        "-" +
+        Date.now().toString().substring(8);
+
+      const excerpt =
+        content.substring(0, 150) + (content.length > 150 ? "..." : "");
+
+      const { data: articleData, error: articleError } = await (supabase as any)
+        .from("public_articles")
+        .insert({
+          user_id: user.id,
+          title,
+          content,
+          excerpt,
+          category: `community:${community.name}`, // Store community name with prefix
+          slug,
+          is_published: true,
+          published_at: new Date().toISOString(),
+          view_count: 0,
+          community_post_id: postData.id, // Link back to community post
+        });
+
+      if (articleError) throw articleError;
+
+      // Redirect to the community post
+      router.push(`/communities/${communityId}/posts/${postData.id}`);
     } catch (err: any) {
       console.error("Error creating post:", err);
       setError(err.message || "Failed to create post");
-      setSubmitting(false);
+    } finally {
+      setPosting(false);
     }
   }
 
-  // If still loading
   if (loading) {
     return (
       <div className="container mx-auto py-8 px-4">
-        <div className="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md flex justify-center items-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-2">Loading...</span>
+        <div className="max-w-4xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/4 mb-8"></div>
+            <div className="h-32 bg-gray-200 rounded mb-4"></div>
+            <div className="h-12 bg-gray-200 rounded mb-4"></div>
+          </div>
         </div>
       </div>
     );
   }
 
-  // If error or not a member
-  if (error && !isMember) {
+  if (!community) {
     return (
       <div className="container mx-auto py-8 px-4">
-        <div className="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
-          </div>
-          <div className="flex justify-between">
-            <Link
-              href={`/communities/${communityId}`}
-              className="text-blue-600 hover:text-blue-800"
-            >
-              Return to Community
-            </Link>
-            {/* Only show Join Community link if logged in */}
-            {user && (
-              <Link
-                href={`/communities/${communityId}`}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
-                Join Community
-              </Link>
-            )}
-          </div>
+        <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md text-center">
+          <h1 className="text-2xl font-bold mb-4 dark:text-white">
+            Community Not Found
+          </h1>
+          <p className="text-gray-600 mb-6 dark:text-gray-300">
+            The community you're looking for doesn't exist or has been removed.
+          </p>
+          <Link
+            href="/communities"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          >
+            Back to Communities
+          </Link>
         </div>
       </div>
     );
   }
 
-  // Main form
+  // Check if user is signed in
+  if (!user) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md text-center">
+          <h1 className="text-2xl font-bold mb-4 dark:text-white">
+            Sign In Required
+          </h1>
+          <p className="text-gray-600 mb-6 dark:text-gray-300">
+            You need to sign in to create a post in this community.
+          </p>
+          <Link
+            href={`/signin?redirect=${encodeURIComponent(
+              window.location.pathname
+            )}`}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          >
+            Sign In
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user is a member of the community
+  if (!isMember) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md text-center">
+          <h1 className="text-2xl font-bold mb-4 dark:text-white">
+            Membership Required
+          </h1>
+          <p className="text-gray-600 mb-6 dark:text-gray-300">
+            You need to be a member of this community to create posts.
+          </p>
+          <Link
+            href={`/communities/${communityId}`}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          >
+            Join Community
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="max-w-3xl mx-auto">
-        {community && (
-          <div className="flex items-center mb-6">
-            <Link
-              href={`/communities/${communityId}`}
-              className="text-blue-600 hover:text-blue-800 mr-4"
-            >
-              ← Back to {community.name}
-            </Link>
-            <h1 className="text-2xl font-bold">
-              Create Post in {community.name}
-            </h1>
-          </div>
-        )}
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold dark:text-white">
+            Create a Post in {community.name}
+          </h1>
+          <Link
+            href={`/communities/${communityId}`}
+            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            Back to Community
+          </Link>
+        </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 dark:bg-red-900 dark:border-red-700 dark:text-red-300">
             {error}
           </div>
         )}
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white p-6 rounded-lg shadow-md"
-        >
-          <div className="mb-4">
-            <label
-              htmlFor="title"
-              className="block text-gray-700 font-medium mb-2"
-            >
-              Title
-            </label>
-            <input
-              type="text"
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="Enter your post title"
-              required
-              disabled={submitting}
-            />
-          </div>
+        <div className="bg-white rounded-lg shadow-md overflow-hidden dark:bg-gray-800">
+          <div className="p-6">
+            <div className="mb-6">
+              <label
+                className="block text-gray-700 dark:text-gray-300 font-medium mb-2"
+                htmlFor="title"
+              >
+                Title
+              </label>
+              <input
+                type="text"
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="Give your post a title"
+                required
+              />
+            </div>
 
-          <div className="mb-6">
-            <label
-              htmlFor="content"
-              className="block text-gray-700 font-medium mb-2"
-            >
-              Content
-            </label>
-            <textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-              rows={10}
-              placeholder="Write your post content here..."
-              required
-              disabled={submitting}
-            />
-          </div>
+            <div className="mb-6">
+              <label
+                className="block text-gray-700 dark:text-gray-300 font-medium mb-2"
+                htmlFor="content"
+              >
+                Content
+              </label>
+              <textarea
+                id="content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="What do you want to share with the community?"
+                rows={8}
+                required
+              />
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                You can use Markdown formatting in your post.
+              </p>
+            </div>
 
-          <div className="flex justify-end space-x-4">
-            <Link
-              href={`/communities/${communityId}`}
-              className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors"
-            >
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {submitting ? "Creating..." : "Create Post"}
-            </button>
+            <div className="flex justify-end">
+              <button
+                onClick={createPostAndPublicArticle}
+                disabled={posting}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-300 dark:disabled:bg-blue-800"
+              >
+                {posting ? "Posting..." : "Create Post"}
+              </button>
+            </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
