@@ -1,4 +1,4 @@
-// Updated version of DeleteButton.tsx to handle community posts
+// src/components/DeleteButton.tsx
 "use client";
 
 import { useState } from "react";
@@ -32,44 +32,7 @@ export default function DeleteButton({
       setIsDeleting(true);
       setError(null);
 
-      // First, check if this article is linked to a community post
-      const { data: articleData, error: fetchError } = await (supabase as any)
-        .from("public_articles")
-        .select("community_post_id")
-        .eq("id", articleId)
-        .single();
-
-      if (fetchError) {
-        console.error("Error fetching article:", fetchError);
-        // Continue with deletion even if we can't fetch the article details
-      }
-
-      // If there's a linked community post, delete it first
-      if (articleData?.community_post_id) {
-        // First delete comments on the community post
-        const { error: commentsError } = await (supabase as any)
-          .from("community_post_comments")
-          .delete()
-          .eq("post_id", articleData.community_post_id);
-
-        if (commentsError) {
-          console.error("Error deleting comments:", commentsError);
-          // Continue with deletion even if comment deletion fails
-        }
-
-        // Then delete the community post
-        const { error: postError } = await (supabase as any)
-          .from("community_posts")
-          .delete()
-          .eq("id", articleData.community_post_id);
-
-        if (postError) {
-          console.error("Error deleting community post:", postError);
-          // Continue with deletion even if community post deletion fails
-        }
-      }
-
-      // Delete related bookmarks
+      // First, delete all related bookmarks
       const { error: bookmarksError } = await (supabase as any)
         .from("bookmarks")
         .delete()
@@ -77,10 +40,10 @@ export default function DeleteButton({
 
       if (bookmarksError) {
         console.error("Error deleting bookmarks:", bookmarksError);
-        // Continue with deletion even if bookmark deletion fails
+        throw bookmarksError;
       }
 
-      // Delete any likes
+      // Also delete any likes that reference this article
       const { error: likesError } = await (supabase as any)
         .from("likes")
         .delete()
@@ -88,7 +51,7 @@ export default function DeleteButton({
 
       if (likesError) {
         console.error("Error deleting likes:", likesError);
-        // Continue with deletion even if likes deletion fails
+        throw likesError;
       }
 
       // Finally, delete the article itself

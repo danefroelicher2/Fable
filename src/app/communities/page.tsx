@@ -43,7 +43,6 @@ export default function CommunitiesPage() {
     { id: "education", name: "Education" },
     { id: "sports", name: "Sports" },
     { id: "art", name: "Art" },
-    { id: "politics", name: "Politics" },
     { id: "food", name: "Food" },
     { id: "science", name: "Science" },
     { id: "history", name: "History" },
