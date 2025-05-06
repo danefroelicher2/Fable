@@ -1,4 +1,5 @@
-// Modified version of UserPublishedArticles.tsx to show community name in bubble
+"use client";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -17,7 +18,6 @@ interface Article {
   image_url?: string | null;
   like_count?: number;
   user_id: string;
-  community_post_id?: string; // Add this to link to community posts
 }
 
 interface UserPublishedArticlesProps {
@@ -43,26 +43,50 @@ export default function UserPublishedArticles({
   useEffect(() => {
     if (userId) {
       fetchUserArticles();
+    } else {
+      console.warn("No userId provided to UserPublishedArticles");
+      setLoading(false);
     }
   }, [userId, limit]);
 
   async function fetchUserArticles() {
     try {
       setLoading(true);
+      console.log("Fetching articles for user:", userId);
 
       // Get pinned post IDs to exclude from regular articles
-      const pinnedPostIds = getUserPinnedPosts(userId);
+      let pinnedPostIds: string[] = [];
+      try {
+        // Safely get pinned post IDs
+        pinnedPostIds =
+          typeof getUserPinnedPosts === "function"
+            ? getUserPinnedPosts(userId)
+            : [];
+        console.log("Excluding pinned posts:", pinnedPostIds);
+      } catch (pinError) {
+        console.warn("Error getting pinned posts:", pinError);
+        pinnedPostIds = []; // Fallback to empty array
+      }
 
       // Fetch total count first (including pinned posts for correct count)
-      const { count, error: countError } = await (supabase as any)
-        .from("public_articles")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("is_published", true);
+      try {
+        const { count, error: countError } = await (supabase as any)
+          .from("public_articles")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .eq("is_published", true);
 
-      if (countError) throw countError;
+        if (countError) {
+          console.error("Count error:", countError);
+          throw countError;
+        }
 
-      setTotalArticles(count || 0);
+        setTotalArticles(count || 0);
+        console.log("Total articles found:", count);
+      } catch (countErr) {
+        console.error("Error fetching article count:", countErr);
+        // Continue even if count fails
+      }
 
       // Now fetch articles, excluding pinned ones
       let query = (supabase as any)
@@ -77,16 +101,21 @@ export default function UserPublishedArticles({
           published_at, 
           view_count,
           image_url,
-          user_id,
-          community_post_id
+          user_id
         `
         )
         .eq("user_id", userId)
         .eq("is_published", true);
 
       // Filter out pinned posts if there are any
-      if (pinnedPostIds.length > 0) {
-        query = query.not("id", "in", `(${pinnedPostIds.join(",")})`);
+      if (pinnedPostIds && pinnedPostIds.length > 0) {
+        try {
+          // Use direct array syntax instead of string interpolation
+          query = query.not("id", "in", pinnedPostIds);
+        } catch (filterErr) {
+          console.warn("Error applying pinned post filter:", filterErr);
+          // Continue without filtering if this fails
+        }
       }
 
       // Apply ordering and limit
@@ -94,10 +123,16 @@ export default function UserPublishedArticles({
         .order("published_at", { ascending: false })
         .limit(limit);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Article fetch error:", error);
+        throw error;
+      }
+
+      console.log(`Successfully fetched ${data?.length || 0} articles`);
 
       // Process articles to add like counts if possible
       let processedArticles = data || [];
+
       try {
         // Add placeholder like counts to avoid errors
         processedArticles = processedArticles.map((article: Article) => ({
@@ -105,30 +140,40 @@ export default function UserPublishedArticles({
           like_count: 0,
         }));
 
-        // Try to get like counts for each article
-        processedArticles = await Promise.all(
-          processedArticles.map(async (article: Article) => {
-            try {
-              const { count, error: likesError } = await (supabase as any)
-                .from("likes")
-                .select("id", { count: "exact" })
-                .eq("article_id", article.id);
+        // Only try to get like counts if we have articles
+        if (processedArticles.length > 0) {
+          processedArticles = await Promise.all(
+            processedArticles.map(async (article: Article) => {
+              try {
+                const { count: likeCount, error: likesError } = await (
+                  supabase as any
+                )
+                  .from("likes")
+                  .select("id", { count: "exact" })
+                  .eq("article_id", article.id);
 
-              if (likesError) throw likesError;
+                if (likesError) {
+                  console.warn(
+                    `Like count error for article ${article.id}:`,
+                    likesError
+                  );
+                  return article;
+                }
 
-              return {
-                ...article,
-                like_count: count || 0,
-              };
-            } catch (err) {
-              console.warn(
-                `Couldn't get like count for article ${article.id}:`,
-                err
-              );
-              return article;
-            }
-          })
-        );
+                return {
+                  ...article,
+                  like_count: likeCount || 0,
+                };
+              } catch (err) {
+                console.warn(
+                  `Couldn't get like count for article ${article.id}:`,
+                  err
+                );
+                return article;
+              }
+            })
+          );
+        }
       } catch (err) {
         console.warn("Error getting like counts:", err);
         // Continue with articles even if like counts fail
@@ -136,6 +181,7 @@ export default function UserPublishedArticles({
 
       setArticles(processedArticles);
     } catch (err) {
+      // Improved error logging with more context
       console.error("Error fetching user articles:", err);
       setError("Failed to load articles");
     } finally {
@@ -150,39 +196,6 @@ export default function UserPublishedArticles({
 
     // Update the total count
     setTotalArticles((prev) => Math.max(0, prev - 1));
-  };
-
-  // Format date (e.g., "Mar 15, 2024")
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  // New function to render category bubble with special handling for community posts
-  const renderCategoryBubble = (category: string | null) => {
-    if (!category) return "Uncategorized";
-
-    // Check if this is a community post
-    if (category.startsWith("community:")) {
-      // Extract the community name from the category field
-      const communityName = category.substring(10); // Remove "community:" prefix
-
-      return (
-        <span className="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm">
-          {communityName}
-        </span>
-      );
-    }
-
-    // Regular category bubble
-    return (
-      <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-        {category}
-      </span>
-    );
   };
 
   if (loading) {
@@ -227,6 +240,20 @@ export default function UserPublishedArticles({
     );
   }
 
+  // Format date (e.g., "Mar 15, 2024")
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch (err) {
+      console.warn("Date formatting error:", err);
+      return "Unknown date";
+    }
+  };
+
   return (
     <div>
       {displayType === "grid" ? (
@@ -235,14 +262,7 @@ export default function UserPublishedArticles({
           {articles.map((article) => (
             <div key={article.id} className="relative group">
               <Link
-                href={
-                  article.community_post_id
-                    ? `/communities/${article.category?.replace(
-                        "community:",
-                        ""
-                      )}/posts/${article.community_post_id}`
-                    : `/articles/${article.slug}`
-                }
+                href={`/articles/${article.slug}`}
                 className="block bg-gray-100 rounded overflow-hidden hover:shadow-md transition-shadow h-full"
               >
                 {/* Square cover image */}
@@ -262,16 +282,8 @@ export default function UserPublishedArticles({
                   )}
                   {/* Category tag */}
                   {article.category && (
-                    <span
-                      className={`absolute top-2 right-2 ${
-                        article.category.startsWith("community:")
-                          ? "bg-purple-100 text-purple-800"
-                          : "bg-blue-100 text-blue-800"
-                      } text-xs px-2 py-1 rounded-full`}
-                    >
-                      {article.category.startsWith("community:")
-                        ? article.category.substring(10) // Remove "community:" prefix
-                        : article.category}
+                    <span className="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                      {article.category}
                     </span>
                   )}
                 </div>
@@ -300,7 +312,7 @@ export default function UserPublishedArticles({
           ))}
         </div>
       ) : (
-        // Updated list display
+        // List display
         <div className="space-y-6">
           {articles.map((article) => (
             <div
@@ -325,20 +337,12 @@ export default function UserPublishedArticles({
                   <div className="flex justify-between items-start">
                     <h3 className="text-xl font-bold mb-2">
                       <Link
-                        href={
-                          article.community_post_id
-                            ? `/communities/${article.category?.replace(
-                                "community:",
-                                ""
-                              )}/posts/${article.community_post_id}`
-                            : `/articles/${article.slug}`
-                        }
+                        href={`/articles/${article.slug}`}
                         className="text-gray-800 hover:text-blue-600"
                       >
                         {article.title}
                       </Link>
                     </h3>
-
                     {isCurrentUser && (
                       <DeleteButton
                         articleId={article.id}
@@ -387,18 +391,9 @@ export default function UserPublishedArticles({
                   )}
                   <div className="mt-4">
                     {article.category && (
-                      <div>
-                        {article.category.startsWith("community:") ? (
-                          <span className="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm">
-                            {article.category.substring(10)}{" "}
-                            {/* Remove "community:" prefix */}
-                          </span>
-                        ) : (
-                          <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                            {article.category}
-                          </span>
-                        )}
-                      </div>
+                      <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                        {article.category}
+                      </span>
                     )}
                   </div>
                 </div>
