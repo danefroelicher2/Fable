@@ -1,5 +1,4 @@
-"use client";
-
+// Modified version of UserPublishedArticles.tsx to show community name in bubble
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -18,6 +17,7 @@ interface Article {
   image_url?: string | null;
   like_count?: number;
   user_id: string;
+  community_post_id?: string; // Add this to link to community posts
 }
 
 interface UserPublishedArticlesProps {
@@ -77,7 +77,8 @@ export default function UserPublishedArticles({
           published_at, 
           view_count,
           image_url,
-          user_id
+          user_id,
+          community_post_id
         `
         )
         .eq("user_id", userId)
@@ -151,6 +152,39 @@ export default function UserPublishedArticles({
     setTotalArticles((prev) => Math.max(0, prev - 1));
   };
 
+  // Format date (e.g., "Mar 15, 2024")
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  // New function to render category bubble with special handling for community posts
+  const renderCategoryBubble = (category: string | null) => {
+    if (!category) return "Uncategorized";
+
+    // Check if this is a community post
+    if (category.startsWith("community:")) {
+      // Extract the community name from the category field
+      const communityName = category.substring(10); // Remove "community:" prefix
+
+      return (
+        <span className="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm">
+          {communityName}
+        </span>
+      );
+    }
+
+    // Regular category bubble
+    return (
+      <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+        {category}
+      </span>
+    );
+  };
+
   if (loading) {
     return (
       <div className="animate-pulse space-y-4">
@@ -193,15 +227,6 @@ export default function UserPublishedArticles({
     );
   }
 
-  // Format date (e.g., "Mar 15, 2024")
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
   return (
     <div>
       {displayType === "grid" ? (
@@ -210,7 +235,14 @@ export default function UserPublishedArticles({
           {articles.map((article) => (
             <div key={article.id} className="relative group">
               <Link
-                href={`/articles/${article.slug}`}
+                href={
+                  article.community_post_id
+                    ? `/communities/${article.category?.replace(
+                        "community:",
+                        ""
+                      )}/posts/${article.community_post_id}`
+                    : `/articles/${article.slug}`
+                }
                 className="block bg-gray-100 rounded overflow-hidden hover:shadow-md transition-shadow h-full"
               >
                 {/* Square cover image */}
@@ -230,8 +262,16 @@ export default function UserPublishedArticles({
                   )}
                   {/* Category tag */}
                   {article.category && (
-                    <span className="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                      {article.category}
+                    <span
+                      className={`absolute top-2 right-2 ${
+                        article.category.startsWith("community:")
+                          ? "bg-purple-100 text-purple-800"
+                          : "bg-blue-100 text-blue-800"
+                      } text-xs px-2 py-1 rounded-full`}
+                    >
+                      {article.category.startsWith("community:")
+                        ? article.category.substring(10) // Remove "community:" prefix
+                        : article.category}
                     </span>
                   )}
                 </div>
@@ -260,7 +300,7 @@ export default function UserPublishedArticles({
           ))}
         </div>
       ) : (
-        // List display
+        // Updated list display
         <div className="space-y-6">
           {articles.map((article) => (
             <div
@@ -285,12 +325,20 @@ export default function UserPublishedArticles({
                   <div className="flex justify-between items-start">
                     <h3 className="text-xl font-bold mb-2">
                       <Link
-                        href={`/articles/${article.slug}`}
+                        href={
+                          article.community_post_id
+                            ? `/communities/${article.category?.replace(
+                                "community:",
+                                ""
+                              )}/posts/${article.community_post_id}`
+                            : `/articles/${article.slug}`
+                        }
                         className="text-gray-800 hover:text-blue-600"
                       >
                         {article.title}
                       </Link>
                     </h3>
+
                     {isCurrentUser && (
                       <DeleteButton
                         articleId={article.id}
@@ -339,9 +387,18 @@ export default function UserPublishedArticles({
                   )}
                   <div className="mt-4">
                     {article.category && (
-                      <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                        {article.category}
-                      </span>
+                      <div>
+                        {article.category.startsWith("community:") ? (
+                          <span className="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm">
+                            {article.category.substring(10)}{" "}
+                            {/* Remove "community:" prefix */}
+                          </span>
+                        ) : (
+                          <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                            {article.category}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
