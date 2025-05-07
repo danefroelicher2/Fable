@@ -35,3 +35,36 @@ export const supabase = createClient<Database>(
 export const isSupabaseConfigured = (): boolean => {
   return !!supabaseUrl && !!supabaseKey;
 };
+
+/**
+ * Check if a username is already taken by another user
+ * @param username The username to check
+ * @param currentUserId The current user's ID (to exclude from the check)
+ * @returns true if the username is available, false if taken
+ */
+export async function isUsernameAvailable(
+  username: string,
+  currentUserId: string
+): Promise<boolean> {
+  try {
+    // Don't check empty usernames
+    if (!username.trim()) return true;
+
+    // Query for users with this username, excluding current user
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", username)
+      .neq("id", currentUserId)
+      .limit(1);
+
+    if (error) throw error;
+
+    // Username is available if no results found
+    return data.length === 0;
+  } catch (error) {
+    console.error("Error checking username availability:", error);
+    // In case of error, conservatively return false
+    return false;
+  }
+}
