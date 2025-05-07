@@ -33,6 +33,31 @@ export default function SidebarNav() {
       {/* Main Navigation */}
       <div className="mt-8 flex-grow">
         <div className="space-y-2">
+          {/* Home Button - Added at the top of navigation */}
+          <Link
+            href="/"
+            className={`flex items-center px-4 py-3 ${
+              pathname === "/" ? "bg-gray-800" : "hover:bg-gray-800"
+            }`}
+          >
+            <svg
+              className="w-6 h-6 mr-3"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span>Home</span>
+          </Link>
+
+          {/* Search link */}
           <Link
             href="/"
             className="flex items-center px-4 py-3 hover:bg-gray-800"
@@ -79,6 +104,7 @@ export default function SidebarNav() {
             <span>My Profile</span>
           </Link>
 
+          {/* Conditional notifications link - preserved functionality */}
           {user ? (
             <Link
               href="/notifications"
@@ -200,30 +226,58 @@ export default function SidebarNav() {
             <span>Premium</span>
           </Link>
 
-          <Link
-            href="/profile/drafts"
-            className={`flex items-center px-4 py-3 ${
-              pathname === "/profile/drafts"
-                ? "bg-gray-800"
-                : "hover:bg-gray-800"
-            }`}
-          >
-            <svg
-              className="w-6 h-6 mr-3"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+          {/* Conditional Saved Drafts link - For consistency with Notifications */}
+          {user ? (
+            <Link
+              href="/profile/drafts"
+              className={`flex items-center px-4 py-3 ${
+                pathname === "/profile/drafts"
+                  ? "bg-gray-800"
+                  : "hover:bg-gray-800"
+              }`}
             >
-              <path
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span>Saved Drafts</span>
-          </Link>
+              <svg
+                className="w-6 h-6 mr-3"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span>Saved Drafts</span>
+            </Link>
+          ) : (
+            <button
+              onClick={() =>
+                router.push(
+                  `/signin?redirect=${encodeURIComponent("/profile/drafts")}`
+                )
+              }
+              className="flex items-center px-4 py-3 hover:bg-gray-800 w-full text-left"
+            >
+              <svg
+                className="w-6 h-6 mr-3"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span>Saved Drafts</span>
+            </button>
+          )}
 
           <Link
             href="/profile/account-settings"
