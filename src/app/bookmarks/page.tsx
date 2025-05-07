@@ -38,6 +38,29 @@ export default function BookmarksPage() {
   >("all");
 
   useEffect(() => {
+    if (!user) {
+      router.push(`/signin?redirect=${encodeURIComponent("/bookmarks")}`);
+    }
+  }, [user, router]);
+
+  // Show auth required message if not logged in
+  if (!user) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md text-center">
+          <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
+          <p className="mb-6">Please sign in to view your bookmarks.</p>
+          <Link
+            href={`/signin?redirect=${encodeURIComponent("/bookmarks")}`}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Sign In
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  useEffect(() => {
     // Redirect if not authenticated
     if (!user && !loading) {
       router.push("/signin?redirect=" + encodeURIComponent("/bookmarks"));
