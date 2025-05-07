@@ -105,6 +105,24 @@ export default function ProfilePage() {
     linkedin: "",
     website: "",
   });
+  // Add this useEffect to your src/app/profile/page.tsx file
+  // This should be added with your other useEffect hooks
+  // Right after your useState declarations
+
+  useEffect(() => {
+    // Check if we should start in edit mode based on localStorage flag
+    if (typeof window !== "undefined") {
+      const startInEditMode = localStorage.getItem("startInEditMode");
+
+      if (startInEditMode === "true") {
+        // Set editing mode to true
+        setIsEditing(true);
+
+        // Clear the flag so it doesn't persist on page refresh
+        localStorage.removeItem("startInEditMode");
+      }
+    }
+  }, []);
 
   // Check if user is authenticated
   useEffect(() => {

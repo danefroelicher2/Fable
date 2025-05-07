@@ -92,7 +92,6 @@ export default function PublicUserProfilePage() {
     );
   }
 
-  // src/app/user/[userId]/page.tsx (continued from previous artifact)
   if (error) {
     return (
       <div className="container mx-auto py-8 px-4">
@@ -161,8 +160,14 @@ export default function PublicUserProfilePage() {
 
               {isCurrentUser && (
                 <div className="mb-4">
-                  <Link
-                    href="/profile"
+                  <button
+                    onClick={() => {
+                      // Directly navigate to the profile page and set editing mode immediately
+                      // This will trigger the editing view instead of the profile view
+                      router.push("/profile");
+                      // Store the editing state in localStorage to be picked up by the profile page
+                      localStorage.setItem("startInEditMode", "true");
+                    }}
                     className="text-blue-600 hover:text-blue-800 flex items-center"
                   >
                     <svg
@@ -180,7 +185,7 @@ export default function PublicUserProfilePage() {
                       />
                     </svg>
                     Edit Profile
-                  </Link>
+                  </button>
                 </div>
               )}
             </div>
