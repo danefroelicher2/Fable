@@ -263,13 +263,13 @@ export default function ProfilePage() {
         }
       }
 
-      // Clean the username (remove @ if user added it)
-      const cleanUsername = username.startsWith("@")
-        ? username.substring(1)
-        : username;
+      // Clean the username (remove @ if user added it) and force lowercase
+      const cleanUsername = (
+        username.startsWith("@") ? username.substring(1) : username
+      ).toLowerCase();
 
       // Check if username is available (if changed)
-      if (cleanUsername && cleanUsername !== profile?.username) {
+      if (cleanUsername && cleanUsername !== profile?.username?.toLowerCase()) {
         const isAvailable = await isUsernameAvailable(cleanUsername, user.id);
         if (!isAvailable) {
           setError(
@@ -305,7 +305,7 @@ export default function ProfilePage() {
 
       // Update fields in the database
       const updates = {
-        username: cleanUsername, // Store clean username without @
+        username: cleanUsername, // Always store lowercase username without @
         full_name: fullName,
         avatar_url: newAvatarUrl,
       };
