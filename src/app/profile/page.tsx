@@ -46,18 +46,31 @@ function validateUsername(username: string): string | null {
     ? username.substring(1)
     : username;
 
-  // Check for valid characters (letters, numbers, underscores, hyphens)
-  if (!/^[a-zA-Z0-9_-]+$/.test(cleanUsername)) {
-    return "Username can only contain letters, numbers, underscores, and hyphens";
+  // Convert to lowercase for validation and check if original had uppercase
+  const lowercaseUsername = cleanUsername.toLowerCase();
+  const hadUppercase = cleanUsername !== lowercaseUsername;
+
+  // Check for valid characters (only lowercase letters, numbers, underscores, hyphens)
+  // Note: using a-z instead of a-zA-Z to enforce lowercase letters only
+  if (!/^[a-z0-9_-]+$/.test(lowercaseUsername)) {
+    return "Username can only contain lowercase letters, numbers, underscores, and hyphens";
   }
 
   // Check length (typically 3-30 characters)
-  if (cleanUsername.length < 3) {
+  if (lowercaseUsername.length < 3) {
     return "Username must be at least 3 characters long";
   }
 
-  if (cleanUsername.length > 30) {
+  if (lowercaseUsername.length > 30) {
     return "Username cannot be longer than 30 characters";
+  }
+
+  // Warning about uppercase conversion - you can remove this if you don't want to show this message
+  if (hadUppercase) {
+    // This isn't a validation error but a notification that uppercase will be converted
+    console.log(
+      "Username had uppercase letters that will be converted to lowercase"
+    );
   }
 
   return null; // Valid

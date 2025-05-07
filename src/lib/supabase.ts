@@ -50,15 +50,24 @@ export async function isUsernameAvailable(
     // Don't check empty usernames
     if (!username.trim()) return true;
 
+    // Always convert to lowercase for checking to enforce case-insensitive uniqueness
+    const lowercaseUsername = username.trim().toLowerCase();
+
     // Query for users with this username, excluding current user
+    // Use ilike for case-insensitive matching
     const { data, error } = await supabase
       .from("profiles")
       .select("id")
-      .eq("username", username)
+      .ilike("username", lowercaseUsername)
       .neq("id", currentUserId)
       .limit(1);
 
     if (error) throw error;
+
+    // Log for debugging
+    console.log(
+      `Username check: "${lowercaseUsername}" - Available: ${data.length === 0}`
+    );
 
     // Username is available if no results found
     return data.length === 0;
