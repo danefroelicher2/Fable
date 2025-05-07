@@ -49,6 +49,21 @@ export default function UserPublishedArticles({
     }
   }, [userId, limit]);
 
+  // src/components/UserPublishedArticles.tsx
+  // Find and replace the problematic query in the fetchUserArticles function
+
+  // Current problematic code (around line 91-105):
+  // If pinnedPostIds and pinnedPostIds.length > 0) {
+  //   try {
+  //     // Use direct array syntax instead of string interpolation
+  //     query = query.not("id", "in", pinnedPostIds);
+  //   } catch (filterErr) {
+  //     console.warn("Error applying pinned post filter:", filterErr);
+  //     // Continue without filtering if this fails
+  //   }
+  // }
+
+  // Replace with this corrected version:
   async function fetchUserArticles() {
     try {
       setLoading(true);
@@ -88,30 +103,32 @@ export default function UserPublishedArticles({
         // Continue even if count fails
       }
 
-      // Now fetch articles, excluding pinned ones
+      // Now fetch articles
       let query = (supabase as any)
         .from("public_articles")
         .select(
           `
-          id, 
-          title, 
-          slug, 
-          excerpt, 
-          category, 
-          published_at, 
-          view_count,
-          image_url,
-          user_id
-        `
+        id, 
+        title, 
+        slug, 
+        excerpt, 
+        category, 
+        published_at, 
+        view_count,
+        image_url,
+        user_id
+      `
         )
         .eq("user_id", userId)
         .eq("is_published", true);
 
-      // Filter out pinned posts if there are any
+      // Filter out pinned posts if there are any - FIXED VERSION
       if (pinnedPostIds && pinnedPostIds.length > 0) {
         try {
-          // Use direct array syntax instead of string interpolation
-          query = query.not("id", "in", pinnedPostIds);
+          // For each pinned post ID, add a filter to exclude it
+          for (const pinnedId of pinnedPostIds) {
+            query = query.neq("id", pinnedId);
+          }
         } catch (filterErr) {
           console.warn("Error applying pinned post filter:", filterErr);
           // Continue without filtering if this fails
