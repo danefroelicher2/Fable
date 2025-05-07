@@ -263,6 +263,10 @@ export default function ProfilePage() {
     }
   }
 
+  // In src/app/profile/page.tsx
+  // Find the updateProfile function and modify it to redirect to the public profile
+  // after a successful update
+
   async function updateProfile() {
     try {
       setLoading(true);
@@ -366,9 +370,12 @@ export default function ProfilePage() {
       }
 
       setMessage("Profile updated successfully!");
-      setIsEditing(false);
-      setAvatarFile(null);
-      setAvatarPreview(null);
+
+      // NEW CODE: Redirect to public profile after a brief delay
+      setTimeout(() => {
+        // Navigate to the public profile
+        router.push(`/user/${user.id}`);
+      }, 1500); // 1.5 seconds delay to show the success message
     } catch (error: any) {
       console.error("Error updating profile:", error.message);
       setError("Error updating profile: " + error.message);
