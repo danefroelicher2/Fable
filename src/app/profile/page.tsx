@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/lib/supabase";
+import { supabase, isUsernameAvailable } from "@/lib/supabase";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import FollowStats from "@/components/FollowStats";
@@ -31,6 +31,36 @@ interface SocialLinks {
   github: string;
   linkedin: string;
   website: string;
+}
+
+/**
+ * Validates username format
+ * @param username The username to validate
+ * @returns An error message if invalid, or null if valid
+ */
+function validateUsername(username: string): string | null {
+  if (!username) return null; // Empty is fine, will be handled elsewhere
+
+  // Remove @ if user enters it (we'll add it when displaying)
+  const cleanUsername = username.startsWith("@")
+    ? username.substring(1)
+    : username;
+
+  // Check for valid characters (letters, numbers, underscores, hyphens)
+  if (!/^[a-zA-Z0-9_-]+$/.test(cleanUsername)) {
+    return "Username can only contain letters, numbers, underscores, and hyphens";
+  }
+
+  // Check length (typically 3-30 characters)
+  if (cleanUsername.length < 3) {
+    return "Username must be at least 3 characters long";
+  }
+
+  if (cleanUsername.length > 30) {
+    return "Username cannot be longer than 30 characters";
+  }
+
+  return null; // Valid
 }
 
 export default function ProfilePage() {
@@ -210,6 +240,33 @@ export default function ProfilePage() {
 
       if (!user) throw new Error("No user");
 
+      // Validate username format if not empty
+      if (username) {
+        const usernameError = validateUsername(username);
+        if (usernameError) {
+          setError(usernameError);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Clean the username (remove @ if user added it)
+      const cleanUsername = username.startsWith("@")
+        ? username.substring(1)
+        : username;
+
+      // Check if username is available (if changed)
+      if (cleanUsername && cleanUsername !== profile?.username) {
+        const isAvailable = await isUsernameAvailable(cleanUsername, user.id);
+        if (!isAvailable) {
+          setError(
+            `Username @${cleanUsername} is already taken. Please choose another username.`
+          );
+          setLoading(false);
+          return;
+        }
+      }
+
       // Upload avatar if a new file is selected
       let newAvatarUrl = avatarUrl;
       if (avatarFile) {
@@ -235,7 +292,7 @@ export default function ProfilePage() {
 
       // Update fields in the database
       const updates = {
-        username,
+        username: cleanUsername, // Store clean username without @
         full_name: fullName,
         avatar_url: newAvatarUrl,
       };
@@ -433,14 +490,43 @@ export default function ProfilePage() {
                 >
                   Username
                 </label>
-                <input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  placeholder="Enter a unique username"
-                />
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+                    @
+                  </span>
+                  <input
+                    id="username"
+                    type="text"
+                    value={
+                      username.startsWith("@")
+                        ? username.substring(1)
+                        : username
+                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Clear username-related errors when user is typing
+                      if (error && error.includes("Username")) {
+                        setError(null);
+                      }
+                      setUsername(value);
+                    }}
+                    onBlur={(e) => {
+                      // Validate on blur for better UX
+                      const value = e.target.value;
+                      if (value) {
+                        const usernameError = validateUsername(value);
+                        if (usernameError) {
+                          setError(usernameError);
+                        }
+                      }
+                    }}
+                    className="w-full p-2 pl-8 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    placeholder="Enter a unique username"
+                  />
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  Your unique username that others will use to mention you
+                </p>
               </div>
 
               <div>
@@ -690,7 +776,9 @@ export default function ProfilePage() {
                 <h2 className="text-2xl font-bold mb-2">
                   {fullName || username || "Anonymous User"}
                 </h2>
-                {username && <p className="text-gray-600">@{username}</p>}
+                {profile?.username && (
+                  <p className="text-gray-600">@{profile.username}</p>
+                )}
               </div>
 
               {bio && (
@@ -936,6 +1024,7 @@ export default function ProfilePage() {
                           <div className="p-4">
                             <div className="h-6 bg-slate-200 rounded w-3/4 mb-3"></div>
                             <div className="h-4 bg-slate-200 rounded w-1/4 mb-3"></div>
+                            <div className="h-4 bg-slate-200 rounded w-full mb-2"></div>
                             <div className="h-4 bg-slate-200 rounded w-full mb-2"></div>
                           </div>
                         </div>
