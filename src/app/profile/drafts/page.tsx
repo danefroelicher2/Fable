@@ -13,7 +13,7 @@ import {
 } from "@/lib/draftUtils";
 
 export default function DraftsPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,35 +22,40 @@ export default function DraftsPage() {
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  // Protected route check
+  // Protected route check - improved redirect logic
   useEffect(() => {
-    if (!user && !loading) {
-      router.push("/signin?redirect=" + encodeURIComponent("/profile/drafts"));
-    }
-  }, [user, router, loading]);
-
-  useEffect(() => {
-    const fetchDrafts = async () => {
-      if (!user) return;
-
-      try {
-        const userDrafts = await getUserDrafts();
-
-        if (userDrafts) {
-          setDrafts(userDrafts);
-        } else {
-          setError("Failed to load drafts");
-        }
-      } catch (err) {
-        console.error("Error fetching drafts:", err);
-        setError("An error occurred while loading drafts");
-      } finally {
-        setLoading(false);
+    // Only check once the auth state is no longer loading
+    if (!authLoading) {
+      if (!user) {
+        // Redirect immediately if user is not authenticated
+        router.replace(
+          "/signin?redirect=" + encodeURIComponent("/profile/drafts")
+        );
+      } else {
+        // If user is authenticated, fetch drafts
+        fetchDrafts();
       }
-    };
+    }
+  }, [user, router, authLoading]);
 
-    fetchDrafts();
-  }, [user]);
+  const fetchDrafts = async () => {
+    if (!user) return;
+
+    try {
+      const userDrafts = await getUserDrafts();
+
+      if (userDrafts) {
+        setDrafts(userDrafts);
+      } else {
+        setError("Failed to load drafts");
+      }
+    } catch (err) {
+      console.error("Error fetching drafts:", err);
+      setError("An error occurred while loading drafts");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDeleteDraft = async (id: string) => {
     if (!id) return;
@@ -138,8 +143,8 @@ export default function DraftsPage() {
     });
   };
 
-  // Show loading state while checking authentication
-  if (loading) {
+  // Show loading state while checking authentication or loading drafts
+  if (authLoading || (loading && user)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
@@ -148,9 +153,22 @@ export default function DraftsPage() {
     );
   }
 
-  // If not authenticated, this will redirect (see useEffect above)
+  // If not authenticated, we'll be redirected in useEffect
+  // This is a fallback in case the redirect hasn't happened yet
   if (!user) {
-    return null;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <div className="text-center">
+          <p className="mb-4">Please sign in to view your drafts</p>
+          <Link
+            href={`/signin?redirect=${encodeURIComponent("/profile/drafts")}`}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Sign In
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
