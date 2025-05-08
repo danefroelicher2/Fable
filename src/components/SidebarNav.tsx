@@ -164,6 +164,56 @@ export default function SidebarNav() {
             </button>
           )}
 
+          {user ? (
+            <Link
+              href="/messages"
+              className={`flex items-center px-4 py-3 ${
+                pathname === "/messages" ? "bg-gray-800" : "hover:bg-gray-800"
+              }`}
+            >
+              <svg
+                className="w-6 h-6 mr-3"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span>Messages</span>
+            </Link>
+          ) : (
+            <button
+              onClick={() =>
+                router.push(
+                  `/signin?redirect=${encodeURIComponent("/messages")}`
+                )
+              }
+              className="flex items-center px-4 py-3 hover:bg-gray-800 w-full text-left"
+            >
+              <svg
+                className="w-6 h-6 mr-3"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span>Messages</span>
+            </button>
+          )}
+
           <Link
             href="/communities"
             className={`flex items-center px-4 py-3 ${
