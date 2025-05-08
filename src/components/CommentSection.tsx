@@ -133,6 +133,63 @@ export default function CommentSection({ articleId }: { articleId: string }) {
     }
   }
 
+  // src/components/CommentSection.tsx (modified)
+
+  // Add new function for deleting comments
+  async function handleDeleteComment(commentId: string) {
+    if (!user) return;
+
+    try {
+      // Delete the comment
+      const { error } = await (supabase as any)
+        .from("comments")
+        .delete()
+        .eq("id", commentId)
+        .eq("user_id", user.id); // Ensure only the comment owner can delete it
+
+      if (error) throw error;
+
+      // Remove from UI
+      setComments((prevComments) =>
+        prevComments.filter((comment) => comment.id !== commentId)
+      );
+    } catch (err) {
+      console.error("Error deleting comment:", err);
+    }
+  }
+
+  // Add new function for deleting replies
+  async function handleDeleteReply(parentId: string, replyId: string) {
+    if (!user) return;
+
+    try {
+      // Delete the reply
+      const { error } = await (supabase as any)
+        .from("comments")
+        .delete()
+        .eq("id", replyId)
+        .eq("user_id", user.id); // Ensure only the reply owner can delete it
+
+      if (error) throw error;
+
+      // Update the UI
+      setComments((prevComments) =>
+        prevComments.map((comment) => {
+          if (comment.id === parentId && comment.replies) {
+            return {
+              ...comment,
+              replies: comment.replies.filter((reply) => reply.id !== replyId),
+              reply_count: Math.max(0, (comment.reply_count || 0) - 1),
+            };
+          }
+          return comment;
+        })
+      );
+    } catch (err) {
+      console.error("Error deleting reply:", err);
+    }
+  }
+
   async function handleSubmitComment(e: React.FormEvent) {
     e.preventDefault();
 
