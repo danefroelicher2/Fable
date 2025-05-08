@@ -57,10 +57,11 @@ export default function SidebarNav() {
             <span>Home</span>
           </Link>
 
-          {/* Search link */}
           <Link
-            href="/"
-            className="flex items-center px-4 py-3 hover:bg-gray-800"
+            href="/search"
+            className={`flex items-center px-4 py-3 ${
+              pathname === "/search" ? "bg-gray-800" : "hover:bg-gray-800"
+            }`}
           >
             <svg
               className="w-6 h-6 mr-3"
