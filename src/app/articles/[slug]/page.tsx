@@ -123,6 +123,8 @@ export default function ArticlePage() {
     }
   }
 
+  // src/app/articles/[slug]/page.tsx (modified)
+
   async function handleLike() {
     if (!user) {
       router.push(
@@ -149,6 +151,23 @@ export default function ArticlePage() {
           article_id: article.id,
           user_id: user.id,
         });
+
+        // Create a notification for the article owner (if it's not the current user)
+        if (article.user_id !== user.id) {
+          try {
+            await (supabase as any).from("notifications").insert({
+              user_id: article.user_id,
+              action_type: "like",
+              action_user_id: user.id,
+              article_id: article.id,
+              created_at: new Date().toISOString(),
+              is_read: false,
+            });
+          } catch (notifyError) {
+            console.error("Error creating like notification:", notifyError);
+            // Continue even if notification creation fails
+          }
+        }
 
         setLikeCount((prev) => prev + 1);
       }
