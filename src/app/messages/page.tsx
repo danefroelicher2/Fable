@@ -1,3 +1,4 @@
+// src/app/messages/page.tsx
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -9,6 +10,7 @@ import {
   getConversation,
   sendMessage,
   markMessagesAsRead,
+  markAllMessagesAsRead,
   ConversationSummary,
   Message,
 } from "@/lib/messageUtils";
@@ -30,6 +32,7 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   // Fetch conversations when component mounts
   useEffect(() => {
@@ -40,6 +43,11 @@ export default function MessagesPage() {
     }
 
     fetchConversations();
+
+    // Mark all messages as read when visiting this page
+    markAllMessagesAsRead().catch((err) => {
+      console.error("Error marking all messages as read:", err);
+    });
 
     // Set up real-time updates for new messages
     const messagesSubscription = supabase
@@ -64,14 +72,14 @@ export default function MessagesPage() {
     return () => {
       messagesSubscription.unsubscribe();
     };
-  }, [user, router, selectedUserId]);
+  }, [user, router]);
 
   // Load specific conversation if user param is present
   useEffect(() => {
-    if (selectedUserId && user) {
+    if (selectedUserId && user && initialLoadComplete) {
       fetchMessages(selectedUserId);
     }
-  }, [selectedUserId, user]);
+  }, [selectedUserId, user, initialLoadComplete]);
 
   // Scroll to bottom of messages when new messages arrive
   useEffect(() => {
@@ -94,6 +102,8 @@ export default function MessagesPage() {
         );
         if (selectedConvo) {
           setSelectedConversation(selectedConvo);
+          // Fetch messages for this conversation
+          await fetchMessages(selectedUserId);
         } else {
           // If we don't have a conversation with this user yet,
           // try to fetch the user's profile to create a placeholder
@@ -115,12 +125,14 @@ export default function MessagesPage() {
                 unread_count: 0,
               };
               setSelectedConversation(newConvo);
+              await fetchMessages(selectedUserId);
             }
           } catch (error) {
             console.error("Error fetching user profile:", error);
           }
         }
       }
+      setInitialLoadComplete(true);
     } catch (error) {
       console.error("Error fetching conversations:", error);
     } finally {
