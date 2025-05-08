@@ -142,7 +142,14 @@ export default function PublicUserProfilePage() {
                   </h2>
 
                   {!isCurrentUser && profile && (
-                    <FollowButton targetUserId={profile.id} />
+                    <div className="flex space-x-2">
+                      <MessageButton
+                        recipientId={profile.id}
+                        variant="secondary"
+                      />
+
+                      <FollowButton targetUserId={profile.id} />
+                    </div>
                   )}
                 </div>
                 {profile?.username && (
@@ -192,8 +199,8 @@ export default function PublicUserProfilePage() {
             </div>
           </div>
         </div>
-        {/* Pinned Posts Section */}
 
+        {/* Pinned Posts Section */}
         {profile && (
           <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
             <div className="px-6 py-4 border-b border-gray-200">
@@ -204,6 +211,7 @@ export default function PublicUserProfilePage() {
             </div>
           </div>
         )}
+
         {/* Favorite Articles Section */}
         {profile && <FavoriteArticles userId={profile.id} />}
 
