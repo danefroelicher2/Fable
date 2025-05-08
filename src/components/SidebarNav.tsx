@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import ProfileDropdown from "./ProfileDropdown";
 import NotificationBadge from "./NotificationBadge";
+import MessageBadge from "./MessageBadge";
 
 export default function SidebarNav() {
   const pathname = usePathname();
@@ -164,10 +165,11 @@ export default function SidebarNav() {
             </button>
           )}
 
+          {/* Messages link - add right after notifications */}
           {user ? (
             <Link
               href="/messages"
-              className={`flex items-center px-4 py-3 ${
+              className={`flex items-center px-4 py-3 relative ${
                 pathname === "/messages" ? "bg-gray-800" : "hover:bg-gray-800"
               }`}
             >
@@ -186,6 +188,11 @@ export default function SidebarNav() {
                 />
               </svg>
               <span>Messages</span>
+
+              {/* Message Badge - positioned absolutely */}
+              <div className="absolute top-2 left-5">
+                <MessageBadge className="h-5 w-5 flex items-center justify-center" />
+              </div>
             </Link>
           ) : (
             <button
