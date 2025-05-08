@@ -1,185 +1,288 @@
-// src/app/search/users/page.tsx
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+import FollowButton from "@/components/FollowButton";
 
-interface SearchResult {
+interface UserProfile {
   id: string;
   username: string | null;
   full_name: string | null;
   avatar_url: string | null;
+  article_count?: number;
 }
 
 export default function SearchUsersPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const query = searchParams?.get("q") || "";
+
+  const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (query) {
+      searchUsers(query);
+    } else {
+      fetchSuggestedUsers();
+    }
+  }, [query]);
 
-    if (!searchTerm.trim()) return;
-
-    setLoading(true);
-    setError(null);
-
+  // Search for users matching the query
+  const searchUsers = async (searchQuery: string) => {
     try {
-      console.log("Searching for users with term:", searchTerm);
+      setLoading(true);
+      setError(null);
 
-      // First try to search by username
-      const { data: usernameResults, error: usernameError } = await supabase
+      // Search for users by username or full name
+      const { data, error } = await supabase
         .from("profiles")
         .select("id, username, full_name, avatar_url")
-        .ilike("username", `%${searchTerm}%`)
-        .limit(5);
+        .or(`username.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`)
+        .limit(20);
 
-      if (usernameError) throw usernameError;
+      if (error) {
+        throw error;
+      }
 
-      // Then try to search by full name
-      const { data: nameResults, error: nameError } = await supabase
-        .from("profiles")
-        .select("id, username, full_name, avatar_url")
-        .ilike("full_name", `%${searchTerm}%`)
-        .limit(5);
+      // For each user, get a count of their articles
+      const usersWithArticleCounts = await Promise.all(
+        (data || []).map(async (profile: UserProfile) => {
+          try {
+            const { count, error: countError } = await (supabase as any)
+              .from("public_articles")
+              .select("id", { count: "exact" })
+              .eq("user_id", profile.id)
+              .eq("is_published", true);
 
-      if (nameError) throw nameError;
+            if (countError) throw countError;
 
-      // Combine and deduplicate results
-      const combined = [...(usernameResults || []), ...(nameResults || [])];
-      const uniqueResults = Array.from(
-        new Map(combined.map((item) => [item.id, item])).values()
+            return {
+              ...profile,
+              article_count: count || 0,
+            };
+          } catch (err) {
+            console.error(
+              `Error getting article count for ${profile.id}:`,
+              err
+            );
+            return {
+              ...profile,
+              article_count: 0,
+            };
+          }
+        })
       );
 
-      console.log(
-        `Found ${uniqueResults.length} users matching "${searchTerm}"`
+      // Sort by article count (most prolific authors first)
+      const sortedUsers = usersWithArticleCounts.sort(
+        (a, b) => (b.article_count || 0) - (a.article_count || 0)
       );
-      setResults(uniqueResults);
+
+      setSearchResults(sortedUsers);
     } catch (err: any) {
       console.error("Error searching users:", err);
-      setError("Failed to search users");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUserClick = (userId: string) => {
-    console.log("Navigating to user profile:", userId);
-    // Navigate to the user profile route
-    router.push(`/user/${userId}`);
+  // Fetch suggested users (used when no search query provided)
+  const fetchSuggestedUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Get users who have published articles, sorted by article count
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, username, full_name, avatar_url")
+        .limit(20);
+
+      if (error) {
+        throw error;
+      }
+
+      // For each user, get a count of their articles
+      const usersWithArticleCounts = await Promise.all(
+        (data || []).map(async (profile: UserProfile) => {
+          try {
+            const { count, error: countError } = await (supabase as any)
+              .from("public_articles")
+              .select("id", { count: "exact" })
+              .eq("user_id", profile.id)
+              .eq("is_published", true);
+
+            if (countError) throw countError;
+
+            return {
+              ...profile,
+              article_count: count || 0,
+            };
+          } catch (err) {
+            console.error(
+              `Error getting article count for ${profile.id}:`,
+              err
+            );
+            return {
+              ...profile,
+              article_count: 0,
+            };
+          }
+        })
+      );
+
+      // Filter users with at least one article and sort by article count
+      const activeUsers = usersWithArticleCounts
+        .filter((user) => (user.article_count || 0) > 0)
+        .sort((a, b) => (b.article_count || 0) - (a.article_count || 0));
+
+      setSearchResults(activeUsers);
+    } catch (err: any) {
+      console.error("Error fetching suggested users:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="container mx-auto py-10 px-4">
+    <div className="container mx-auto py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Find Users</h1>
-        <p className="text-gray-600 mb-8">
-          Search for users by name or username to view their profiles and
-          articles.
-        </p>
-
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <form onSubmit={handleSearch} className="mb-4">
-            <div className="flex">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-grow p-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-blue-400"
-                placeholder="Search users by name or username"
-              />
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded-r hover:bg-blue-700"
-                disabled={loading}
-              >
-                {loading ? "Searching..." : "Search"}
-              </button>
-            </div>
-          </form>
-
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              {error}
-            </div>
-          )}
-
-          {results.length > 0 && (
-            <div className="mt-6">
-              <h2 className="text-xl font-semibold mb-4">Search Results</h2>
-              <div className="bg-white rounded-lg overflow-hidden">
-                <ul className="divide-y divide-gray-200">
-                  {results.map((user) => (
-                    <li
-                      key={user.id}
-                      className="p-4 hover:bg-gray-50 cursor-pointer transition"
-                      onClick={() => handleUserClick(user.id)}
-                    >
-                      <div className="flex items-center">
-                        <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3 overflow-hidden">
-                          {user.avatar_url ? (
-                            <img
-                              src={user.avatar_url}
-                              alt={user.username || "User"}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-lg">
-                              {(user.full_name || user.username || "U")
-                                .charAt(0)
-                                .toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium text-lg">
-                            {user.full_name ||
-                              user.username ||
-                              "Anonymous User"}
-                          </p>
-                          {user.username && (
-                            <p className="text-sm text-gray-500">
-                              @{user.username}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {results.length === 0 && searchTerm && !loading && (
-            <div className="text-center py-6 text-gray-500">
-              No users found matching "{searchTerm}"
-            </div>
-          )}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">
+            {query ? `Search Results for "${query}"` : "Discover Users"}
+          </h1>
+          <p className="text-gray-600">
+            {query
+              ? "Find users matching your search query"
+              : "Discover interesting writers in the community"}
+          </p>
         </div>
 
-        <div className="bg-gray-50 p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-4">
-            Other Discovery Options
+        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+          <form
+            action="/search-users"
+            method="get"
+            className="flex items-center"
+          >
+            <input
+              type="text"
+              name="q"
+              defaultValue={query}
+              placeholder="Search users by name or username..."
+              className="flex-grow p-3 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              required
+            />
+            <button
+              type="submit"
+              className="bg-blue-600 text-white p-3 rounded-r-lg hover:bg-blue-700"
+            >
+              Search
+            </button>
+          </form>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-bold mb-6">
+            {query ? `Users matching "${query}"` : "Active Community Members"}
           </h2>
-          <div className="flex flex-wrap gap-4">
-            <Link
-              href="/feed"
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Browse Community Articles
-            </Link>
-            <Link
-              href="/"
-              className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-            >
-              Return to Homepage
-            </Link>
-          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, index) => (
+                <div
+                  key={index}
+                  className="bg-gray-50 p-4 rounded-lg animate-pulse"
+                >
+                  <div className="flex items-center mb-3">
+                    <div className="h-12 w-12 bg-gray-200 rounded-full mr-3"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                  <div className="h-8 bg-gray-200 rounded w-24 ml-auto"></div>
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="bg-red-100 p-4 rounded-lg text-red-700">
+              <p>Error: {error}</p>
+            </div>
+          ) : searchResults.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-600 mb-4">
+                {query
+                  ? `No users found matching "${query}"`
+                  : "No active users found"}
+              </p>
+              <Link
+                href="/search"
+                className="text-blue-600 hover:text-blue-800"
+              >
+                Try a different search
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {searchResults.map((user) => (
+                <div key={user.id} className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex items-start justify-between">
+                    <Link
+                      href={`/user/${user.id}`}
+                      className="flex items-center group"
+                    >
+                      <div className="h-12 w-12 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-3 overflow-hidden">
+                        {user.avatar_url ? (
+                          <img
+                            src={user.avatar_url}
+                            alt={user.username || "User"}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span>
+                            {(user.full_name || user.username || "U")
+                              .charAt(0)
+                              .toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium group-hover:text-blue-600">
+                          {user.full_name || user.username || "Anonymous User"}
+                        </div>
+                        {user.username && (
+                          <div className="text-sm text-gray-500">
+                            @{user.username}
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      {user.article_count}{" "}
+                      {user.article_count === 1 ? "article" : "articles"}
+                    </div>
+                    <FollowButton targetUserId={user.id} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!loading && !error && searchResults.length > 0 && !query && (
+            <div className="mt-6 text-center">
+              <Link href="/feed" className="text-blue-600 hover:text-blue-800">
+                Browse Community Feed
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>
