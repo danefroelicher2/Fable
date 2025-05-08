@@ -177,18 +177,24 @@ export default function NotificationsPage() {
       case "follow":
         return (
           <span>
-            <span className="font-medium">
+            <Link
+              href={`/user/${notification.action_user_id}`}
+              className="font-medium hover:text-blue-600"
+            >
               {action_user?.full_name || action_user?.username || "Someone"}
-            </span>{" "}
+            </Link>{" "}
             started following you
           </span>
         );
       case "like":
         return (
           <span>
-            <span className="font-medium">
+            <Link
+              href={`/user/${notification.action_user_id}`}
+              className="font-medium hover:text-blue-600"
+            >
               {action_user?.full_name || action_user?.username || "Someone"}
-            </span>{" "}
+            </Link>{" "}
             liked your article{" "}
             {article && (
               <Link
@@ -203,9 +209,12 @@ export default function NotificationsPage() {
       case "comment":
         return (
           <span>
-            <span className="font-medium">
+            <Link
+              href={`/user/${notification.action_user_id}`}
+              className="font-medium hover:text-blue-600"
+            >
               {action_user?.full_name || action_user?.username || "Someone"}
-            </span>{" "}
+            </Link>{" "}
             commented on your article{" "}
             {article && (
               <Link
@@ -305,25 +314,31 @@ export default function NotificationsPage() {
                   className={`p-4 ${!notification.is_read ? "bg-blue-50" : ""}`}
                 >
                   <div className="flex items-start">
-                    <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 overflow-hidden mr-3">
-                      {notification.action_user?.avatar_url ? (
-                        <img
-                          src={notification.action_user.avatar_url}
-                          alt={notification.action_user.username || "User"}
-                          className="h-10 w-10 object-cover"
-                        />
-                      ) : (
-                        <span className="text-lg">
-                          {(
-                            notification.action_user?.username ||
-                            notification.action_user?.full_name ||
-                            "U"
-                          )
-                            .charAt(0)
-                            .toUpperCase()}
-                        </span>
-                      )}
-                    </div>
+                    <Link
+                      href={`/user/${notification.action_user_id}`}
+                      className="mr-3"
+                    >
+                      <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 overflow-hidden">
+                        {notification.action_user?.avatar_url ? (
+                          <img
+                            src={notification.action_user.avatar_url}
+                            alt={notification.action_user.username || "User"}
+                            className="h-10 w-10 object-cover"
+                          />
+                        ) : (
+                          <span className="text-lg">
+                            {(
+                              notification.action_user?.username ||
+                              notification.action_user?.full_name ||
+                              "U"
+                            )
+                              .charAt(0)
+                              .toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+
                     <div className="flex-1">
                       <div className="mb-1">
                         {renderNotificationContent(notification)}
@@ -332,6 +347,7 @@ export default function NotificationsPage() {
                         {formatDate(notification.created_at)}
                       </div>
                     </div>
+
                     {!notification.is_read && (
                       <button
                         onClick={() => markAsRead(notification.id)}
