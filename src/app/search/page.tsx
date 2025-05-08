@@ -14,11 +14,12 @@ interface Article {
   published_at: string;
   view_count: number;
   image_url?: string | null;
+  user_id: string;
   user?: {
     username: string | null;
     full_name: string | null;
     avatar_url: string | null;
-  };
+  } | null;
 }
 
 export default function SearchPage() {
@@ -34,8 +35,8 @@ export default function SearchPage() {
     try {
       setLoading(true);
 
-      // Fetch the most recent articles with user profile info
-      const { data, error } = await (supabase as any)
+      // Fetch the most recent articles
+      const { data: articles, error } = await (supabase as any)
         .from("public_articles")
         .select(
           `
@@ -47,8 +48,7 @@ export default function SearchPage() {
           published_at, 
           view_count,
           image_url,
-          user_id,
-          profiles:user_id(username, full_name, avatar_url)
+          user_id
         `
         )
         .eq("is_published", true)
@@ -59,16 +59,45 @@ export default function SearchPage() {
         throw error;
       }
 
-      // Process the data to format user information
-      const articlesWithUsers = data.map((article: any) => ({
+      // If no articles found, return empty array
+      if (!articles || articles.length === 0) {
+        setRecentArticles([]);
+        return;
+      }
+
+      const userIds = Array.from(
+        new Set<string>(articles.map((article: Article) => article.user_id))
+      );
+
+      // Fetch profiles for all these users in a single query
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, username, full_name, avatar_url")
+        .in("id", userIds);
+
+      if (profilesError) {
+        throw profilesError;
+      }
+
+      // Create a map of user IDs to profiles for easy lookup
+      const userProfileMap = profiles.reduce(
+        (map: Record<string, any>, profile) => {
+          map[profile.id] = profile;
+          return map;
+        },
+        {}
+      );
+
+      // Join the articles with their user profiles
+      const articlesWithUsers = articles.map((article: any) => ({
         ...article,
-        user: article.profiles,
+        user: userProfileMap[article.user_id] || null,
       }));
 
       setRecentArticles(articlesWithUsers);
     } catch (err: any) {
       console.error("Error fetching recent articles:", err);
-      setError(err.message);
+      setError(err.message || "Failed to load recent articles");
     } finally {
       setLoading(false);
     }

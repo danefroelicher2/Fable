@@ -96,54 +96,66 @@ export default function SearchUsersPage() {
       setLoading(true);
       setError(null);
 
-      // Get users who have published articles, sorted by article count
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, username, full_name, avatar_url")
-        .limit(20);
+      // Get counts of articles by user, grouped by user_id
+      // Use a simplified approach to avoid complex queries
+      const { data: articleCounts, error: countsError } = await (
+        supabase as any
+      )
+        .from("public_articles")
+        .select("user_id, count", { count: "exact", head: false })
+        .eq("is_published", true)
+        .limit(30);
 
-      if (error) {
-        throw error;
+      if (countsError) throw countsError;
+
+      // If no articles found, get some random users instead
+      if (!articleCounts || articleCounts.length === 0) {
+        const { data: randomUsers, error: randomError } = await supabase
+          .from("profiles")
+          .select("id, username, full_name, avatar_url")
+          .limit(20);
+
+        if (randomError) throw randomError;
+
+        // Set article count to 0 for all users
+        const usersWithZeroCounts = (randomUsers || []).map((user) => ({
+          ...user,
+          article_count: 0,
+        }));
+
+        setSearchResults(usersWithZeroCounts);
+        return;
       }
 
-      // For each user, get a count of their articles
-      const usersWithArticleCounts = await Promise.all(
-        (data || []).map(async (profile: UserProfile) => {
-          try {
-            const { count, error: countError } = await (supabase as any)
-              .from("public_articles")
-              .select("id", { count: "exact" })
-              .eq("user_id", profile.id)
-              .eq("is_published", true);
+      // Create a map of user IDs to article counts
+      const userArticleCountMap: Record<string, number> = {};
+      const userIds: string[] = [];
 
-            if (countError) throw countError;
+      articleCounts.forEach((item: any) => {
+        userIds.push(item.user_id);
+        userArticleCountMap[item.user_id] = parseInt(item.count);
+      });
 
-            return {
-              ...profile,
-              article_count: count || 0,
-            };
-          } catch (err) {
-            console.error(
-              `Error getting article count for ${profile.id}:`,
-              err
-            );
-            return {
-              ...profile,
-              article_count: 0,
-            };
-          }
-        })
-      );
+      // Get the user profiles for these users
+      const { data: userProfiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, username, full_name, avatar_url")
+        .in("id", userIds);
 
-      // Filter users with at least one article and sort by article count
-      const activeUsers = usersWithArticleCounts
-        .filter((user) => (user.article_count || 0) > 0)
+      if (profilesError) throw profilesError;
+
+      // Join the profiles with their article counts and sort
+      const usersWithCounts = userProfiles
+        .map((profile: UserProfile) => ({
+          ...profile,
+          article_count: userArticleCountMap[profile.id] || 0,
+        }))
         .sort((a, b) => (b.article_count || 0) - (a.article_count || 0));
 
-      setSearchResults(activeUsers);
+      setSearchResults(usersWithCounts);
     } catch (err: any) {
       console.error("Error fetching suggested users:", err);
-      setError(err.message);
+      setError(err.message || "Failed to load suggested users");
     } finally {
       setLoading(false);
     }
