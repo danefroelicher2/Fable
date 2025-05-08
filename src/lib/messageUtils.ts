@@ -279,6 +279,35 @@ export async function markMessagesAsRead(
 }
 
 /**
+ * Mark all messages as read for the current user
+ * This is used when a user visits the messages page
+ */
+export async function markAllMessagesAsRead(): Promise<boolean> {
+  try {
+    // Get the current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userData.user) {
+      throw new Error("You must be logged in to update messages");
+    }
+
+    // Mark all messages as read where the current user is the recipient
+    const { error } = await (supabase as any)
+      .from("messages")
+      .update({ is_read: true })
+      .eq("recipient_id", userData.user.id)
+      .eq("is_read", false);
+
+    if (error) throw error;
+
+    return true;
+  } catch (error: any) {
+    console.error("Error marking all messages as read:", error);
+    return false;
+  }
+}
+
+/**
  * Get unread message count
  */
 export async function getUnreadCount(): Promise<number> {
