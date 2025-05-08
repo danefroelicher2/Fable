@@ -1,4 +1,4 @@
-// src/app/communities/create/page.tsx - Modified version with topic selection
+// src/app/communities/create/page.tsx
 
 "use client";
 
@@ -158,8 +158,8 @@ export default function CreateCommunityPage() {
         >
           <div className="mb-4">
             <label
+              className="block text-gray-700 font-bold mb-2 dark:text-gray-300"
               htmlFor="name"
-              className="block text-gray-700 font-medium mb-2 dark:text-gray-300"
             >
               Community Name*
             </label>
@@ -177,8 +177,8 @@ export default function CreateCommunityPage() {
 
           <div className="mb-4">
             <label
+              className="block text-gray-700 font-bold mb-2 dark:text-gray-300"
               htmlFor="category"
-              className="block text-gray-700 font-medium mb-2 dark:text-gray-300"
             >
               Choose a Topic
             </label>
@@ -202,8 +202,8 @@ export default function CreateCommunityPage() {
 
           <div className="mb-6">
             <label
+              className="block text-gray-700 font-bold mb-2 dark:text-gray-300"
               htmlFor="description"
-              className="block text-gray-700 font-medium mb-2 dark:text-gray-300"
             >
               Description*
             </label>
@@ -220,7 +220,7 @@ export default function CreateCommunityPage() {
           </div>
 
           <div className="mb-6">
-            <label className="block text-gray-700 font-medium mb-2 dark:text-gray-300">
+            <label className="block text-gray-700 font-bold mb-2 dark:text-gray-300">
               Community Image (Optional)
             </label>
             <ImageUpload

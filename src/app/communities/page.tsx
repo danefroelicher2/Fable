@@ -13,15 +13,18 @@ interface Community {
   description: string;
   creator_id: string;
   image_url: string | null;
+  banner_url: string | null;
   created_at: string;
+  updated_at: string | null;
   member_count?: number;
   is_member?: boolean;
+  is_admin?: boolean;
   creator?: {
     username: string | null;
     full_name: string | null;
     avatar_url: string | null;
-  };
-  category?: string;
+  } | null;
+  category: string | null;
 }
 
 export default function CommunitiesPage() {
@@ -272,15 +275,6 @@ export default function CommunitiesPage() {
     }
   }
 
-  // Format date
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
   return (
     <div className="container mx-auto py-4 px-4">
       <div className="max-w-6xl mx-auto">
@@ -384,17 +378,10 @@ export default function CommunitiesPage() {
                 key={index}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 animate-pulse"
               >
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-gray-300 dark:bg-gray-700 rounded-full mr-3"></div>
-                  <div className="flex-1">
-                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                  </div>
-                </div>
-                <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-full mb-4"></div>
+                <div className="h-40 bg-gray-300 dark:bg-gray-700 w-full mb-4 rounded"></div>
+                <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
-                <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded w-full"></div>
+                <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded w-full mt-4"></div>
               </div>
             ))}
           </div>
@@ -431,50 +418,41 @@ export default function CommunitiesPage() {
                 key={community.id}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
               >
+                {/* Image section (top half) */}
+                <div className="h-40 bg-gray-200 dark:bg-gray-700 w-full">
+                  {community.image_url ? (
+                    <img
+                      src={community.image_url}
+                      alt={community.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center bg-blue-50 dark:bg-blue-900">
+                      <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
+                        {community.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Content section (bottom half) */}
                 <div className="p-6">
-                  <div className="flex items-center mb-4">
-                    <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mr-3 overflow-hidden">
-                      {community.image_url ? (
-                        <img
-                          src={community.image_url}
-                          alt={community.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-xl font-bold">
-                          {community.name.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <Link
-                        href={`/communities/${community.id}`}
-                        className="text-xl font-bold text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400"
-                      >
-                        {community.name}
-                      </Link>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Created by{" "}
-                        <Link
-                          href={`/user/${community.creator_id}`}
-                          className="text-blue-600 dark:text-blue-400 hover:underline"
-                        >
-                          {community.creator?.full_name ||
-                            community.creator?.username ||
-                            "Anonymous"}
-                        </Link>{" "}
-                        • {formatDate(community.created_at)}
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
-                    {community.description}
-                  </p>
-                  <div className="flex flex-wrap items-center justify-between mt-4">
+                  <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
+                    {community.name}
+                  </h3>
+
+                  {community.description && (
+                    <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
+                      {community.description}
+                    </p>
+                  )}
+
+                  <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {community.member_count}{" "}
+                      {community.member_count || 0}{" "}
                       {community.member_count === 1 ? "member" : "members"}
                     </span>
+
                     {community.is_member ? (
                       <button
                         onClick={() => handleLeaveCommunity(community.id)}

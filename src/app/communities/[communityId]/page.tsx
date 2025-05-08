@@ -1,11 +1,14 @@
-// src/app/communities/page.tsx
+// src/app/communities/[communityId]/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import ConfirmationModal from "@/components/ConfirmationModal";
+import BookmarkButton from "@/components/BookmarkButton";
+import CommunityBannerUpload from "@/components/CommunityBannerUpload";
 
 interface Community {
   id: string;
@@ -17,6 +20,7 @@ interface Community {
   created_at: string;
   updated_at: string | null;
   member_count?: number;
+  post_count?: number;
   is_member?: boolean;
   is_admin?: boolean;
   creator?: {
@@ -24,187 +28,292 @@ interface Community {
     full_name: string | null;
     avatar_url: string | null;
   } | null;
-  category: string | null;
 }
 
-export default function CommunitiesPage() {
-  const { user } = useAuth();
+interface CommunityPost {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  user?: {
+    username: string | null;
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+}
+
+export default function CommunityDetailPage() {
+  const params = useParams();
   const router = useRouter();
-  const [communities, setCommunities] = useState<Community[]>([]);
+  const { user } = useAuth();
+  const [community, setCommunity] = useState<Community | null>(null);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"discover" | "my-communities">(
-    "discover"
-  );
-  const [activeCategory, setActiveCategory] = useState("all");
-  const [isInCategory, setIsInCategory] = useState(false);
+  const [activeTab, setActiveTab] = useState<"posts" | "members">("posts");
+  const [members, setMembers] = useState<any[]>([]);
+  const [communityBanner, setCommunityBanner] = useState<string | null>(null);
 
-  // Complete list of categories
-  const categories = [
-    { id: "technology", name: "Technology" },
-    { id: "entertainment", name: "Entertainment" },
-    { id: "education", name: "Education" },
-    { id: "sports", name: "Sports" },
-    { id: "art", name: "Art" },
-    { id: "food", name: "Food" },
-    { id: "science", name: "Science" },
-    { id: "history", name: "History" },
-    { id: "gaming", name: "Gaming" },
-    { id: "health", name: "Health" },
-    { id: "travel", name: "Travel" },
-  ];
+  // State for delete confirmation modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<{
+    id: string;
+    userId: string;
+  } | null>(null);
+  const [showDeleteCommunityModal, setShowDeleteCommunityModal] =
+    useState(false);
+
+  const communityId = Array.isArray(params?.communityId)
+    ? params.communityId[0]
+    : params?.communityId;
 
   useEffect(() => {
-    fetchCommunities();
-  }, [user, activeTab, activeCategory]);
+    if (communityId) {
+      fetchCommunityData();
+    }
+  }, [communityId, user]);
 
   useEffect(() => {
-    setIsInCategory(activeCategory !== "all");
-  }, [activeCategory]);
+    // When tab changes, fetch the relevant data
+    if (communityId && activeTab === "posts") {
+      fetchCommunityPosts();
+    } else if (communityId && activeTab === "members") {
+      fetchCommunityMembers();
+    }
+  }, [activeTab, communityId]);
 
-  async function fetchCommunities() {
+  async function fetchCommunityData() {
     try {
       setLoading(true);
       setError(null);
 
-      // First, fetch communities without trying to join with profiles
-      let query = (supabase as any)
+      if (!communityId) {
+        setError("Community ID is missing");
+        setLoading(false);
+        return;
+      }
+
+      // Fetch the community details without using the join syntax
+      const { data: communityData, error: communityError } = await (
+        supabase as any
+      )
         .from("communities")
         .select("*")
-        .order("created_at", { ascending: false });
+        .eq("id", communityId)
+        .single();
 
-      if (activeTab === "my-communities" && user) {
-        // Get communities the user is a member of
-        const { data: membershipData, error: membershipError } = await (
-          supabase as any
-        )
+      if (communityError) {
+        console.error("Error fetching community:", communityError);
+        throw communityError;
+      }
+
+      if (!communityData) {
+        setError("Community not found");
+        setLoading(false);
+        return;
+      }
+
+      // Set banner URL state
+      setCommunityBanner(communityData.banner_url);
+
+      // Fetch the creator's profile separately
+      const { data: creatorData, error: creatorError } = await supabase
+        .from("profiles")
+        .select("username, full_name, avatar_url")
+        .eq("id", communityData.creator_id)
+        .single();
+
+      if (creatorError) {
+        console.warn(
+          `Error fetching creator for community ${communityId}:`,
+          creatorError
+        );
+      }
+
+      // Get member count
+      const { count: memberCount, error: countError } = await (supabase as any)
+        .from("community_members")
+        .select("id", { count: "exact", head: true })
+        .eq("community_id", communityId);
+
+      if (countError) {
+        console.warn("Error getting member count:", countError);
+      }
+
+      // Get post count
+      const { count: postCount, error: postCountError } = await (
+        supabase as any
+      )
+        .from("community_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("community_id", communityId);
+
+      if (postCountError) {
+        console.warn("Error getting post count:", postCountError);
+      }
+
+      // Check if current user is a member and/or admin
+      let isMember = false;
+      let isAdmin = false;
+      if (user) {
+        const { data: memberData, error: memberError } = await (supabase as any)
           .from("community_members")
-          .select("community_id")
-          .eq("user_id", user.id);
+          .select("is_admin")
+          .eq("community_id", communityId)
+          .eq("user_id", user.id)
+          .maybeSingle();
 
-        if (membershipError) throw membershipError;
-
-        if (membershipData && membershipData.length > 0) {
-          const communityIds = membershipData.map(
-            (item: any) => item.community_id
-          );
-          query = query.in("id", communityIds);
-        } else {
-          // User is not a member of any communities
-          setCommunities([]);
-          setLoading(false);
-          return;
+        if (!memberError && memberData) {
+          isMember = true;
+          isAdmin = memberData.is_admin;
         }
       }
 
-      // Apply category filter if not "all"
-      if (activeCategory !== "all") {
-        query = query.eq("category", activeCategory);
-      }
+      // Set the community data with the additional information
+      setCommunity({
+        ...communityData,
+        creator: creatorData || null,
+        member_count: memberCount || 0,
+        post_count: postCount || 0,
+        is_member: isMember,
+        is_admin: isAdmin,
+      });
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      // Now, for each community, get the creator's profile separately
-      const communitiesWithCreators = await Promise.all(
-        (data || []).map(async (community: Community) => {
-          try {
-            // Get creator profile
-            const { data: creatorData, error: creatorError } = await supabase
-              .from("profiles")
-              .select("username, full_name, avatar_url")
-              .eq("id", community.creator_id)
-              .single();
-
-            if (creatorError) {
-              console.warn(
-                `Error fetching creator for community ${community.id}:`,
-                creatorError
-              );
-              return {
-                ...community,
-                creator: null,
-              };
-            }
-
-            // Get member count
-            const { count: memberCount, error: countError } = await (
-              supabase as any
-            )
-              .from("community_members")
-              .select("id", { count: "exact", head: true })
-              .eq("community_id", community.id);
-
-            if (countError) {
-              console.warn(
-                `Error getting member count for community ${community.id}:`,
-                countError
-              );
-            }
-
-            // Check if current user is a member
-            let isMember = false;
-            if (user) {
-              const { data: memberData, error: memberError } = await (
-                supabase as any
-              )
-                .from("community_members")
-                .select("id")
-                .eq("community_id", community.id)
-                .eq("user_id", user.id)
-                .maybeSingle();
-
-              if (!memberError) {
-                isMember = !!memberData;
-              }
-            }
-
-            return {
-              ...community,
-              creator: creatorData,
-              member_count: memberCount || 0,
-              is_member: isMember,
-            };
-          } catch (err) {
-            console.error(
-              `Error getting data for community ${community.id}:`,
-              err
-            );
-            return {
-              ...community,
-              creator: null,
-              member_count: 0,
-              is_member: false,
-            };
-          }
-        })
-      );
-
-      setCommunities(communitiesWithCreators);
+      // Fetch initial posts
+      await fetchCommunityPosts();
     } catch (err) {
-      console.error("Error fetching communities:", err);
-      setError("Failed to load communities. Please try again.");
+      console.error("Error fetching community data:", err);
+      setError("Failed to load community. Please try again.");
     } finally {
       setLoading(false);
     }
   }
 
-  // Handle category change
-  const handleCategoryChange = (category: string) => {
-    setActiveCategory(category);
-  };
+  async function fetchCommunityPosts() {
+    try {
+      if (!communityId) return;
 
-  // Handle back to main view
-  const handleBackToMain = () => {
-    setActiveCategory("all");
-  };
+      // Fetch posts without using the join syntax
+      const { data: postsData, error: postsError } = await (supabase as any)
+        .from("community_posts")
+        .select("*")
+        .eq("community_id", communityId)
+        .order("created_at", { ascending: false });
 
-  async function handleJoinCommunity(communityId: string) {
+      if (postsError) {
+        console.error("Error fetching community posts:", postsError);
+        throw postsError;
+      }
+
+      // Fetch user profiles for each post separately
+      const postsWithUsers = await Promise.all(
+        (postsData || []).map(async (post: any) => {
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from("profiles")
+              .select("username, full_name, avatar_url")
+              .eq("id", post.user_id)
+              .single();
+
+            if (userError) {
+              console.warn(
+                `Error fetching user for post ${post.id}:`,
+                userError
+              );
+              return {
+                ...post,
+                user: null,
+              };
+            }
+
+            return {
+              ...post,
+              user: userData,
+            };
+          } catch (err) {
+            console.error(`Error processing post ${post.id}:`, err);
+            return {
+              ...post,
+              user: null,
+            };
+          }
+        })
+      );
+
+      setPosts(postsWithUsers);
+    } catch (err) {
+      console.error("Error fetching community posts:", err);
+      // Not setting global error since it shouldn't prevent viewing the community
+    }
+  }
+
+  async function fetchCommunityMembers() {
+    try {
+      if (!communityId) return;
+
+      // Fetch community members without using the join syntax
+      const { data: membersData, error: membersError } = await (supabase as any)
+        .from("community_members")
+        .select("id, user_id, is_admin, joined_at")
+        .eq("community_id", communityId)
+        .order("joined_at", { ascending: false });
+
+      if (membersError) {
+        console.error("Error fetching community members:", membersError);
+        throw membersError;
+      }
+
+      // Fetch user profiles for each member separately
+      const membersWithProfiles = await Promise.all(
+        (membersData || []).map(async (member: any) => {
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from("profiles")
+              .select("username, full_name, avatar_url")
+              .eq("id", member.user_id)
+              .single();
+
+            if (userError) {
+              console.warn(
+                `Error fetching user for member ${member.id}:`,
+                userError
+              );
+              return {
+                ...member,
+                user: null,
+              };
+            }
+
+            return {
+              ...member,
+              user: userData,
+            };
+          } catch (err) {
+            console.error(`Error processing member ${member.id}:`, err);
+            return {
+              ...member,
+              user: null,
+            };
+          }
+        })
+      );
+
+      setMembers(membersWithProfiles);
+    } catch (err) {
+      console.error("Error fetching community members:", err);
+    }
+  }
+
+  async function handleJoinCommunity() {
     if (!user) {
-      router.push(`/signin?redirect=${encodeURIComponent("/communities")}`);
+      router.push(
+        `/signin?redirect=${encodeURIComponent(window.location.pathname)}`
+      );
       return;
     }
+
+    if (!communityId) return;
 
     try {
       // Add user to community members
@@ -220,25 +329,22 @@ export default function CommunitiesPage() {
       if (error) throw error;
 
       // Update local state
-      setCommunities((prev) =>
-        prev.map((community) =>
-          community.id === communityId
-            ? {
-                ...community,
-                member_count: (community.member_count || 0) + 1,
-                is_member: true,
-              }
-            : community
-        )
-      );
+      setCommunity((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          member_count: (prev.member_count || 0) + 1,
+          is_member: true,
+        };
+      });
     } catch (err) {
       console.error("Error joining community:", err);
       alert("Failed to join community. Please try again.");
     }
   }
 
-  async function handleLeaveCommunity(communityId: string) {
-    if (!user) return;
+  async function handleLeaveCommunity() {
+    if (!user || !communityId) return;
 
     try {
       // Remove user from community members
@@ -251,230 +357,232 @@ export default function CommunitiesPage() {
       if (error) throw error;
 
       // Update local state
-      setCommunities((prev) =>
-        prev.map((community) =>
-          community.id === communityId
-            ? {
-                ...community,
-                member_count: Math.max(0, (community.member_count || 1) - 1),
-                is_member: false,
-              }
-            : community
-        )
-      );
-
-      // If on my communities tab, remove this community from the list
-      if (activeTab === "my-communities") {
-        setCommunities((prev) =>
-          prev.filter((community) => community.id !== communityId)
-        );
-      }
+      setCommunity((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          member_count: Math.max(0, (prev.member_count || 1) - 1),
+          is_member: false,
+          is_admin: false,
+        };
+      });
     } catch (err) {
       console.error("Error leaving community:", err);
       alert("Failed to leave community. Please try again.");
     }
   }
 
-  return (
-    <div className="container mx-auto py-4 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-          <div>
-            <h1 className="text-3xl font-bold mb-2 dark:text-white">
-              Communities
-            </h1>
-            <p className="text-gray-600 dark:text-gray-300">
-              Join communities to connect with others and share knowledge
-            </p>
-          </div>
-          <div className="mt-4 md:mt-0">
-            <Link
-              href="/communities/create"
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-            >
-              Create Community
-            </Link>
-          </div>
-        </div>
+  // Handle post deletion from the community page
+  function handleDeletePost(
+    postId: string,
+    userId: string,
+    event: React.MouseEvent
+  ) {
+    // Stop propagation to prevent navigating to the post page
+    event.stopPropagation();
 
-        {/* Tabs */}
-        <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex">
-            <button
-              onClick={() => setActiveTab("discover")}
-              className={`px-6 py-3 text-lg font-medium border-b-2 ${
-                activeTab === "discover"
-                  ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500"
-                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              }`}
-            >
-              Discover
-            </button>
-            <button
-              onClick={() => setActiveTab("my-communities")}
-              className={`px-6 py-3 text-lg font-medium border-b-2 ${
-                activeTab === "my-communities"
-                  ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500"
-                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              }`}
-            >
-              My Communities
-            </button>
-          </div>
-        </div>
+    if (!user || user.id !== userId) {
+      return; // Only post authors can delete posts
+    }
 
-        {/* Category navigation area */}
-        {activeTab === "discover" && (
-          <div className="py-0 px-0 mb-4">
-            <div className="relative overflow-x-auto scrollbar-hide py-1">
-              <div className="flex whitespace-nowrap space-x-3">
-                {/* Up Arrow (only when in a specific category) */}
-                {isInCategory && (
-                  <button
-                    onClick={handleBackToMain}
-                    className="flex-shrink-0 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-colors flex items-center justify-center"
-                    aria-label="Back to all communities"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 10l7-7m0 0l7 7m-7-7v18"
-                      />
-                    </svg>
-                  </button>
-                )}
+    // Show the delete confirmation modal
+    setPostToDelete({ id: postId, userId });
+    setShowDeleteModal(true);
+  }
 
-                {/* Category tabs - now always displayed */}
-                {categories.map((category) => (
-                  <button
-                    key={category.id}
-                    onClick={() => handleCategoryChange(category.id)}
-                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                      activeCategory === category.id
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-800 text-white hover:bg-gray-700"
-                    }`}
-                  >
-                    {category.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+  // Function to execute the actual post deletion
+  async function executePostDeletion() {
+    if (!postToDelete) return;
 
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, index) => (
-              <div
-                key={index}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 animate-pulse"
-              >
-                <div className="h-40 bg-gray-300 dark:bg-gray-700 w-full mb-4 rounded"></div>
-                <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2"></div>
-                <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded w-full mt-4"></div>
-              </div>
-            ))}
-          </div>
-        ) : error ? (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 dark:bg-red-900 dark:border-red-700 dark:text-red-300">
-            {error}
-          </div>
-        ) : communities.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
-            {activeTab === "discover" ? (
-              <p className="text-gray-600 dark:text-gray-300 mb-6">
-                {activeCategory === "all"
-                  ? "No communities have been created yet. Be the first to create one!"
-                  : `No communities found in the ${activeCategory} category. Be the first to create one!`}
-              </p>
-            ) : (
-              <>
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  You haven't joined any communities yet.
-                </p>
-                <button
-                  onClick={() => setActiveTab("discover")}
-                  className="text-blue-600 hover:text-blue-800 dark:text-blue-500 dark:hover:text-blue-400 font-medium"
-                >
-                  Discover Communities
-                </button>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {communities.map((community) => (
-              <div
-                key={community.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
-              >
-                {/* Image section (top half) */}
-                <div className="h-40 bg-gray-200 dark:bg-gray-700 w-full">
-                  {community.image_url ? (
-                    <img
-                      src={community.image_url}
-                      alt={community.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center bg-blue-50 dark:bg-blue-900">
-                      <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
-                        {community.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                </div>
+    const { id: postId, userId } = postToDelete;
 
-                {/* Content section (bottom half) */}
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
-                    {community.name}
-                  </h3>
+    try {
+      // First, delete all comments on this post
+      const { error: commentsError } = await (supabase as any)
+        .from("community_post_comments")
+        .delete()
+        .eq("post_id", postId);
 
-                  {community.description && (
-                    <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
-                      {community.description}
-                    </p>
-                  )}
+      if (commentsError) {
+        console.error("Error deleting post comments:", commentsError);
+        throw commentsError;
+      }
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {community.member_count || 0}{" "}
-                      {community.member_count === 1 ? "member" : "members"}
-                    </span>
+      // Delete any bookmarks for this post
+      try {
+        const { error: bookmarksError } = await (supabase as any)
+          .from("bookmarks")
+          .delete()
+          .eq("post_id", postId);
 
-                    {community.is_member ? (
-                      <button
-                        onClick={() => handleLeaveCommunity(community.id)}
-                        className="text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 px-4 py-2 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-                      >
-                        Leave
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleJoinCommunity(community.id)}
-                        className="text-sm bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-                      >
-                        Join
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+        if (bookmarksError) {
+          console.error("Error deleting post bookmarks:", bookmarksError);
+          // Continue even if bookmarks deletion fails
+        }
+      } catch (bookmarkErr) {
+        console.error("Error with bookmarks deletion:", bookmarkErr);
+        // Continue with post deletion even if bookmarks deletion fails
+      }
+
+      // Then, delete the post itself
+      const { error: postError } = await (supabase as any)
+        .from("community_posts")
+        .delete()
+        .eq("id", postId)
+        .eq("user_id", userId); // Extra safety check
+
+      if (postError) {
+        console.error("Error deleting post:", postError);
+        throw postError;
+      }
+
+      // Update the posts list by filtering out the deleted post
+      setPosts(posts.filter((post) => post.id !== postId));
+
+      // Reset the state
+      setPostToDelete(null);
+      setShowDeleteModal(false);
+    } catch (err) {
+      console.error("Error deleting post:", err);
+      alert("Failed to delete post. Please try again.");
+      setShowDeleteModal(false);
+    }
+  }
+
+  // Handle community deletion
+  function handleDeleteCommunity() {
+    // Security check - only community creator can delete
+    if (!user || !community || user.id !== community.creator_id) {
+      return;
+    }
+
+    // Show the delete community confirmation modal
+    setShowDeleteCommunityModal(true);
+  }
+
+  // Function to execute the actual community deletion
+  async function executeCommunityDeletion() {
+    try {
+      setLoading(true);
+      setShowDeleteCommunityModal(false);
+
+      // Safety check to ensure user exists
+      if (!user || !communityId) {
+        console.error("User or community ID is null");
+        setLoading(false);
+        return;
+      }
+
+      console.log("Starting community deletion process for:", communityId);
+
+      // 1. First, get all post IDs in this community
+      const { data: postsData, error: postsQueryError } = await (
+        supabase as any
+      )
+        .from("community_posts")
+        .select("id")
+        .eq("community_id", communityId);
+
+      if (postsQueryError) {
+        console.error("Error getting community posts:", postsQueryError);
+        throw postsQueryError;
+      }
+
+      console.log(`Found ${postsData?.length || 0} posts to delete`);
+
+      // If there are posts, delete their comments first
+      if (postsData && postsData.length > 0) {
+        const postIds = postsData.map((post: any) => post.id);
+
+        // 2. Delete all bookmarks for these posts
+        try {
+          console.log("Deleting bookmarks for posts...");
+          const { error: bookmarksError } = await (supabase as any)
+            .from("bookmarks")
+            .delete()
+            .in("post_id", postIds);
+
+          if (bookmarksError) {
+            console.warn("Error deleting post bookmarks:", bookmarksError);
+            // Continue even if bookmark deletion fails
+          }
+        } catch (err) {
+          console.warn("Error with bookmark deletion:", err);
+          // Continue with deletion even if bookmarks deletion fails
+        }
+
+        // 3. Delete all comments on these posts
+        console.log("Deleting comments for posts...");
+        const { error: commentsError } = await (supabase as any)
+          .from("community_post_comments")
+          .delete()
+          .in("post_id", postIds);
+
+        if (commentsError) {
+          console.error("Error deleting post comments:", commentsError);
+          throw commentsError;
+        }
+      }
+
+      // 4. Now delete all community posts
+      console.log("Deleting all community posts...");
+      const { error: postsError } = await (supabase as any)
+        .from("community_posts")
+        .delete()
+        .eq("community_id", communityId);
+
+      if (postsError) {
+        console.error("Error deleting community posts:", postsError);
+        throw postsError;
+      }
+
+      // 5. Delete all community members
+      console.log("Deleting community members...");
+      const { error: membersError } = await (supabase as any)
+        .from("community_members")
+        .delete()
+        .eq("community_id", communityId);
+
+      if (membersError) {
+        console.error("Error deleting community members:", membersError);
+        throw membersError;
+      }
+
+      // 6. Finally, delete the community itself
+      console.log("Deleting the community...");
+      const { error: communityError } = await (supabase as any)
+        .from("communities")
+        .delete()
+        .eq("id", communityId)
+        .eq("creator_id", user.id); // Additional security check
+
+      if (communityError) {
+        console.error("Error deleting community:", communityError);
+        throw communityError;
+      }
+
+      console.log("Community deletion successful!");
+      // Redirect to communities page
+      router.push("/communities");
+    } catch (err) {
+      console.error("Error deleting community:", err);
+      alert("Failed to delete community. Please try again.");
+      setLoading(false);
+    }
+  }
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  // Format content preview
+  const formatPreview = (content: string, maxLength: number = 150) => {
+    if (content.length <= maxLength) return content;
+    return content.substring(0, maxLength) + "...";
+  };
 }
