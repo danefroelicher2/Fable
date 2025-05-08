@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import UserPublishedArticles from "@/components/UserPublishedArticles";
 import FavoriteArticles from "@/components/FavoriteArticles";
 import FollowButton from "@/components/FollowButton";
+import MessageButton from "@/components/MessageButton";
 import FollowStats from "@/components/FollowStats";
 import PinnedPosts from "@/components/PinnedPosts";
 
