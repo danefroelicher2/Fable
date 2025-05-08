@@ -133,9 +133,6 @@ export default function CommentSection({ articleId }: { articleId: string }) {
     }
   }
 
-  // src/components/CommentSection.tsx (modified)
-
-  // Add new function for deleting comments
   async function handleDeleteComment(commentId: string) {
     if (!user) return;
 
@@ -158,7 +155,6 @@ export default function CommentSection({ articleId }: { articleId: string }) {
     }
   }
 
-  // Add new function for deleting replies
   async function handleDeleteReply(parentId: string, replyId: string) {
     if (!user) return;
 
@@ -337,6 +333,7 @@ export default function CommentSection({ articleId }: { articleId: string }) {
         throw new Error("No data returned from insert");
       }
 
+      // Get the parent comment's user_id
       const parentComment = comments.find((comment) => comment.id === parentId);
       if (parentComment && parentComment.user_id !== user.id) {
         try {
@@ -426,7 +423,8 @@ export default function CommentSection({ articleId }: { articleId: string }) {
     if (
       comment &&
       (!comment.replies || comment.replies.length === 0) &&
-      comment.reply_count! > 0
+      comment.reply_count &&
+      comment.reply_count > 0
     ) {
       fetchReplies(commentId);
     }
@@ -530,15 +528,30 @@ export default function CommentSection({ articleId }: { articleId: string }) {
                   </div>
                 </div>
                 <div className="flex-grow">
-                  <div className="flex items-center mb-1">
-                    <span className="font-medium mr-2">
-                      {comment.profiles?.full_name ||
-                        comment.profiles?.username ||
-                        "Anonymous"}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {formatDate(comment.created_at)}
-                    </span>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center">
+                      <Link
+                        href={`/user/${comment.user_id}`}
+                        className="font-medium mr-2 hover:text-blue-600"
+                      >
+                        {comment.profiles?.full_name ||
+                          comment.profiles?.username ||
+                          "Anonymous"}
+                      </Link>
+                      <span className="text-xs text-gray-500">
+                        {formatDate(comment.created_at)}
+                      </span>
+                    </div>
+
+                    {/* Add delete button if current user is the comment author */}
+                    {user && user.id === comment.user_id && (
+                      <button
+                        onClick={() => handleDeleteComment(comment.id)}
+                        className="text-xs text-red-600 hover:text-red-800"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                   <p className="text-gray-700 mb-2">{comment.content}</p>
 
@@ -554,7 +567,7 @@ export default function CommentSection({ articleId }: { articleId: string }) {
                       {replyingTo === comment.id ? "Cancel" : "Reply"}
                     </button>
 
-                    {comment.reply_count! > 0 && (
+                    {comment.reply_count && comment.reply_count > 0 && (
                       <button
                         onClick={() => toggleReplies(comment.id)}
                         className="text-sm text-gray-600 hover:text-gray-800 flex items-center"
@@ -639,15 +652,32 @@ export default function CommentSection({ articleId }: { articleId: string }) {
                           </div>
                         </div>
                         <div className="flex-grow">
-                          <div className="flex items-center mb-1">
-                            <span className="font-medium mr-2 text-sm">
-                              {reply.profiles?.full_name ||
-                                reply.profiles?.username ||
-                                "Anonymous"}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {formatDate(reply.created_at)}
-                            </span>
+                          <div className="flex justify-between items-center mb-1">
+                            <div>
+                              <Link
+                                href={`/user/${reply.user_id}`}
+                                className="font-medium mr-2 text-sm hover:text-blue-600"
+                              >
+                                {reply.profiles?.full_name ||
+                                  reply.profiles?.username ||
+                                  "Anonymous"}
+                              </Link>
+                              <span className="text-xs text-gray-500">
+                                {formatDate(reply.created_at)}
+                              </span>
+                            </div>
+
+                            {/* Add delete button for replies */}
+                            {user && user.id === reply.user_id && (
+                              <button
+                                onClick={() =>
+                                  handleDeleteReply(comment.id, reply.id)
+                                }
+                                className="text-xs text-red-600 hover:text-red-800"
+                              >
+                                Delete
+                              </button>
+                            )}
                           </div>
                           <p className="text-gray-700 text-sm">
                             {reply.content}

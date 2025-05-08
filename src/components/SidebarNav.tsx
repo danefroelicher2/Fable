@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import ProfileDropdown from "./ProfileDropdown";
+import NotificationBadge from "./NotificationBadge";
 
 export default function SidebarNav() {
   const pathname = usePathname();
@@ -109,7 +110,7 @@ export default function SidebarNav() {
           {user ? (
             <Link
               href="/notifications"
-              className={`flex items-center px-4 py-3 ${
+              className={`flex items-center px-4 py-3 relative ${
                 pathname === "/notifications"
                   ? "bg-gray-800"
                   : "hover:bg-gray-800"
@@ -130,6 +131,11 @@ export default function SidebarNav() {
                 />
               </svg>
               <span>Notifications</span>
+
+              {/* Notification Badge - positioned absolutely */}
+              <div className="absolute top-2 left-5">
+                <NotificationBadge className="h-5 w-5 flex items-center justify-center" />
+              </div>
             </Link>
           ) : (
             <button

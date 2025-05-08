@@ -65,6 +65,9 @@ export default function NotificationBadge({
 
       if (error) throw error;
       setCount(count || 0);
+
+      // Add debugging to help understand if the query is working
+      console.log("Unread notification count:", count);
     } catch (err) {
       console.error("Error fetching notification count:", err);
     }
@@ -94,7 +97,7 @@ export default function NotificationBadge({
 
   return (
     <div
-      className={`bg-red-600 text-white text-xs rounded-full flex items-center justify-center ${className}`}
+      className={`bg-red-600 text-white text-xs rounded-full flex items-center justify-center min-w-[20px] min-h-[20px] px-1 ${className}`}
     >
       {count > 99 ? "99+" : count}
     </div>
