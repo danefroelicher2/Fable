@@ -280,7 +280,6 @@ export default function CommentSection({ articleId }: { articleId: string }) {
         throw new Error("No data returned from insert");
       }
 
-      // Get the parent comment's user_id
       const parentComment = comments.find((comment) => comment.id === parentId);
       if (parentComment && parentComment.user_id !== user.id) {
         try {
