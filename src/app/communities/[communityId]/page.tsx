@@ -455,7 +455,7 @@ export default function CommunityDetailPage() {
     setShowDeleteCommunityModal(true);
   }
 
-  // Function to execute the actual community deletion
+  // Modified executeCommunityDeletion function
   async function executeCommunityDeletion() {
     try {
       setLoading(true);
@@ -468,8 +468,9 @@ export default function CommunityDetailPage() {
         return;
       }
 
-      // 1. First, delete all comments on community posts
-      // First get all post IDs in this community
+      console.log("Starting community deletion process for:", communityId);
+
+      // 1. First, get all post IDs in this community
       const { data: postsData, error: postsQueryError } = await (
         supabase as any
       )
@@ -477,45 +478,85 @@ export default function CommunityDetailPage() {
         .select("id")
         .eq("community_id", communityId);
 
-      if (postsQueryError) throw postsQueryError;
+      if (postsQueryError) {
+        console.error("Error getting community posts:", postsQueryError);
+        throw postsQueryError;
+      }
 
-      // If there are posts, delete their comments
+      console.log(`Found ${postsData?.length || 0} posts to delete`);
+
+      // If there are posts, delete their comments first
       if (postsData && postsData.length > 0) {
         const postIds = postsData.map((post: any) => post.id);
 
+        // 2. Delete all bookmarks for these posts
+        try {
+          console.log("Deleting bookmarks for posts...");
+          const { error: bookmarksError } = await (supabase as any)
+            .from("bookmarks")
+            .delete()
+            .in("post_id", postIds);
+
+          if (bookmarksError) {
+            console.warn("Error deleting post bookmarks:", bookmarksError);
+            // Continue even if bookmark deletion fails
+          }
+        } catch (err) {
+          console.warn("Error with bookmark deletion:", err);
+          // Continue with deletion even if bookmarks deletion fails
+        }
+
+        // 3. Delete all comments on these posts
+        console.log("Deleting comments for posts...");
         const { error: commentsError } = await (supabase as any)
           .from("community_post_comments")
           .delete()
           .in("post_id", postIds);
 
-        if (commentsError) throw commentsError;
+        if (commentsError) {
+          console.error("Error deleting post comments:", commentsError);
+          throw commentsError;
+        }
       }
 
-      // 2. Delete all community posts
+      // 4. Now delete all community posts
+      console.log("Deleting all community posts...");
       const { error: postsError } = await (supabase as any)
         .from("community_posts")
         .delete()
         .eq("community_id", communityId);
 
-      if (postsError) throw postsError;
+      if (postsError) {
+        console.error("Error deleting community posts:", postsError);
+        throw postsError;
+      }
 
-      // 3. Delete all community members
+      // 5. Delete all community members
+      console.log("Deleting community members...");
       const { error: membersError } = await (supabase as any)
         .from("community_members")
         .delete()
         .eq("community_id", communityId);
 
-      if (membersError) throw membersError;
+      if (membersError) {
+        console.error("Error deleting community members:", membersError);
+        throw membersError;
+      }
 
-      // 4. Finally, delete the community itself
+      // 6. Finally, delete the community itself
+      console.log("Deleting the community...");
       const { error: communityError } = await (supabase as any)
         .from("communities")
         .delete()
         .eq("id", communityId)
         .eq("creator_id", user.id); // Additional security check
 
-      if (communityError) throw communityError;
+      if (communityError) {
+        console.error("Error deleting community:", communityError);
+        throw communityError;
+      }
 
+      console.log("Community deletion successful!");
       // Redirect to communities page
       router.push("/communities");
     } catch (err) {
