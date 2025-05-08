@@ -2,9 +2,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getUnreadCount } from "@/lib/messageUtils";
+import { getUnreadCount, markAllMessagesAsRead } from "@/lib/messageUtils";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { usePathname } from "next/navigation";
 
 interface MessageBadgeProps {
   className?: string;
@@ -13,6 +14,7 @@ interface MessageBadgeProps {
 export default function MessageBadge({ className = "" }: MessageBadgeProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const { user } = useAuth();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!user) return;
@@ -59,6 +61,15 @@ export default function MessageBadge({ className = "" }: MessageBadgeProps) {
       messagesUpdateSubscription.unsubscribe();
     };
   }, [user]);
+
+  // Clear badge when user visits the messages page
+  useEffect(() => {
+    if (pathname?.startsWith("/messages") && user && unreadCount > 0) {
+      markAllMessagesAsRead().then(() => {
+        setUnreadCount(0);
+      });
+    }
+  }, [pathname, user, unreadCount]);
 
   const fetchUnreadCount = async () => {
     const count = await getUnreadCount();
