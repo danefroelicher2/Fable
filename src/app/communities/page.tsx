@@ -200,7 +200,10 @@ export default function CommunitiesPage() {
     setActiveCategory("all");
   };
 
-  async function handleJoinCommunity(communityId: string) {
+  async function handleJoinCommunity(communityId: string, e: React.MouseEvent) {
+    // Prevent the click from bubbling up to the parent elements
+    e.stopPropagation();
+
     if (!user) {
       router.push(`/signin?redirect=${encodeURIComponent("/communities")}`);
       return;
@@ -237,7 +240,13 @@ export default function CommunitiesPage() {
     }
   }
 
-  async function handleLeaveCommunity(communityId: string) {
+  async function handleLeaveCommunity(
+    communityId: string,
+    e: React.MouseEvent
+  ) {
+    // Prevent the click from bubbling up to the parent elements
+    e.stopPropagation();
+
     if (!user) return;
 
     try {
@@ -274,6 +283,12 @@ export default function CommunitiesPage() {
       alert("Failed to leave community. Please try again.");
     }
   }
+
+  // Function to navigate to a community
+  const navigateToCommunity = (communityId: string) => {
+    // This should match the path pattern in your [communityId]/page.tsx file
+    router.push(`/communities/${communityId}`);
+  };
 
   return (
     <div className="container mx-auto py-4 px-4">
@@ -416,7 +431,8 @@ export default function CommunitiesPage() {
             {communities.map((community) => (
               <div
                 key={community.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => navigateToCommunity(community.id)}
               >
                 {/* Image section (top half) */}
                 <div className="h-40 bg-gray-200 dark:bg-gray-700 w-full">
@@ -437,9 +453,14 @@ export default function CommunitiesPage() {
 
                 {/* Content section (bottom half) */}
                 <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
-                    {community.name}
-                  </h3>
+                  <Link
+                    href={`/communities/${community.id}`}
+                    className="hover:text-blue-600 dark:hover:text-blue-400"
+                  >
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
+                      {community.name}
+                    </h3>
+                  </Link>
 
                   {community.description && (
                     <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
@@ -455,14 +476,14 @@ export default function CommunitiesPage() {
 
                     {community.is_member ? (
                       <button
-                        onClick={() => handleLeaveCommunity(community.id)}
+                        onClick={(e) => handleLeaveCommunity(community.id, e)}
                         className="text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 px-4 py-2 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition"
                       >
                         Leave
                       </button>
                     ) : (
                       <button
-                        onClick={() => handleJoinCommunity(community.id)}
+                        onClick={(e) => handleJoinCommunity(community.id, e)}
                         className="text-sm bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
                       >
                         Join
