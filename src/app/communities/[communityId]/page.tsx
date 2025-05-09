@@ -1,7 +1,7 @@
 // src/app/communities/[communityId]/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -55,10 +55,16 @@ export default function CommunityDetailPage() {
   const [communityBanner, setCommunityBanner] = useState<string | null>(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
-  // State for community description editing
+  // State for community editing
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [descriptionText, setDescriptionText] = useState("");
   const [descriptionCharCount, setDescriptionCharCount] = useState(0);
+  const [isEditingCommunity, setIsEditingCommunity] = useState(false);
+  const [communityName, setCommunityName] = useState("");
+  const [uploadedBannerUrl, setUploadedBannerUrl] = useState<string | null>(
+    null
+  );
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const MAX_DESCRIPTION_LENGTH = 500;
 
   // State for delete confirmation modal
@@ -189,6 +195,12 @@ export default function CommunityDetailPage() {
       setCommunity(updatedCommunity);
       setDescriptionText(communityData.description || "");
       setDescriptionCharCount(communityData.description?.length || 0);
+      setCommunityName(communityData.name || "");
+
+      // Set banner and image URLs
+      setCommunityBanner(communityData.banner_url);
+      setUploadedBannerUrl(communityData.banner_url);
+      setUploadedImageUrl(communityData.image_url);
 
       // Fetch initial posts
       await fetchCommunityPosts();
@@ -312,6 +324,116 @@ export default function CommunityDetailPage() {
       setMembers(membersWithProfiles);
     } catch (err) {
       console.error("Error fetching community members:", err);
+    }
+  }
+
+  // Function to update community
+  async function updateCommunity() {
+    if (!community || !user || user.id !== community.creator_id) return;
+
+    try {
+      setLoading(true);
+
+      const updates: any = {};
+
+      // Only include fields that have changed
+      if (communityName !== community.name) {
+        updates.name = communityName;
+      }
+
+      if (descriptionText !== community.description) {
+        updates.description = descriptionText;
+      }
+
+      if (uploadedBannerUrl !== community.banner_url) {
+        updates.banner_url = uploadedBannerUrl;
+      }
+
+      if (uploadedImageUrl !== community.image_url) {
+        updates.image_url = uploadedImageUrl;
+      }
+
+      // Only update if there are changes
+      if (Object.keys(updates).length > 0) {
+        updates.updated_at = new Date().toISOString();
+
+        const { error } = await (supabase as any)
+          .from("communities")
+          .update(updates)
+          .eq("id", community.id)
+          .eq("creator_id", user.id); // Extra safety check
+
+        if (error) throw error;
+
+        // Update local state
+        setCommunity({
+          ...community,
+          ...updates,
+        });
+
+        setCommunityBanner(uploadedBannerUrl);
+      }
+
+      setIsEditingCommunity(false);
+    } catch (err) {
+      console.error("Error updating community:", err);
+      alert("Failed to update community. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Function to handle banner image upload
+  async function handleBannerUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !user || !community) return;
+
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `banner-${Date.now()}.${fileExt}`;
+      const filePath = `community-banners/${community.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("communities")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("communities")
+        .getPublicUrl(filePath);
+
+      setUploadedBannerUrl(urlData.publicUrl);
+    } catch (err) {
+      console.error("Error uploading banner:", err);
+      alert("Failed to upload banner image.");
+    }
+  }
+
+  // Function to handle community image upload
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !user || !community) return;
+
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `image-${Date.now()}.${fileExt}`;
+      const filePath = `community-images/${community.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("communities")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("communities")
+        .getPublicUrl(filePath);
+
+      setUploadedImageUrl(urlData.publicUrl);
+    } catch (err) {
+      console.error("Error uploading image:", err);
+      alert("Failed to upload community image.");
     }
   }
 
@@ -646,15 +768,15 @@ export default function CommunityDetailPage() {
     <div className="container mx-auto py-8 px-4 relative">
       <div className="max-w-6xl mx-auto">
         {/* Back button - positioned on the far left */}
-        <div className="absolute left-4 top-4 z-10">
+        <div className="absolute left-4 top-6 z-10">
           <Link
             href="/communities"
-            className="flex items-center justify-center p-2 rounded-full bg-gray-800 bg-opacity-50 text-white hover:bg-opacity-70 transition"
+            className="flex items-center justify-center p-3 rounded-full bg-gray-800 bg-opacity-50 text-white hover:bg-opacity-70 transition"
             aria-label="Back to communities"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
+              className="h-6 w-6"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -690,13 +812,49 @@ export default function CommunityDetailPage() {
                 </h1>
               </div>
             )}
+
+            {/* Banner edit overlay */}
+            {isEditingCommunity && user && community.creator_id === user.id && (
+              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                <label className="cursor-pointer bg-white text-gray-800 px-4 py-2 rounded-md hover:bg-gray-100">
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleBannerUpload}
+                  />
+                  Change Banner
+                </label>
+              </div>
+            )}
           </div>
 
           <div className="p-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
               <div className="flex items-center mb-4 md:mb-0">
-                <div className="h-16 w-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mr-4 overflow-hidden">
-                  {community.image_url ? (
+                <div className="h-16 w-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mr-4 overflow-hidden relative">
+                  {isEditingCommunity &&
+                    user &&
+                    community.creator_id === user.id && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+                        <label className="cursor-pointer text-white text-xs">
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                          />
+                          Change
+                        </label>
+                      </div>
+                    )}
+                  {uploadedImageUrl ? (
+                    <img
+                      src={uploadedImageUrl}
+                      alt={community.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : community.image_url ? (
                     <img
                       src={community.image_url}
                       alt={community.name}
@@ -709,9 +867,22 @@ export default function CommunityDetailPage() {
                   )}
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold mb-1 dark:text-white">
-                    {community.name}
-                  </h1>
+                  {isEditingCommunity &&
+                  user &&
+                  community.creator_id === user.id ? (
+                    <input
+                      type="text"
+                      value={communityName}
+                      onChange={(e) => setCommunityName(e.target.value)}
+                      className="text-2xl font-bold mb-1 dark:text-white bg-transparent border-b border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500"
+                      placeholder="Community Name"
+                      maxLength={50}
+                    />
+                  ) : (
+                    <h1 className="text-2xl font-bold mb-1 dark:text-white">
+                      {community.name}
+                    </h1>
+                  )}
                   <div className="text-sm text-gray-500 dark:text-gray-400">
                     Created by{" "}
                     <Link
@@ -728,7 +899,37 @@ export default function CommunityDetailPage() {
               </div>
 
               <div className="flex flex-col space-y-2">
-                {community.is_member ? (
+                {/* Only show Edit Community for creators */}
+                {user && community.creator_id === user.id ? (
+                  <>
+                    {!isEditingCommunity ? (
+                      <button
+                        onClick={() => setIsEditingCommunity(true)}
+                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                      >
+                        Edit Community
+                      </button>
+                    ) : (
+                      <button
+                        onClick={updateCommunity}
+                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+                        disabled={loading}
+                      >
+                        {loading ? "Saving..." : "Save Changes"}
+                      </button>
+                    )}
+
+                    {/* DELETE COMMUNITY BUTTON - Only visible to creator */}
+                    <button
+                      onClick={handleDeleteCommunity}
+                      className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition w-full"
+                      disabled={loading}
+                    >
+                      {loading ? "Processing..." : "Delete Community"}
+                    </button>
+                  </>
+                ) : /* Show Leave/Join button for non-creators */
+                community.is_member ? (
                   <button
                     onClick={handleLeaveCommunity}
                     className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 px-4 py-2 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition"
@@ -743,19 +944,6 @@ export default function CommunityDetailPage() {
                     Join Community
                   </button>
                 )}
-
-                {/* DELETE COMMUNITY BUTTON - Only visible to creator */}
-                {community.is_member &&
-                  user &&
-                  community.creator_id === user.id && (
-                    <button
-                      onClick={handleDeleteCommunity}
-                      className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition w-full"
-                      disabled={loading}
-                    >
-                      {loading ? "Processing..." : "Delete Community"}
-                    </button>
-                  )}
               </div>
             </div>
 
