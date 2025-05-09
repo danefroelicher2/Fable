@@ -393,76 +393,99 @@ export default function CommunityDetailPage() {
       const fileExt = file.name.split(".").pop();
       const fileName = `banner-${Date.now()}.${fileExt}`;
 
-      // CHANGED: Use the correct bucket path
-      const filePath = `community-banners/${community.id}/${fileName}`;
-
       // Check file size before uploading
       const fileSizeMB = file.size / (1024 * 1024);
       if (fileSizeMB > 5) {
         throw new Error("File size exceeds 5MB limit");
       }
 
+      // First, check what buckets are available
+      const { data: buckets, error: bucketListError } =
+        await supabase.storage.listBuckets();
+
+      console.log("Available buckets:", buckets);
+
+      // Define the bucket name we want to use
+      const desiredBucketName = "community-storage";
+
+      // Check if our desired bucket exists
+      let bucketExists = false;
+      if (buckets) {
+        bucketExists = buckets.some(
+          (bucket) => bucket.name === desiredBucketName
+        );
+      }
+
+      // If bucket doesn't exist, create it
+      if (!bucketExists) {
+        console.log(
+          `Bucket "${desiredBucketName}" not found. Attempting to create it...`
+        );
+
+        try {
+          const { data, error: createError } =
+            await supabase.storage.createBucket(desiredBucketName, {
+              public: true, // Make the bucket public so files can be accessed
+            });
+
+          if (createError) {
+            console.error("Error creating bucket:", createError);
+            throw createError;
+          }
+
+          console.log(
+            `Bucket "${desiredBucketName}" created successfully:`,
+            data
+          );
+        } catch (createErr) {
+          console.error("Failed to create bucket:", createErr);
+          throw new Error(
+            `Could not create storage bucket: ${
+              createErr instanceof Error ? createErr.message : String(createErr)
+            }`
+          );
+        }
+      }
+
+      // Create the path
+      const filePath = `community-banners/${community.id}/${fileName}`;
+
+      console.log(
+        `Attempting to upload to bucket: ${desiredBucketName}, path: ${filePath}`
+      );
+
+      // Try to upload to the bucket
       const { error: uploadError } = await supabase.storage
-        .from("public") // CHANGED: use the correct bucket name
+        .from(desiredBucketName)
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error(`Error uploading to ${desiredBucketName}:`, uploadError);
+        throw uploadError;
+      }
 
+      // Get the public URL for the uploaded file
       const { data: urlData } = supabase.storage
-        .from("public") // CHANGED: match the same bucket used above
+        .from(desiredBucketName)
         .getPublicUrl(filePath);
+
+      console.log("Upload successful! URL:", urlData.publicUrl);
 
       setUploadedBannerUrl(urlData.publicUrl);
       // Immediately update the banner preview
       setCommunityBanner(urlData.publicUrl);
-
-      console.log("Banner uploaded successfully:", urlData.publicUrl);
     } catch (err) {
       console.error("Error uploading banner:", err);
-      alert(
-        `Failed to upload banner image: ${
-          err instanceof Error ? err.message : String(err)
-        }`
-      );
-    }
-  }
 
-  // Function to handle community image upload
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !user || !community) return;
-
-    try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `image-${Date.now()}.${fileExt}`;
-
-      // CHANGED: Use the correct bucket path
-      const filePath = `community-images/${community.id}/${fileName}`;
-
-      // Check file size before uploading
-      const fileSizeMB = file.size / (1024 * 1024);
-      if (fileSizeMB > 5) {
-        throw new Error("File size exceeds 5MB limit");
+      // Create a user-friendly error message
+      let errorMessage = "Failed to upload banner image";
+      if (err instanceof Error) {
+        errorMessage += `: ${err.message}`;
+      } else if (typeof err === "object" && err !== null) {
+        errorMessage += `: ${JSON.stringify(err)}`;
       }
 
-      const { error: uploadError } = await supabase.storage
-        .from("public") // CHANGED: use the correct bucket name
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from("public") // CHANGED: match the same bucket used above
-        .getPublicUrl(filePath);
-
-      setUploadedImageUrl(urlData.publicUrl);
-    } catch (err) {
-      console.error("Error uploading image:", err);
-      alert(
-        `Failed to upload community image: ${
-          err instanceof Error ? err.message : String(err)
-        }`
-      );
+      alert(errorMessage);
     }
   }
 
