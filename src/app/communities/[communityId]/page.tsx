@@ -389,24 +389,41 @@ export default function CommunityDetailPage() {
     if (!file || !user || !community) return;
 
     try {
+      // Create a more descriptive file name
       const fileExt = file.name.split(".").pop();
       const fileName = `banner-${Date.now()}.${fileExt}`;
+
+      // CHANGED: Use the correct bucket path
       const filePath = `community-banners/${community.id}/${fileName}`;
 
+      // Check file size before uploading
+      const fileSizeMB = file.size / (1024 * 1024);
+      if (fileSizeMB > 5) {
+        throw new Error("File size exceeds 5MB limit");
+      }
+
       const { error: uploadError } = await supabase.storage
-        .from("communities")
+        .from("public") // CHANGED: use the correct bucket name
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
-        .from("communities")
+        .from("public") // CHANGED: match the same bucket used above
         .getPublicUrl(filePath);
 
       setUploadedBannerUrl(urlData.publicUrl);
+      // Immediately update the banner preview
+      setCommunityBanner(urlData.publicUrl);
+
+      console.log("Banner uploaded successfully:", urlData.publicUrl);
     } catch (err) {
       console.error("Error uploading banner:", err);
-      alert("Failed to upload banner image.");
+      alert(
+        `Failed to upload banner image: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
     }
   }
 
@@ -418,22 +435,34 @@ export default function CommunityDetailPage() {
     try {
       const fileExt = file.name.split(".").pop();
       const fileName = `image-${Date.now()}.${fileExt}`;
+
+      // CHANGED: Use the correct bucket path
       const filePath = `community-images/${community.id}/${fileName}`;
 
+      // Check file size before uploading
+      const fileSizeMB = file.size / (1024 * 1024);
+      if (fileSizeMB > 5) {
+        throw new Error("File size exceeds 5MB limit");
+      }
+
       const { error: uploadError } = await supabase.storage
-        .from("communities")
+        .from("public") // CHANGED: use the correct bucket name
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
-        .from("communities")
+        .from("public") // CHANGED: match the same bucket used above
         .getPublicUrl(filePath);
 
       setUploadedImageUrl(urlData.publicUrl);
     } catch (err) {
       console.error("Error uploading image:", err);
-      alert("Failed to upload community image.");
+      alert(
+        `Failed to upload community image: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
     }
   }
 
@@ -813,17 +842,31 @@ export default function CommunityDetailPage() {
               </div>
             )}
 
-            {/* Banner edit overlay */}
+            {/* Banner edit overlay - IMPROVED WITH DESCRIPTIVE MESSAGE */}
             {isEditingCommunity && user && community.creator_id === user.id && (
               <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <label className="cursor-pointer bg-white text-gray-800 px-4 py-2 rounded-md hover:bg-gray-100">
+                <label className="cursor-pointer bg-white text-gray-800 px-4 py-2 rounded-md hover:bg-gray-100 flex items-center gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
                   <input
                     type="file"
                     className="hidden"
                     accept="image/*"
                     onChange={handleBannerUpload}
                   />
-                  Change Banner
+                  Change Banner Image
                 </label>
               </div>
             )}
