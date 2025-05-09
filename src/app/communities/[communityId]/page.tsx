@@ -53,6 +53,13 @@ export default function CommunityDetailPage() {
   const [activeTab, setActiveTab] = useState<"posts" | "members">("posts");
   const [members, setMembers] = useState<any[]>([]);
   const [communityBanner, setCommunityBanner] = useState<string | null>(null);
+  const [showFullDescription, setShowFullDescription] = useState(false);
+
+  // State for community description editing
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [descriptionText, setDescriptionText] = useState("");
+  const [descriptionCharCount, setDescriptionCharCount] = useState(0);
+  const MAX_DESCRIPTION_LENGTH = 500;
 
   // State for delete confirmation modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -170,14 +177,18 @@ export default function CommunityDetailPage() {
       }
 
       // Set the community data with the additional information
-      setCommunity({
+      const updatedCommunity = {
         ...communityData,
         creator: creatorData || null,
         member_count: memberCount || 0,
         post_count: postCount || 0,
         is_member: isMember,
         is_admin: isAdmin,
-      });
+      };
+
+      setCommunity(updatedCommunity);
+      setDescriptionText(communityData.description || "");
+      setDescriptionCharCount(communityData.description?.length || 0);
 
       // Fetch initial posts
       await fetchCommunityPosts();
@@ -585,6 +596,14 @@ export default function CommunityDetailPage() {
     return content.substring(0, maxLength) + "...";
   };
 
+  // Format description with character limit
+  const formatDescription = (description: string, maxLength: number = 500) => {
+    if (description.length <= maxLength || showFullDescription)
+      return description;
+
+    return description.substring(0, maxLength) + "...";
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto py-8 px-4">
@@ -624,8 +643,30 @@ export default function CommunityDetailPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container mx-auto py-8 px-4 relative">
       <div className="max-w-6xl mx-auto">
+        {/* Back button - positioned on the far left */}
+        <div className="absolute left-4 top-4 z-10">
+          <Link
+            href="/communities"
+            className="flex items-center justify-center p-2 rounded-full bg-gray-800 bg-opacity-50 text-white hover:bg-opacity-70 transition"
+            aria-label="Back to communities"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </Link>
+        </div>
+
         {/* Community Header */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6 dark:bg-gray-800">
           {/* Banner Image */}
@@ -724,9 +765,104 @@ export default function CommunityDetailPage() {
             </div>
 
             <div className="mt-4">
-              <p className="text-gray-700 dark:text-gray-300">
-                {community.description}
-              </p>
+              {isEditingDescription && community.is_admin ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={descriptionText}
+                    onChange={(e) => {
+                      const newText = e.target.value;
+                      if (newText.length <= MAX_DESCRIPTION_LENGTH) {
+                        setDescriptionText(newText);
+                        setDescriptionCharCount(newText.length);
+                      }
+                    }}
+                    className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    placeholder="Describe your community..."
+                    rows={4}
+                    maxLength={MAX_DESCRIPTION_LENGTH}
+                  />
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {descriptionCharCount}/{MAX_DESCRIPTION_LENGTH} characters
+                    </div>
+                    <div className="space-x-2">
+                      <button
+                        onClick={() => {
+                          setIsEditingDescription(false);
+                          if (community) {
+                            setDescriptionText(community.description);
+                            setDescriptionCharCount(
+                              community.description.length
+                            );
+                          }
+                        }}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded-md dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!community) return;
+
+                          try {
+                            const { error } = await (supabase as any)
+                              .from("communities")
+                              .update({ description: descriptionText })
+                              .eq("id", community.id);
+
+                            if (error) throw error;
+
+                            setCommunity({
+                              ...community,
+                              description: descriptionText,
+                            });
+                            setIsEditingDescription(false);
+                          } catch (err) {
+                            console.error("Error updating description:", err);
+                            alert("Failed to update description");
+                          }
+                        }}
+                        className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-gray-700 dark:text-gray-300">
+                    {formatDescription(community.description)}
+                    {community.description.length > 500 &&
+                      !showFullDescription && (
+                        <button
+                          onClick={() => setShowFullDescription(true)}
+                          className="ml-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          Show more
+                        </button>
+                      )}
+                    {community.description.length > 500 &&
+                      showFullDescription && (
+                        <button
+                          onClick={() => setShowFullDescription(false)}
+                          className="ml-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          Show less
+                        </button>
+                      )}
+                  </p>
+
+                  {community.is_admin && (
+                    <button
+                      onClick={() => setIsEditingDescription(true)}
+                      className="mt-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                      Edit description
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
