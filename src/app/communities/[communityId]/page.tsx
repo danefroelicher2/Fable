@@ -732,7 +732,7 @@ export default function CommunityDetailPage() {
         <div className="max-w-6xl mx-auto">
           <div className="animate-pulse">
             {/* Reduced banner height in loading state */}
-            <div className="h-64 bg-gray-300 rounded-lg mb-4 dark:bg-gray-700"></div>
+            <div className="h-60 bg-gray-300 rounded-lg mb-4 dark:bg-gray-700"></div>
             <div className="h-8 bg-gray-300 rounded w-1/2 mb-2 dark:bg-gray-700"></div>
             <div className="h-4 bg-gray-200 rounded w-1/4 mb-2 dark:bg-gray-700"></div>
             <div className="h-4 bg-gray-200 rounded w-full mb-2 dark:bg-gray-700"></div>
@@ -795,8 +795,8 @@ export default function CommunityDetailPage() {
           <div
             className={
               communityBanner
-                ? "h-64 relative"
-                : "h-64 bg-gradient-to-r from-blue-500 to-purple-600 relative"
+                ? "h-76 relative"
+                : "h-88 bg-gradient-to-r from-blue-500 to-purple-600 relative"
             }
           >
             {communityBanner ? (
@@ -852,7 +852,7 @@ export default function CommunityDetailPage() {
                 )}
               </div>
 
-              <div className="flex flex-col space-y-2 mt-2 md:mt-0">
+              <div className="flex flex-col space-y-1 mt-2 md:mt-0">
                 {/* Only show Edit Community for creators */}
                 {user && community.creator_id === user.id ? (
                   <>
