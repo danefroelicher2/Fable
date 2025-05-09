@@ -383,109 +383,44 @@ export default function CommunityDetailPage() {
     }
   }
 
-  // Function to handle banner image upload
   async function handleBannerUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !user || !community) return;
 
     try {
-      // Create a more descriptive file name
-      const fileExt = file.name.split(".").pop();
-      const fileName = `banner-${Date.now()}.${fileExt}`;
-
-      // Check file size before uploading
+      // Check file size - data URLs can be large
       const fileSizeMB = file.size / (1024 * 1024);
-      if (fileSizeMB > 5) {
-        throw new Error("File size exceeds 5MB limit");
+      if (fileSizeMB > 1) {
+        // Limit to 1MB for data URLs
+        throw new Error("File size exceeds 1MB limit for data URL storage");
       }
 
-      // First, check what buckets are available
-      const { data: buckets, error: bucketListError } =
-        await supabase.storage.listBuckets();
+      // Convert file to data URL
+      const reader = new FileReader();
 
-      console.log("Available buckets:", buckets);
+      // Create a promise to handle the FileReader
+      const dataUrlPromise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("Failed to read file"));
+      });
 
-      // Define the bucket name we want to use
-      const desiredBucketName = "community-storage";
+      reader.readAsDataURL(file);
 
-      // Check if our desired bucket exists
-      let bucketExists = false;
-      if (buckets) {
-        bucketExists = buckets.some(
-          (bucket) => bucket.name === desiredBucketName
-        );
-      }
+      // Wait for data URL
+      const dataUrl = await dataUrlPromise;
 
-      // If bucket doesn't exist, create it
-      if (!bucketExists) {
-        console.log(
-          `Bucket "${desiredBucketName}" not found. Attempting to create it...`
-        );
+      // Set the data URL as the banner
+      setUploadedBannerUrl(dataUrl);
+      setCommunityBanner(dataUrl);
 
-        try {
-          const { data, error: createError } =
-            await supabase.storage.createBucket(desiredBucketName, {
-              public: true, // Make the bucket public so files can be accessed
-            });
-
-          if (createError) {
-            console.error("Error creating bucket:", createError);
-            throw createError;
-          }
-
-          console.log(
-            `Bucket "${desiredBucketName}" created successfully:`,
-            data
-          );
-        } catch (createErr) {
-          console.error("Failed to create bucket:", createErr);
-          throw new Error(
-            `Could not create storage bucket: ${
-              createErr instanceof Error ? createErr.message : String(createErr)
-            }`
-          );
-        }
-      }
-
-      // Create the path
-      const filePath = `community-banners/${community.id}/${fileName}`;
-
-      console.log(
-        `Attempting to upload to bucket: ${desiredBucketName}, path: ${filePath}`
-      );
-
-      // Try to upload to the bucket
-      const { error: uploadError } = await supabase.storage
-        .from(desiredBucketName)
-        .upload(filePath, file);
-
-      if (uploadError) {
-        console.error(`Error uploading to ${desiredBucketName}:`, uploadError);
-        throw uploadError;
-      }
-
-      // Get the public URL for the uploaded file
-      const { data: urlData } = supabase.storage
-        .from(desiredBucketName)
-        .getPublicUrl(filePath);
-
-      console.log("Upload successful! URL:", urlData.publicUrl);
-
-      setUploadedBannerUrl(urlData.publicUrl);
-      // Immediately update the banner preview
-      setCommunityBanner(urlData.publicUrl);
+      console.log("Converted image to data URL successfully");
     } catch (err) {
-      console.error("Error uploading banner:", err);
-
-      // Create a user-friendly error message
-      let errorMessage = "Failed to upload banner image";
-      if (err instanceof Error) {
-        errorMessage += `: ${err.message}`;
-      } else if (typeof err === "object" && err !== null) {
-        errorMessage += `: ${JSON.stringify(err)}`;
-      }
-
-      alert(errorMessage);
+      console.error("Error processing image:", err);
+      alert(
+        `Failed to upload image: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
     }
   }
 
