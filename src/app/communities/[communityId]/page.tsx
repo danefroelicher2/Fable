@@ -728,15 +728,15 @@ export default function CommunityDetailPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-8 px-4">
+      <div className="container mx-auto py-6 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="animate-pulse">
-            {/* Bigger banner in loading state */}
-            <div className="h-96 bg-gray-300 rounded-lg mb-6 dark:bg-gray-700"></div>
-            <div className="h-8 bg-gray-300 rounded w-1/2 mb-4 dark:bg-gray-700"></div>
+            {/* Reduced banner height in loading state */}
+            <div className="h-64 bg-gray-300 rounded-lg mb-4 dark:bg-gray-700"></div>
+            <div className="h-8 bg-gray-300 rounded w-1/2 mb-2 dark:bg-gray-700"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/4 mb-2 dark:bg-gray-700"></div>
             <div className="h-4 bg-gray-200 rounded w-full mb-2 dark:bg-gray-700"></div>
-            <div className="h-4 bg-gray-200 rounded w-full mb-2 dark:bg-gray-700"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-6 dark:bg-gray-700"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-4 dark:bg-gray-700"></div>
           </div>
         </div>
       </div>
@@ -745,12 +745,12 @@ export default function CommunityDetailPage() {
 
   if (error || !community) {
     return (
-      <div className="container mx-auto py-8 px-4">
-        <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md text-center dark:bg-gray-800">
-          <h1 className="text-2xl font-bold mb-4 dark:text-white">
+      <div className="container mx-auto py-6 px-4">
+        <div className="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md text-center dark:bg-gray-800">
+          <h1 className="text-2xl font-bold mb-3 dark:text-white">
             {error || "Community Not Found"}
           </h1>
-          <p className="text-gray-600 mb-6 dark:text-gray-300">
+          <p className="text-gray-600 mb-4 dark:text-gray-300">
             The community you're looking for doesn't exist or has been removed.
           </p>
           <Link
@@ -765,7 +765,7 @@ export default function CommunityDetailPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 relative">
+    <div className="container mx-auto py-6 px-4 relative">
       <div className="max-w-6xl mx-auto">
         {/* Back button - positioned on the far left */}
         <div className="absolute left-4 top-6 z-10">
@@ -789,14 +789,14 @@ export default function CommunityDetailPage() {
           </Link>
         </div>
 
-        {/* Community Header */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6 dark:bg-gray-800">
-          {/* Banner Image - MUCH TALLER (h-64 -> h-96) */}
+        {/* Community Header - REDUCED HEIGHT */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4 dark:bg-gray-800">
+          {/* Banner Image - REDUCED HEIGHT from h-96 to h-64 */}
           <div
             className={
               communityBanner
-                ? "h-96 relative"
-                : "h-96 bg-gradient-to-r from-blue-500 to-purple-600 relative"
+                ? "h-64 relative"
+                : "h-64 bg-gradient-to-r from-blue-500 to-purple-600 relative"
             }
           >
             {communityBanner ? (
@@ -829,9 +829,10 @@ export default function CommunityDetailPage() {
             )}
           </div>
 
-          <div className="p-6">
+          {/* Content with reduced padding and spacing */}
+          <div className="p-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-              {/* Title moved to the left - removed the circle image placeholder */}
+              {/* Title moved to the left */}
               <div>
                 {isEditingCommunity &&
                 user &&
@@ -845,13 +846,13 @@ export default function CommunityDetailPage() {
                     maxLength={50}
                   />
                 ) : (
-                  <h1 className="text-3xl font-bold mb-1 dark:text-white">
+                  <h1 className="text-3xl font-bold dark:text-white">
                     {community.name}
                   </h1>
                 )}
               </div>
 
-              <div className="flex flex-col space-y-2 mt-4 md:mt-0">
+              <div className="flex flex-col space-y-2 mt-2 md:mt-0">
                 {/* Only show Edit Community for creators */}
                 {user && community.creator_id === user.id ? (
                   <>
