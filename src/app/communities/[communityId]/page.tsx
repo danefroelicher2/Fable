@@ -731,9 +731,9 @@ export default function CommunityDetailPage() {
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="animate-pulse">
-            <div className="h-40 bg-gray-300 rounded-lg mb-6 dark:bg-gray-700"></div>
+            {/* Bigger banner in loading state */}
+            <div className="h-96 bg-gray-300 rounded-lg mb-6 dark:bg-gray-700"></div>
             <div className="h-8 bg-gray-300 rounded w-1/2 mb-4 dark:bg-gray-700"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/3 mb-6 dark:bg-gray-700"></div>
             <div className="h-4 bg-gray-200 rounded w-full mb-2 dark:bg-gray-700"></div>
             <div className="h-4 bg-gray-200 rounded w-full mb-2 dark:bg-gray-700"></div>
             <div className="h-4 bg-gray-200 rounded w-3/4 mb-6 dark:bg-gray-700"></div>
@@ -791,12 +791,12 @@ export default function CommunityDetailPage() {
 
         {/* Community Header */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6 dark:bg-gray-800">
-          {/* Banner Image */}
+          {/* Banner Image - MUCH TALLER (h-64 -> h-96) */}
           <div
             className={
               communityBanner
-                ? "h-40 relative"
-                : "h-40 bg-gradient-to-r from-blue-500 to-purple-600 relative"
+                ? "h-96 relative"
+                : "h-96 bg-gradient-to-r from-blue-500 to-purple-600 relative"
             }
           >
             {communityBanner ? (
@@ -831,74 +831,27 @@ export default function CommunityDetailPage() {
 
           <div className="p-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-              <div className="flex items-center mb-4 md:mb-0">
-                <div className="h-16 w-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mr-4 overflow-hidden relative">
-                  {isEditingCommunity &&
-                    user &&
-                    community.creator_id === user.id && (
-                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
-                        <label className="cursor-pointer text-white text-xs">
-                          <input
-                            type="file"
-                            className="hidden"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                          />
-                          Change
-                        </label>
-                      </div>
-                    )}
-                  {uploadedImageUrl ? (
-                    <img
-                      src={uploadedImageUrl}
-                      alt={community.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : community.image_url ? (
-                    <img
-                      src={community.image_url}
-                      alt={community.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-2xl font-bold">
-                      {community.name.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  {isEditingCommunity &&
-                  user &&
-                  community.creator_id === user.id ? (
-                    <input
-                      type="text"
-                      value={communityName}
-                      onChange={(e) => setCommunityName(e.target.value)}
-                      className="text-2xl font-bold mb-1 dark:text-white bg-transparent border-b border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500"
-                      placeholder="Community Name"
-                      maxLength={50}
-                    />
-                  ) : (
-                    <h1 className="text-2xl font-bold mb-1 dark:text-white">
-                      {community.name}
-                    </h1>
-                  )}
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    Created by{" "}
-                    <Link
-                      href={`/user/${community.creator_id}`}
-                      className="text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      {community.creator?.full_name ||
-                        community.creator?.username ||
-                        "Anonymous"}
-                    </Link>{" "}
-                    • {formatDate(community.created_at)}
-                  </div>
-                </div>
+              {/* Title moved to the left - removed the circle image placeholder */}
+              <div>
+                {isEditingCommunity &&
+                user &&
+                community.creator_id === user.id ? (
+                  <input
+                    type="text"
+                    value={communityName}
+                    onChange={(e) => setCommunityName(e.target.value)}
+                    className="text-3xl font-bold mb-1 dark:text-white bg-transparent border-b border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500"
+                    placeholder="Community Name"
+                    maxLength={50}
+                  />
+                ) : (
+                  <h1 className="text-3xl font-bold mb-1 dark:text-white">
+                    {community.name}
+                  </h1>
+                )}
               </div>
 
-              <div className="flex flex-col space-y-2">
+              <div className="flex flex-col space-y-2 mt-4 md:mt-0">
                 {/* Only show Edit Community for creators */}
                 {user && community.creator_id === user.id ? (
                   <>
@@ -947,12 +900,17 @@ export default function CommunityDetailPage() {
               </div>
             </div>
 
-            <div className="flex items-center space-x-6 mt-6 text-sm text-gray-600 dark:text-gray-400">
-              <div>{community.member_count} members</div>
-              <div>{community.post_count} posts</div>
+            {/* Community stats - cleaned up and made more prominent */}
+            <div className="flex items-center space-x-6 mt-4 text-sm font-medium">
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-1">
+                {community.member_count} members
+              </div>
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-1">
+                {community.post_count} posts
+              </div>
             </div>
 
-            <div className="mt-4">
+            <div className="mt-6">
               {isEditingDescription && community.is_admin ? (
                 <div className="space-y-2">
                   <textarea
@@ -1019,6 +977,9 @@ export default function CommunityDetailPage() {
                 </div>
               ) : (
                 <div>
+                  <h3 className="text-lg font-semibold mb-2 dark:text-white">
+                    About this community
+                  </h3>
                   <p className="text-gray-700 dark:text-gray-300">
                     {formatDescription(community.description)}
                     {community.description.length > 500 &&
