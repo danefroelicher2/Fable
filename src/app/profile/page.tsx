@@ -10,6 +10,7 @@ import FollowStats from "@/components/FollowStats";
 import ManageFavorites from "@/components/ManageFavorites";
 import ManagePinnedPosts from "@/components/ManagePinnedPosts";
 import PinnedPosts from "@/components/PinnedPosts";
+import { getFromStorage, setToStorage } from "@/lib/localStorageUtils";
 
 interface Profile {
   id: string;
