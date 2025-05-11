@@ -12,6 +12,7 @@ import FollowButton from "@/components/FollowButton";
 import MessageButton from "@/components/MessageButton";
 import FollowStats from "@/components/FollowStats";
 import PinnedPosts from "@/components/PinnedPosts";
+import SocialLinks from "@/components/SocialLinks"; // Import the new SocialLinks component
 
 interface Profile {
   id: string;
@@ -31,6 +32,13 @@ export default function PublicUserProfilePage() {
   const [bio, setBio] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [isCurrentUser, setIsCurrentUser] = useState(false);
+  // Add state for social links
+  const [socialLinks, setSocialLinks] = useState({
+    twitter: "",
+    github: "",
+    linkedin: "",
+    website: "",
+  });
 
   useEffect(() => {
     if (!userId) {
@@ -65,10 +73,24 @@ export default function PublicUserProfilePage() {
 
         setProfile(data);
 
+        // Only try to access localStorage on the client side
         if (typeof window !== "undefined") {
+          // Get bio from localStorage
           const savedBio = localStorage.getItem("userBio_" + userId);
           if (savedBio) {
             setBio(savedBio);
+          }
+
+          // Get social links from localStorage
+          const savedSocialLinks = localStorage.getItem(
+            "userSocialLinks_" + userId
+          );
+          if (savedSocialLinks) {
+            try {
+              setSocialLinks(JSON.parse(savedSocialLinks));
+            } catch (e) {
+              console.error("Error parsing social links:", e);
+            }
           }
         }
       } catch (error: any) {
@@ -163,6 +185,9 @@ export default function PublicUserProfilePage() {
                   <p className="text-gray-700 whitespace-pre-line">{bio}</p>
                 </div>
               )}
+
+              {/* Display Social Links - NEW SECTION */}
+              <SocialLinks socialLinks={socialLinks} className="mb-6" />
 
               {profile && <FollowStats userId={profile.id} className="mb-4" />}
 
