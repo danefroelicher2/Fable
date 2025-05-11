@@ -434,9 +434,15 @@ export default function CommunitiesPage() {
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
                 onClick={() => navigateToCommunity(community.id)}
               >
-                {/* Image section (top half) */}
+                {/* Image section (top half) - prioritizing banner_url */}
                 <div className="h-40 bg-gray-200 dark:bg-gray-700 w-full">
-                  {community.image_url ? (
+                  {community.banner_url ? (
+                    <img
+                      src={community.banner_url}
+                      alt={community.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : community.image_url ? (
                     <img
                       src={community.image_url}
                       alt={community.name}
