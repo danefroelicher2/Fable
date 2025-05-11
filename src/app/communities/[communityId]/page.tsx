@@ -778,7 +778,7 @@ export default function CommunityDetailPage() {
 
         {/* Community Header - REDUCED HEIGHT */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4 dark:bg-gray-800">
-          {/* Banner Image - REDUCED HEIGHT from h-96 to h-64 */}
+          {/* Banner Image  */}
           <div
             className={
               communityBanner
