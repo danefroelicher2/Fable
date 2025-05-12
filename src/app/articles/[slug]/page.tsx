@@ -1,4 +1,4 @@
-// src/app/articles/[slug]/page.tsx
+// src/app/articles/[slug]/page.tsx (modified for line break preservation)
 "use client";
 
 import { useState, useEffect } from "react";
@@ -122,8 +122,6 @@ export default function ArticlePage() {
       console.error("Error checking like status:", error);
     }
   }
-
-  // src/app/articles/[slug]/page.tsx (modified)
 
   async function handleLike() {
     if (!user) {
@@ -320,11 +318,11 @@ export default function ArticlePage() {
           </div>
         )}
 
+        {/* Article content - with whitespace preserved */}
         <div className="prose dark:prose-invert max-w-none mb-10">
-          <div
-            dangerouslySetInnerHTML={{ __html: article.content }}
-            className="dark:text-gray-300"
-          ></div>
+          <div className="whitespace-pre-line dark:text-gray-300">
+            {article.content}
+          </div>
         </div>
 
         <div className="border-t dark:border-gray-700 border-b py-4 mb-8 flex justify-between items-center">
