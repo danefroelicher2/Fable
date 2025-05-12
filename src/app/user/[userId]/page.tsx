@@ -1,4 +1,4 @@
-// src/app/user/[userId]/page.tsx
+// src/app/user/[userId]/page.tsx (modified)
 "use client";
 
 import { useState, useEffect } from "react";
@@ -10,7 +10,6 @@ import UserPublishedArticles from "@/components/UserPublishedArticles";
 import FavoriteArticles from "@/components/FavoriteArticles";
 import FollowButton from "@/components/FollowButton";
 import MessageButton from "@/components/MessageButton";
-import FollowStats from "@/components/FollowStats";
 import PinnedPosts from "@/components/PinnedPosts";
 import SocialLinks from "@/components/SocialLinks"; // Import the new SocialLinks component
 
@@ -39,6 +38,9 @@ export default function PublicUserProfilePage() {
     linkedin: "",
     website: "",
   });
+  // Add follower/following counts
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   useEffect(() => {
     if (!userId) {
@@ -92,6 +94,34 @@ export default function PublicUserProfilePage() {
               console.error("Error parsing social links:", e);
             }
           }
+        }
+
+        // Get follower and following counts
+        try {
+          // Get followers count (people who follow this user)
+          const { count: followersCount, error: followersError } = await (
+            supabase as any
+          )
+            .from("follows")
+            .select("id", { count: "exact" })
+            .eq("following_id", userId);
+
+          if (followersError) throw followersError;
+
+          // Get following count (people this user follows)
+          const { count: followingCountData, error: followingError } = await (
+            supabase as any
+          )
+            .from("follows")
+            .select("id", { count: "exact" })
+            .eq("follower_id", userId);
+
+          if (followingError) throw followingError;
+
+          setFollowerCount(followersCount || 0);
+          setFollowingCount(followingCountData || 0);
+        } catch (err) {
+          console.error("Error fetching follow stats:", err);
         }
       } catch (error: any) {
         console.error("Error loading profile:", error.message);
@@ -155,50 +185,52 @@ export default function PublicUserProfilePage() {
             </div>
 
             <div className="md:w-2/3 md:pl-8">
-              <div className="mb-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                  <h2 className="text-2xl font-bold mb-2 md:mb-0">
-                    {profile?.full_name ||
-                      profile?.username ||
-                      "Anonymous User"}
-                  </h2>
-
-                  {!isCurrentUser && profile && (
-                    <div className="flex space-x-2">
-                      <MessageButton
-                        recipientId={profile.id}
-                        variant="secondary"
-                      />
-
-                      <FollowButton targetUserId={profile.id} />
-                    </div>
-                  )}
-                </div>
+              {/* Name and Username */}
+              <div className="mb-2">
+                <h2 className="text-2xl font-bold">
+                  {profile?.full_name || profile?.username || "Anonymous User"}
+                </h2>
                 {profile?.username && (
                   <p className="text-gray-600">@{profile.username}</p>
                 )}
               </div>
 
+              {/* FOLLOWERS/FOLLOWING - Moved up as requested */}
+              <div className="flex space-x-6 mb-4">
+                <div className="flex flex-col items-center">
+                  <span className="font-bold text-lg">{followerCount}</span>
+                  <span className="text-gray-600 text-sm">Followers</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="font-bold text-lg">{followingCount}</span>
+                  <span className="text-gray-600 text-sm">Following</span>
+                </div>
+              </div>
+
+              {/* BIO - removed the "Bio" heading as requested */}
               {bio && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-2">Bio</h3>
+                <div className="mb-4">
                   <p className="text-gray-700 whitespace-pre-line">{bio}</p>
                 </div>
               )}
 
-              {/* Display Social Links - NEW SECTION */}
-              <SocialLinks socialLinks={socialLinks} className="mb-6" />
+              {/* SOCIAL LINKS - Display only icons, no usernames */}
+              <SocialLinks socialLinks={socialLinks} className="mb-4" />
 
-              {profile && <FollowStats userId={profile.id} className="mb-4" />}
+              {/* Action buttons */}
+              {!isCurrentUser && profile && (
+                <div className="flex space-x-2 mt-4">
+                  <MessageButton recipientId={profile.id} variant="secondary" />
+                  <FollowButton targetUserId={profile.id} />
+                </div>
+              )}
 
               {isCurrentUser && (
-                <div className="mb-4">
+                <div className="mt-4">
                   <button
                     onClick={() => {
                       // Directly navigate to the profile page and set editing mode immediately
-                      // This will trigger the editing view instead of the profile view
                       router.push("/profile");
-                      // Store the editing state in localStorage to be picked up by the profile page
                       localStorage.setItem("startInEditMode", "true");
                     }}
                     className="text-blue-600 hover:text-blue-800 flex items-center"
