@@ -1,4 +1,4 @@
-// src/components/FollowStats.tsx
+// src/components/FollowStats.tsx (simplified version)
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 interface FollowStatsProps {
   userId: string;
   className?: string;
+  displayFormat?: "raw" | "inline" | "stacked";
   onStatsLoaded?: (followers: number, following: number) => void;
 }
 
@@ -20,6 +21,7 @@ interface ProfileData {
 export default function FollowStats({
   userId,
   className = "",
+  displayFormat = "stacked", // 'raw' just gives numbers, 'inline' horizontal layout, 'stacked' vertical layout
   onStatsLoaded,
 }: FollowStatsProps) {
   const [followerCount, setFollowerCount] = useState(0);
@@ -81,9 +83,8 @@ export default function FollowStats({
     try {
       setLoadingList(true);
       setFollowList([]);
-      console.log(`Fetching ${type} list for user ID:`, userId);
 
-      // First, let's get the user IDs that are following or being followed
+      // First fetch the relevant user IDs
       let userIds: string[] = [];
 
       if (type === "followers") {
@@ -97,7 +98,6 @@ export default function FollowStats({
 
         if (followerError) throw followerError;
         userIds = followerData.map((item: any) => item.follower_id);
-        console.log("Follower IDs:", userIds);
       } else {
         // Get IDs of users this user follows
         const { data: followingData, error: followingError } = await (
@@ -109,7 +109,6 @@ export default function FollowStats({
 
         if (followingError) throw followingError;
         userIds = followingData.map((item: any) => item.following_id);
-        console.log("Following IDs:", userIds);
       }
 
       // If we have user IDs, fetch their profile information
@@ -120,14 +119,10 @@ export default function FollowStats({
           .in("id", userIds);
 
         if (profilesError) throw profilesError;
-        console.log(`${type} profiles:`, profilesData);
         setFollowList(profilesData || []);
-      } else {
-        // No followers/following
-        setFollowList([]);
       }
-    } catch (err) {
-      console.error(`Error fetching ${type} list:`, err);
+    } catch (error) {
+      console.error(`Error fetching ${type} list:`, error);
     } finally {
       setLoadingList(false);
     }
@@ -142,6 +137,11 @@ export default function FollowStats({
     setShowFollowModal(null);
     setFollowList([]);
   };
+
+  // Raw display just for callbacks
+  if (displayFormat === "raw") {
+    return null; // We're just using the onStatsLoaded callback
+  }
 
   // Modal component for displaying followers/following
   const FollowModal = () => {
@@ -232,6 +232,37 @@ export default function FollowStats({
     );
   };
 
+  // Choose layout based on displayFormat
+  if (displayFormat === "inline") {
+    return (
+      <div className={`flex space-x-6 ${className}`}>
+        <button
+          onClick={() => openModal("followers")}
+          className="flex flex-col items-center hover:opacity-80 transition-opacity"
+        >
+          <span className="font-bold text-lg">
+            {loading ? "-" : followerCount}
+          </span>
+          <span className="text-gray-600 text-sm">Followers</span>
+        </button>
+
+        <button
+          onClick={() => openModal("following")}
+          className="flex flex-col items-center hover:opacity-80 transition-opacity"
+        >
+          <span className="font-bold text-lg">
+            {loading ? "-" : followingCount}
+          </span>
+          <span className="text-gray-600 text-sm">Following</span>
+        </button>
+
+        {/* Modal for showing followers/following lists */}
+        <FollowModal />
+      </div>
+    );
+  }
+
+  // Default stacked layout
   return (
     <div className={`flex space-x-6 ${className}`}>
       <button
