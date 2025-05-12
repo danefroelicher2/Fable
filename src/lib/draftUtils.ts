@@ -232,12 +232,14 @@ export async function publishDraft(draft: Draft): Promise<string | null> {
         : draft.content);
 
     // Insert into public_articles
+    // Line breaks are preserved because we're directly storing the content string
+    // No processing or transformation is done to the content
     const { data, error } = await (supabase as any)
       .from("public_articles")
       .insert({
         user_id: userData.user.id,
         title: draft.title,
-        content: draft.content,
+        content: draft.content, // Raw content with line breaks is preserved
         excerpt: finalExcerpt,
         category: draft.category,
         slug: finalSlug,
