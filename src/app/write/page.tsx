@@ -1,4 +1,4 @@
-// src/app/write/page.tsx (modified)
+// src/app/write/page.tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -210,7 +210,7 @@ export default function WritePage() {
               onChange={(e) => {
                 setTitle(e.target.value);
               }}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
               placeholder="Enter a compelling title for your article"
               required
               disabled={isRedirecting}
@@ -269,14 +269,13 @@ export default function WritePage() {
               </label>
             </div>
 
-            {/* "Insert Image" button removed */}
-
+            {/* Text color changed to black for better visibility */}
             <textarea
               id="content"
               ref={editorRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
               rows={15}
               placeholder="Write your article here..."
               required

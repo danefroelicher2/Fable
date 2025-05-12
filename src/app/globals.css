@@ -370,3 +370,27 @@ body {
 .nav-item-transition:hover {
   transform: scale(1.05);
 }
+/* Add this to your globals.css file */
+
+/* Ensure all input fields and textareas have black text for better readability */
+input,
+textarea {
+  color: #000; /* Black text color */
+}
+
+/* For dark mode support */
+.dark input,
+.dark textarea {
+  color: #fff; /* White text in dark mode */
+  background-color: #333; /* Darker background in dark mode */
+}
+
+/* Improve placeholder text visibility */
+::placeholder {
+  color: #6b7280; /* Medium gray for better visibility */
+  opacity: 1; /* Full opacity */
+}
+
+.dark ::placeholder {
+  color: #9ca3af; /* Lighter gray for dark mode */
+}
