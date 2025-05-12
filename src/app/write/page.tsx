@@ -1,4 +1,4 @@
-// src/app/write/page.tsx
+// src/app/write/page.tsx (modified)
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -170,38 +170,6 @@ export default function WritePage() {
     }
   };
 
-  // Function to handle inserting an image into the content
-  const handleInsertImage = (imageUrl: string) => {
-    if (editorRef.current) {
-      const textarea = editorRef.current;
-      const startPos = textarea.selectionStart;
-      const endPos = textarea.selectionEnd;
-
-      // Create markdown image syntax
-      const imageMarkdown = `\n\n![Image](${imageUrl})\n\n`;
-
-      // Insert at cursor position
-      const newContent =
-        content.substring(0, startPos) +
-        imageMarkdown +
-        content.substring(endPos);
-
-      setContent(newContent);
-
-      // Set cursor position after the inserted image
-      setTimeout(() => {
-        textarea.focus();
-        textarea.setSelectionRange(
-          startPos + imageMarkdown.length,
-          startPos + imageMarkdown.length
-        );
-      }, 0);
-    } else {
-      // If no cursor position, just append to the end
-      setContent(content + `\n\n![Image](${imageUrl})\n\n`);
-    }
-  };
-
   return (
     <div className="container mx-auto py-10 px-4">
       <div className="max-w-4xl mx-auto">
@@ -301,25 +269,7 @@ export default function WritePage() {
               </label>
             </div>
 
-            <div className="mb-2">
-              {!isRedirecting ? (
-                <ImageUpload
-                  onImageUploaded={handleInsertImage}
-                  bucketName="article-images"
-                  folderPath="{userId}/content/{timestamp}"
-                  buttonLabel="Insert Image"
-                  className="mb-2"
-                />
-              ) : (
-                <button
-                  type="button"
-                  disabled
-                  className="bg-gray-300 text-gray-600 px-4 py-2 rounded opacity-50 cursor-not-allowed mb-2"
-                >
-                  Insert Image
-                </button>
-              )}
-            </div>
+            {/* "Insert Image" button removed */}
 
             <textarea
               id="content"

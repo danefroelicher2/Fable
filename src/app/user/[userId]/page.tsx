@@ -41,6 +41,7 @@ export default function PublicUserProfilePage() {
   // Add follower/following counts
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [articles, setArticles] = useState<any[]>([]);
 
   useEffect(() => {
     if (!userId) {
@@ -120,6 +121,23 @@ export default function PublicUserProfilePage() {
 
           setFollowerCount(followersCount || 0);
           setFollowingCount(followingCountData || 0);
+
+          // Fetch user's published articles
+          try {
+            const { data: articlesData, error: articlesError } = await (
+              supabase as any
+            )
+              .from("public_articles")
+              .select("id")
+              .eq("user_id", userId)
+              .eq("is_published", true);
+
+            if (articlesError) throw articlesError;
+            setArticles(articlesData || []);
+          } catch (articlesErr) {
+            console.error("Error fetching user articles:", articlesErr);
+            setArticles([]);
+          }
         } catch (err) {
           console.error("Error fetching follow stats:", err);
         }
@@ -185,22 +203,63 @@ export default function PublicUserProfilePage() {
             </div>
 
             <div className="md:w-2/3 md:pl-8">
-              {/* Name and Username */}
-              <div className="mb-2">
-                <h2 className="text-2xl font-bold">
-                  {profile?.full_name || profile?.username || "Anonymous User"}
-                </h2>
-                {profile?.username && (
-                  <p className="text-gray-600">@{profile.username}</p>
+              {/* Header with name/username and edit button */}
+              <div className="flex justify-between items-start mb-2">
+                {/* Name and Username */}
+                <div>
+                  <h2 className="text-2xl font-bold">
+                    {profile?.full_name ||
+                      profile?.username ||
+                      "Anonymous User"}
+                  </h2>
+                  {profile?.username && (
+                    <p className="text-gray-600">@{profile.username}</p>
+                  )}
+                </div>
+
+                {/* Edit Profile button moved to top right */}
+                {isCurrentUser && (
+                  <button
+                    onClick={() => {
+                      router.push("/profile");
+                      localStorage.setItem("startInEditMode", "true");
+                    }}
+                    className="text-blue-600 hover:text-blue-800 flex items-center text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition-colors"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                      />
+                    </svg>
+                    Edit Profile
+                  </button>
                 )}
               </div>
 
-              {/* FOLLOWERS/FOLLOWING - Moved up as requested */}
+              {/* Posts/Followers/Following counts */}
               <div className="flex space-x-6 mb-4">
+                {/* NEW: Posts count */}
+                <div className="flex flex-col items-center">
+                  <span className="font-bold text-lg">
+                    {articles?.length || 0}
+                  </span>
+                  <span className="text-gray-600 text-sm">Posts</span>
+                </div>
+
                 <div className="flex flex-col items-center">
                   <span className="font-bold text-lg">{followerCount}</span>
                   <span className="text-gray-600 text-sm">Followers</span>
                 </div>
+
                 <div className="flex flex-col items-center">
                   <span className="font-bold text-lg">{followingCount}</span>
                   <span className="text-gray-600 text-sm">Following</span>
@@ -222,35 +281,6 @@ export default function PublicUserProfilePage() {
                 <div className="flex space-x-2 mt-4">
                   <MessageButton recipientId={profile.id} variant="secondary" />
                   <FollowButton targetUserId={profile.id} />
-                </div>
-              )}
-
-              {isCurrentUser && (
-                <div className="mt-4">
-                  <button
-                    onClick={() => {
-                      // Directly navigate to the profile page and set editing mode immediately
-                      router.push("/profile");
-                      localStorage.setItem("startInEditMode", "true");
-                    }}
-                    className="text-blue-600 hover:text-blue-800 flex items-center"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 mr-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                      />
-                    </svg>
-                    Edit Profile
-                  </button>
                 </div>
               )}
             </div>
