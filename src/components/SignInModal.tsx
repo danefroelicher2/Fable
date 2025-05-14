@@ -4,7 +4,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { storeAccount } from "@/lib/accountManager"; // Import the storeAccount function
+import { storeAccount, storeSessionForAccount } from "@/lib/accountManager"; // Import the functions
 
 interface SignInModalProps {
   isOpen: boolean;
@@ -17,6 +17,18 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Check for pre-filled email from account switching
+  useEffect(() => {
+    if (isOpen && typeof window !== "undefined") {
+      const switchToAccount = localStorage.getItem("switch_to_account");
+      if (switchToAccount) {
+        setEmail(switchToAccount);
+        // Clear it after using it
+        localStorage.removeItem("switch_to_account");
+      }
+    }
+  }, [isOpen]);
 
   // Handle clicks outside the modal to close it
   useEffect(() => {
@@ -94,6 +106,11 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
           full_name: profileData?.full_name || null,
           avatar_url: profileData?.avatar_url || null,
         });
+
+        // Store the session data for future use
+        if (data.session) {
+          storeSessionForAccount(data.user.id, data.session);
+        }
       }
 
       // Close modal on successful sign in
@@ -118,12 +135,12 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
       {/* Modal content */}
       <div
         ref={modalRef}
-        className="bg-black border border-gray-800 rounded-xl w-full max-w-md p-6 relative z-[10000]"
+        className="bg-white border border-gray-200 rounded-xl w-full max-w-md p-6 relative z-[10000]"
       >
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 left-4 text-gray-400 hover:text-white"
+          className="absolute top-4 left-4 text-gray-400 hover:text-gray-600"
         >
           <svg
             width="20"
@@ -142,7 +159,7 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
           </svg>
         </button>
 
-        {/* X logo */}
+        {/* Logo */}
         <div className="flex justify-center mb-8 mt-2">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -159,33 +176,39 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
           </svg>
         </div>
 
-        {/* Title */}
-        <h1 className="text-2xl font-bold text-white text-center mb-8">
-          Sign in to LOSTLIBRARY
+        {/* Title - Changed the color to match labels */}
+        <h1 className="text-2xl font-bold text-gray-800 text-center mb-8">
+          Account Access
         </h1>
 
         {/* Form */}
         <form onSubmit={handleSignIn} className="space-y-6">
           {/* Email/Username input */}
           <div>
+            <label className="block text-gray-700 font-medium mb-2">
+              Email
+            </label>
             <input
               type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email or username"
-              className="w-full bg-black border border-gray-600 rounded-md py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-white border border-gray-300 rounded-md py-3 px-4 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
           </div>
 
           {/* Password input */}
           <div>
+            <label className="block text-gray-700 font-medium mb-2">
+              Password
+            </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
-              className="w-full bg-black border border-gray-600 rounded-md py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-white border border-gray-300 rounded-md py-3 px-4 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
           </div>
@@ -197,22 +220,22 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
           <button
             type="submit"
             disabled={loading || !email || !password}
-            className="w-full bg-white text-black font-bold py-3 px-4 rounded-full disabled:opacity-50"
+            className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-full disabled:opacity-50"
           >
-            {loading ? "Signing in..." : "Next"}
+            {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
 
         {/* Forgot password link */}
         <div className="mt-4 text-center">
           <button
-            className="text-blue-400 hover:text-blue-300 text-sm"
+            className="text-blue-600 hover:text-blue-500 text-sm"
             onClick={() => {
               // Handle forgot password
               console.log("Forgot password clicked");
             }}
           >
-            Forgot password?
+            Forgot Password?
           </button>
         </div>
       </div>
