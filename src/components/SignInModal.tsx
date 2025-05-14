@@ -5,6 +5,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { storeAccount } from "@/lib/accountManager";
 
 interface SignInModalProps {
   isOpen: boolean;
@@ -59,7 +60,6 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
     };
   }, [isOpen, onClose]);
 
-  // Handle sign in
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -70,12 +70,31 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
       const isEmail = email.includes("@");
 
       // Sign in with Supabase
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: isEmail ? email : `${email}@example.com`, // If username, convert to email format
         password,
       });
 
       if (error) throw error;
+
+      // If sign-in successful, store the account info
+      if (data.user) {
+        // Fetch the user's profile data
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("username, full_name, avatar_url")
+          .eq("id", data.user.id)
+          .single();
+
+        // Store the account
+        storeAccount({
+          id: data.user.id,
+          email: data.user.email!,
+          username: profileData?.username || null,
+          full_name: profileData?.full_name || null,
+          avatar_url: profileData?.avatar_url || null,
+        });
+      }
 
       // Close modal on successful sign in
       onClose();
