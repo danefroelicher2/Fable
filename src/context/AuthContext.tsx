@@ -11,6 +11,10 @@ import {
 import { supabase } from "@/lib/supabase";
 import { User, Session } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
+import {
+  initializeAccountSwitching,
+  captureAuthSession,
+} from "@/lib/accountSwitcher";
 
 type AuthContextType = {
   user: User | null;
@@ -44,6 +48,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Get initial session
     const initializeAuth = async () => {
       try {
+        setIsLoading(true);
+
+        // First check if we need to switch accounts
+        const switched = await initializeAccountSwitching();
+
+        // Then get the current session
         const { data, error } = await supabase.auth.getSession();
 
         if (error) {
@@ -54,6 +64,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (data?.session) {
           setSession(data.session);
           setUser(data.session.user);
+
+          // Capture the refresh token for future account switching
+          if (data.session.user) {
+            await captureAuthSession(data.session.user.id);
+          }
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
@@ -67,10 +82,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Subscribe to auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, currentSession) => {
+    } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       if (currentSession) {
         setSession(currentSession);
         setUser(currentSession.user);
+
+        // Capture refresh token on auth changes too
+        if (currentSession.user) {
+          await captureAuthSession(currentSession.user.id);
+        }
       } else {
         setSession(null);
         setUser(null);
