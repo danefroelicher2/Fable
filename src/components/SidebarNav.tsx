@@ -4,14 +4,17 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useState, useEffect } from "react";
 import ProfileDropdown from "./ProfileDropdown";
 import NotificationBadge from "./NotificationBadge";
 import MessageBadge from "./MessageBadge";
+import { supabase } from "@/lib/supabase";
 
 export default function SidebarNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
+  const [profileData, setProfileData] = useState<any>(null);
 
   // Get the URL for the user's public profile
   const publicProfileUrl = user ? `/user/${user.id}` : "/signin";
@@ -20,6 +23,37 @@ export default function SidebarNav() {
   const handlePostClick = () => {
     router.push("/write");
   };
+
+  // Fetch profile data to get username
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchProfileData = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("username, avatar_url")
+          .eq("id", user.id)
+          .single();
+
+        if (!error && data) {
+          setProfileData(data);
+        }
+      } catch (error) {
+        console.error("Error fetching profile data:", error);
+      }
+    };
+
+    fetchProfileData();
+  }, [user]);
+
+  // Get the display username
+  const displayUsername =
+    user && profileData?.username
+      ? `@${profileData.username}`
+      : user?.email
+      ? `@${user.email.split("@")[0]}`
+      : "@user";
 
   return (
     <nav className="bg-gray-900 text-white h-screen w-64 fixed flex flex-col">
@@ -104,7 +138,8 @@ export default function SidebarNav() {
                 strokeLinejoin="round"
               />
             </svg>
-            <span>My Profile</span>
+            {/* Show username with @ here */}
+            <span>{displayUsername}</span>
           </Link>
 
           {/* Conditional notifications link - preserved functionality */}
