@@ -1,3 +1,6 @@
+// Modified src/components/UserPublishedArticles.tsx
+// Removing the category label bubble from article displays
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -49,21 +52,6 @@ export default function UserPublishedArticles({
     }
   }, [userId, limit]);
 
-  // src/components/UserPublishedArticles.tsx
-  // Find and replace the problematic query in the fetchUserArticles function
-
-  // Current problematic code (around line 91-105):
-  // If pinnedPostIds and pinnedPostIds.length > 0) {
-  //   try {
-  //     // Use direct array syntax instead of string interpolation
-  //     query = query.not("id", "in", pinnedPostIds);
-  //   } catch (filterErr) {
-  //     console.warn("Error applying pinned post filter:", filterErr);
-  //     // Continue without filtering if this fails
-  //   }
-  // }
-
-  // Replace with this corrected version:
   async function fetchUserArticles() {
     try {
       setLoading(true);
@@ -274,7 +262,7 @@ export default function UserPublishedArticles({
   return (
     <div>
       {displayType === "grid" ? (
-        // Updated grid display with 4 columns
+        // Updated grid display with 4 columns - REMOVED CATEGORY LABEL BUBBLE
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {articles.map((article) => (
             <div key={article.id} className="relative group">
@@ -297,12 +285,7 @@ export default function UserPublishedArticles({
                       </span>
                     </div>
                   )}
-                  {/* Category tag */}
-                  {article.category && (
-                    <span className="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                      {article.category}
-                    </span>
-                  )}
+                  {/* Category tag bubble removed from here */}
                 </div>
 
                 {/* Title and date below image */}
@@ -329,7 +312,7 @@ export default function UserPublishedArticles({
           ))}
         </div>
       ) : (
-        // List display
+        // List display - MODIFIED TO REMOVE CATEGORY BUBBLE
         <div className="space-y-6">
           {articles.map((article) => (
             <div
@@ -406,13 +389,8 @@ export default function UserPublishedArticles({
                   {article.excerpt && (
                     <p className="text-gray-700">{article.excerpt}</p>
                   )}
-                  <div className="mt-4">
-                    {article.category && (
-                      <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                        {article.category}
-                      </span>
-                    )}
-                  </div>
+
+                  {/* Category tag removed from bottom of card */}
                 </div>
               </div>
             </div>
