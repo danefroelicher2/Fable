@@ -2,130 +2,150 @@
 import { supabase } from "./supabase";
 import { getStoredAccounts } from "./accountManager";
 
-// Type for stored refresh tokens
-interface StoredToken {
-  accountId: string;
-  refreshToken: string;
-  lastUpdated: number;
-}
-
 /**
- * Store a refresh token for an account
+ * Store a user's session data for account switching
  */
-export function storeRefreshToken(
-  accountId: string,
-  refreshToken: string
-): void {
+export function storeUserSession(userId: string, session: any): void {
   if (typeof window === "undefined") return;
 
   try {
-    // Get existing tokens
-    const tokensJson = localStorage.getItem("account_refresh_tokens");
-    const tokens: StoredToken[] = tokensJson ? JSON.parse(tokensJson) : [];
+    // Get existing sessions
+    const sessionsJson = localStorage.getItem("user_sessions");
+    const sessions = sessionsJson ? JSON.parse(sessionsJson) : {};
 
-    // Find if this account already has a token
-    const existingIndex = tokens.findIndex((t) => t.accountId === accountId);
-
-    if (existingIndex >= 0) {
-      // Update existing token
-      tokens[existingIndex] = {
-        accountId,
-        refreshToken,
-        lastUpdated: Date.now(),
-      };
-    } else {
-      // Add new token
-      tokens.push({
-        accountId,
-        refreshToken,
-        lastUpdated: Date.now(),
-      });
-    }
+    // Store this user's session
+    sessions[userId] = {
+      session: session,
+      timestamp: Date.now(),
+    };
 
     // Save back to localStorage
-    localStorage.setItem("account_refresh_tokens", JSON.stringify(tokens));
+    localStorage.setItem("user_sessions", JSON.stringify(sessions));
+    console.log(`Stored session for user ${userId}`);
   } catch (error) {
-    console.error("Error storing refresh token:", error);
+    console.error("Error storing user session:", error);
   }
 }
 
 /**
- * Get the refresh token for an account
+ * Get a user's stored session data
  */
-export function getRefreshToken(accountId: string): string | null {
+export function getUserSession(userId: string): any {
   if (typeof window === "undefined") return null;
 
   try {
-    const tokensJson = localStorage.getItem("account_refresh_tokens");
-    if (!tokensJson) return null;
+    const sessionsJson = localStorage.getItem("user_sessions");
+    if (!sessionsJson) return null;
 
-    const tokens: StoredToken[] = JSON.parse(tokensJson);
-    const token = tokens.find((t) => t.accountId === accountId);
-
-    return token?.refreshToken || null;
+    const sessions = JSON.parse(sessionsJson);
+    return sessions[userId]?.session || null;
   } catch (error) {
-    console.error("Error retrieving refresh token:", error);
+    console.error("Error retrieving user session:", error);
     return null;
   }
 }
 
 /**
- * Initialize account switching by checking localStorage
- * This should be called on app initialization
+ * Switch to another account using stored credentials
  */
-export async function initializeAccountSwitching(): Promise<boolean> {
+export async function switchToAccount(targetUserId: string): Promise<boolean> {
   if (typeof window === "undefined") return false;
 
   try {
-    // Check if we have a pending account switch
-    const targetAccountId = localStorage.getItem("switchToAccountId");
-    if (!targetAccountId) return false;
+    // Get the stored accounts to find the account email
+    const accounts = getStoredAccounts();
+    const accountToSwitch = accounts.find((acc) => acc.id === targetUserId);
 
-    // Clear the flag immediately to prevent loops
-    localStorage.removeItem("switchToAccountId");
-
-    // Get the refresh token
-    const refreshToken = getRefreshToken(targetAccountId);
-    if (!refreshToken) {
-      console.warn("No refresh token found for account switch");
+    if (!accountToSwitch) {
+      console.error("Account not found in stored accounts");
       return false;
     }
 
-    // Try to sign in with the refresh token
-    const { data, error } = await supabase.auth.refreshSession({
-      refresh_token: refreshToken,
-    });
+    // Store the target account ID in localStorage
+    localStorage.setItem("switchToAccountId", targetUserId);
 
-    if (error) {
-      console.error("Error switching account with refresh token:", error);
-      return false;
-    }
+    // Also store which page we're on so we can return to it
+    localStorage.setItem("switchAccountReturnPath", window.location.pathname);
 
-    // Store the new refresh token
-    if (data?.session?.refresh_token) {
-      storeRefreshToken(targetAccountId, data.session.refresh_token);
-    }
+    // Instead of refreshing the whole page, redirect to a special switch page
+    window.location.href = "/auth/switch-account";
 
-    console.log("Successfully switched to account:", targetAccountId);
     return true;
   } catch (error) {
-    console.error("Error in account switching initialization:", error);
+    console.error("Error initiating account switch:", error);
     return false;
   }
 }
 
 /**
- * Capture the refresh token when a user signs in
- * This should be called after successful authentication
+ * Capture the current session
  */
-export async function captureAuthSession(userId: string): Promise<void> {
+export async function captureCurrentSession(): Promise<void> {
   try {
     const { data } = await supabase.auth.getSession();
 
-    if (data?.session?.refresh_token) {
-      storeRefreshToken(userId, data.session.refresh_token);
+    if (data?.session && data.session.user) {
+      // Store the entire session for the user
+      storeUserSession(data.session.user.id, data.session);
     }
   } catch (error) {
-    console.error("Error capturing auth session:", error);
+    console.error("Error capturing current session:", error);
+  }
+}
+
+/**
+ * Complete the account switch by using stored credentials
+ */
+export async function completeAccountSwitch(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+
+  try {
+    // Check if we have a pending account switch
+    const targetAccountId = localStorage.getItem("switchToAccountId");
+    if (!targetAccountId) {
+      console.log("No account switch pending");
+      return false;
+    }
+
+    console.log(`Completing account switch to: ${targetAccountId}`);
+
+    // Get the stored accounts to find the account credentials
+    const accounts = getStoredAccounts();
+    const accountToSwitch = accounts.find((acc) => acc.id === targetAccountId);
+
+    if (!accountToSwitch) {
+      console.error("Account not found in stored accounts");
+      localStorage.removeItem("switchToAccountId");
+      return false;
+    }
+
+    // Get the return path
+    const returnPath = localStorage.getItem("switchAccountReturnPath") || "/";
+
+    // Clear the flags immediately to prevent loops
+    localStorage.removeItem("switchToAccountId");
+    localStorage.removeItem("switchAccountReturnPath");
+
+    // First sign out the current user
+    await supabase.auth.signOut();
+
+    // Then sign in as the new user using stored email
+    if (!accountToSwitch.email) {
+      console.error("Missing email for account switching");
+      return false;
+    }
+
+    // Redirect to sign-in page with special parameters
+    window.location.href = `/auth/signin?redirect=${encodeURIComponent(
+      returnPath
+    )}&switchEmail=${encodeURIComponent(accountToSwitch.email)}`;
+
+    return true;
+  } catch (error) {
+    console.error("Error completing account switch:", error);
+    // Clear any pending switches
+    localStorage.removeItem("switchToAccountId");
+    localStorage.removeItem("switchAccountReturnPath");
+    return false;
   }
 }
