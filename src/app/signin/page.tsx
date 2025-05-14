@@ -5,50 +5,69 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/context/AuthContext";
+import { getStoredAccounts } from "@/lib/accountManager";
 
-export default function SignIn() {
+export default function SignInPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [redirectPath, setRedirectPath] = useState("/");
 
-  // Get redirect path from URL if available
-  const redirect = searchParams?.get("redirect") || "/profile";
-
-  // Redirect if already logged in
   useEffect(() => {
-    if (user) {
-      router.push(redirect);
+    // Check for redirect parameter
+    const redirect = searchParams?.get("redirect");
+    if (redirect) {
+      setRedirectPath(redirect);
     }
-  }, [user, router, redirect]);
+
+    // Check if there's an accountSwitch parameter
+    const accountId = searchParams?.get("accountSwitch");
+    if (accountId) {
+      handleAccountSwitch(accountId);
+    }
+  }, [searchParams]);
+
+  const handleAccountSwitch = async (accountId: string) => {
+    setLoading(true);
+    setMessage("Switching accounts... Please sign in again to continue.");
+
+    try {
+      // Find the account in stored accounts
+      const accounts = getStoredAccounts();
+      const accountToSwitch = accounts.find((a) => a.id === accountId);
+
+      if (accountToSwitch && accountToSwitch.email) {
+        // Pre-fill the email field if we have the account info
+        setEmail(accountToSwitch.email);
+      }
+    } catch (error) {
+      console.error("Error switching accounts:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setMessage("");
+    setError(null);
 
     try {
-      const { data, error: signInError } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-      if (signInError) throw signInError;
+      if (error) throw error;
 
-      // Session is automatically handled by Supabase
-      router.push(redirect);
-    } catch (error: any) {
-      console.error("Sign in error:", error);
-      setError(error.message || "An error occurred during sign in");
+      // Successful sign-in, redirect to the specified path or home
+      router.push(redirectPath || "/");
+    } catch (err: any) {
+      setError(err.message || "An error occurred during sign in");
     } finally {
       setLoading(false);
     }
@@ -57,141 +76,119 @@ export default function SignIn() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setMessage("");
+    setError(null);
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      // Get the full origin for the redirect URL
+      const origin = window.location.origin;
+
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${origin}/auth/callback`,
         },
       });
 
-      if (signUpError) throw signUpError;
+      if (error) throw error;
 
-      setMessage("Check your email for the confirmation link");
-    } catch (error: any) {
-      console.error("Sign up error:", error);
-      setError(error.message || "An error occurred during sign up");
+      setMessage(
+        "Please check your email for the confirmation link. " +
+          "Click the link in the email to complete your registration. " +
+          "If you don't see it, check your spam folder."
+      );
+    } catch (err: any) {
+      setError(err.message || "An error occurred during sign up");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold text-center mb-6 dark:text-white">
-        {isSignUp ? "Create an Account" : "Sign In"}
-      </h1>
+    <div className="container mx-auto py-10">
+      <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
+        <h1 className="text-3xl font-bold text-center mb-6">Account Access</h1>
 
-      {message && (
-        <div className="bg-green-100 border border-green-400 text-green-700 dark:bg-green-900 dark:border-green-700 dark:text-green-300 px-4 py-3 rounded mb-4">
-          {message}
-        </div>
-      )}
-
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 dark:bg-red-900 dark:border-red-700 dark:text-red-300 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      <form
-        onSubmit={isSignUp ? handleSignUp : handleSignIn}
-        className="space-y-4"
-      >
-        <div>
-          <label
-            className="block text-gray-700 dark:text-gray-300 mb-2"
-            htmlFor="email"
-          >
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-gray-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            required
-          />
-        </div>
-
-        <div>
-          <label
-            className="block text-gray-700 dark:text-gray-300 mb-2"
-            htmlFor="password"
-          >
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-gray-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            required
-          />
-        </div>
-
-        {!isSignUp && (
-          <div className="flex items-center">
-            <input
-              id="rememberMe"
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 text-gray-800 focus:ring-gray-500 border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700"
-            />
-            <label
-              htmlFor="rememberMe"
-              className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
-            >
-              Remember me
-            </label>
+        {message && (
+          <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+            <p dangerouslySetInnerHTML={{ __html: message }} />
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition disabled:bg-red-400 disabled:cursor-not-allowed"
-        >
-          {loading ? "Loading..." : isSignUp ? "Create Account" : "Sign In"}
-        </button>
-      </form>
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
 
-      <div className="mt-6 text-center">
-        <button
-          onClick={() => setIsSignUp(!isSignUp)}
-          className="text-gray-800 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400"
-        >
-          {isSignUp
-            ? "Already have an account? Sign In"
-            : "Don't have an account? Sign Up"}
-        </button>
-      </div>
+        <form className="space-y-4" onSubmit={handleSignIn}>
+          <div>
+            <label className="block text-gray-700 mb-2">Email</label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-2 border rounded"
+              placeholder="Enter your email"
+              required
+            />
+          </div>
 
-      {!isSignUp && (
-        <div className="mt-4 text-center">
-          <Link
-            href="/password-reset"
-            className="text-gray-800 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400"
-          >
-            Forgot your password?
-          </Link>
+          <div>
+            <label className="block text-gray-700 mb-2">Password</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-2 border rounded"
+              placeholder="Enter your password"
+              required
+            />
+            <div className="text-right mt-1">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Forgot Password?
+              </Link>
+            </div>
+          </div>
+
+          <div className="flex space-x-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-1/2 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSignUp}
+              disabled={loading}
+              className="w-1/2 bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:opacity-50"
+            >
+              {loading ? "Processing..." : "Sign Up"}
+            </button>
+          </div>
+        </form>
+
+        <div className="mt-6 pt-4 border-t border-gray-200 text-center">
+          <p className="text-sm text-gray-600">
+            By continuing, you agree to our{" "}
+            <Link href="/terms" className="text-blue-600 hover:text-blue-800">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-blue-600 hover:text-blue-800">
+              Privacy Policy
+            </Link>
+            .
+          </p>
         </div>
-      )}
-
-      <div className="mt-8 text-center">
-        <Link
-          href="/"
-          className="text-gray-800 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400"
-        >
-          Back to Home
-        </Link>
       </div>
     </div>
   );
