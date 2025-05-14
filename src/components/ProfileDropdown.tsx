@@ -1,5 +1,4 @@
 // src/components/ProfileDropdown.tsx
-
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -10,6 +9,7 @@ import {
   storeAccount,
   updateLastUsed,
 } from "@/lib/accountManager";
+import { switchToAccount } from "@/lib/accountSwitcher";
 
 export default function ProfileDropdown() {
   const { user } = useAuth();
@@ -18,6 +18,7 @@ export default function ProfileDropdown() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
   const [storedAccounts, setStoredAccounts] = useState<any[]>([]);
+  const [switchingAccount, setSwitchingAccount] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch user profile data and stored accounts
@@ -46,8 +47,7 @@ export default function ProfileDropdown() {
         }
 
         // Load stored accounts
-        const accounts = getStoredAccounts();
-        setStoredAccounts(accounts);
+        loadStoredAccounts();
       } catch (error) {
         console.error("Error fetching profile data:", error);
       }
@@ -55,6 +55,18 @@ export default function ProfileDropdown() {
 
     fetchProfileData();
   }, [user]);
+
+  // Load stored accounts
+  const loadStoredAccounts = () => {
+    try {
+      const accounts = getStoredAccounts();
+      // Sort accounts by last used (most recent first)
+      accounts.sort((a, b) => b.last_used - a.last_used);
+      setStoredAccounts(accounts);
+    } catch (error) {
+      console.error("Error loading stored accounts:", error);
+    }
+  };
 
   // Handle clicks outside of dropdown to close it
   useEffect(() => {
@@ -73,6 +85,32 @@ export default function ProfileDropdown() {
     };
   }, []);
 
+  // Check for pending account switches that need sign-in
+  useEffect(() => {
+    const pendingAccountId = localStorage.getItem("pendingAccountSwitch");
+    if (pendingAccountId) {
+      // Clear the flag to prevent repeated prompts
+      localStorage.removeItem("pendingAccountSwitch");
+
+      // Find the account in stored accounts
+      const accounts = getStoredAccounts();
+      const account = accounts.find((a) => a.id === pendingAccountId);
+
+      if (account) {
+        // Show a confirmation dialog
+        const shouldSwitch = window.confirm(
+          `Would you like to sign in as ${account.username || account.email}?`
+        );
+        if (shouldSwitch) {
+          // Open sign-in modal with pre-filled email
+          setIsSignInModalOpen(true);
+          // Pass the account email to the modal (we'll update SignInModal later)
+          localStorage.setItem("prefillEmail", account.email);
+        }
+      }
+    }
+  }, []);
+
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -85,6 +123,10 @@ export default function ProfileDropdown() {
   };
 
   const toggleDropdown = () => {
+    if (!isDropdownOpen) {
+      // Refresh the stored accounts list when opening the dropdown
+      loadStoredAccounts();
+    }
     setIsDropdownOpen(!isDropdownOpen);
   };
 
@@ -93,40 +135,33 @@ export default function ProfileDropdown() {
     setIsDropdownOpen(false); // Close dropdown when opening modal
   };
 
-  const switchToAccount = async (accountId: string) => {
+  const handleSwitchToAccount = async (accountId: string) => {
     if (accountId === user?.id) return; // Already using this account
 
     try {
-      // Get the stored accounts to find the account details
-      const accounts = getStoredAccounts();
-      const accountToSwitch = accounts.find((acc) => acc.id === accountId);
-
-      if (!accountToSwitch) {
-        console.error("Account not found in stored accounts");
-        return;
-      }
-
-      // Update loading state to give feedback
+      // Update UI state
+      setSwitchingAccount(true);
       setIsDropdownOpen(false);
 
       // Update last used time for the account we're switching to
       updateLastUsed(accountId);
 
-      // Instead of signing out and redirecting, try to directly sign in
-      // using the stored credentials from another method
+      // Use our new switchToAccount function
+      const success = await switchToAccount(accountId);
 
-      // For now, close the dropdown and refresh the page
-      // This will trigger a re-render of the ProfileDropdown
-      // and you can implement automatic login in a separate system
-
-      // Store the target account ID in localStorage
-      localStorage.setItem("switchToAccountId", accountId);
-
-      // Refresh the page to apply the changes
-      // This is a temporary solution until we implement direct account switching
-      window.location.href = "/";
+      if (success) {
+        // Successful switch - page will refresh from the auth context
+        console.log("Account switch successful");
+      } else {
+        // Failed to switch directly - redirect to sign in
+        console.log("Redirecting to sign in for account switch");
+        router.push(`/signin?accountSwitch=${accountId}`);
+      }
     } catch (error) {
-      console.error("Error switching accounts:", error);
+      console.error("Error initiating account switch:", error);
+      alert("Failed to switch accounts. Please try signing in manually.");
+    } finally {
+      setSwitchingAccount(false);
     }
   };
 
@@ -158,12 +193,13 @@ export default function ProfileDropdown() {
               {storedAccounts.map((account) => (
                 <button
                   key={account.id}
-                  onClick={() => switchToAccount(account.id)}
+                  onClick={() => handleSwitchToAccount(account.id)}
+                  disabled={switchingAccount}
                   className={`flex items-center w-full text-left px-2 py-2 rounded-md text-sm ${
                     account.id === user.id
                       ? "bg-gray-800 text-white"
                       : "text-white hover:bg-gray-800"
-                  } mb-1`}
+                  } mb-1 ${switchingAccount ? "opacity-50 cursor-wait" : ""}`}
                 >
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center text-gray-300 font-medium mr-3">
                     {account.avatar_url ? (
@@ -201,7 +237,10 @@ export default function ProfileDropdown() {
             {/* Option to add an existing account */}
             <button
               onClick={handleAddAccount}
-              className="flex items-center w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-800"
+              disabled={switchingAccount}
+              className={`flex items-center w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-800 ${
+                switchingAccount ? "opacity-50 cursor-wait" : ""
+              }`}
             >
               <svg
                 className="w-5 h-5 mr-2"
@@ -223,7 +262,10 @@ export default function ProfileDropdown() {
             {/* Sign out option */}
             <button
               onClick={handleSignOut}
-              className="flex items-center w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-800"
+              disabled={switchingAccount}
+              className={`flex items-center w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-800 ${
+                switchingAccount ? "opacity-50 cursor-wait" : ""
+              }`}
             >
               <svg
                 className="w-5 h-5 mr-2"
@@ -247,7 +289,10 @@ export default function ProfileDropdown() {
         {/* Profile button */}
         <button
           onClick={toggleDropdown}
-          className="flex items-center w-full text-sm font-medium text-white hover:bg-gray-800 rounded-full transition-colors p-2"
+          disabled={switchingAccount}
+          className={`flex items-center w-full text-sm font-medium text-white hover:bg-gray-800 rounded-full transition-colors p-2 ${
+            switchingAccount ? "opacity-50 cursor-wait" : ""
+          }`}
           aria-expanded={isDropdownOpen}
           aria-haspopup="true"
         >
@@ -265,7 +310,9 @@ export default function ProfileDropdown() {
             </div>
             <div className="flex-1 text-left mr-2">
               {/* Show only the @username instead of name and email */}
-              <div className="font-medium text-white">{displayUsername}</div>
+              <div className="font-medium text-white">
+                {switchingAccount ? "Switching..." : displayUsername}
+              </div>
             </div>
             <svg
               className={`h-5 w-5 text-gray-400 transition-transform ${

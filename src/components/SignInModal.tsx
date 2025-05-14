@@ -1,5 +1,4 @@
 // src/components/SignInModal.tsx
-
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -17,7 +16,22 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAccountSwitch, setIsAccountSwitch] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Check for prefilled email from account switch
+  useEffect(() => {
+    if (isOpen) {
+      // Check if we have a prefilled email
+      const prefillEmail = localStorage.getItem("prefillEmail");
+      if (prefillEmail) {
+        setEmail(prefillEmail);
+        setIsAccountSwitch(true);
+        // Clear the stored email
+        localStorage.removeItem("prefillEmail");
+      }
+    }
+  }, [isOpen]);
 
   // Handle clicks outside the modal to close it
   useEffect(() => {
@@ -60,6 +74,16 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
     };
   }, [isOpen, onClose]);
 
+  // Reset form when modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setEmail("");
+      setPassword("");
+      setError(null);
+      setIsAccountSwitch(false);
+    }
+  }, [isOpen]);
+
   // Handle sign in
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,12 +91,9 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
     setError(null);
 
     try {
-      // Check if input is an email or username
-      const isEmail = email.includes("@");
-
       // Sign in with Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: isEmail ? email : `${email}@example.com`, // If username, convert to email format
+        email,
         password,
       });
 
@@ -98,11 +119,15 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
 
         // Capture auth session for account switching
         await captureAuthSession(data.user.id);
+
+        console.log("Successfully signed in and stored account data");
       }
 
       // Close modal on successful sign in
       onClose();
-      window.location.reload(); // Refresh to update auth state
+
+      // Refresh to update auth state
+      window.location.reload();
     } catch (err: any) {
       console.error("Sign in error:", err);
       setError(err.message || "Failed to sign in");
@@ -146,7 +171,7 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
           </svg>
         </button>
 
-        {/* X logo */}
+        {/* Logo */}
         <div className="flex justify-center mb-8 mt-2">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -163,9 +188,11 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
           </svg>
         </div>
 
-        {/* Title */}
+        {/* Title - Show appropriate message for account switching */}
         <h1 className="text-2xl font-bold text-white text-center mb-8">
-          Sign in to LOSTLIBRARY
+          {isAccountSwitch
+            ? `Sign in to switch to ${email}`
+            : "Sign in to LOSTLIBRARY"}
         </h1>
 
         {/* Form */}
@@ -179,6 +206,8 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
               placeholder="Email or username"
               className="w-full bg-black border border-gray-600 rounded-md py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
+              // If it's an account switch, disable editing the email
+              readOnly={isAccountSwitch}
             />
           </div>
 
@@ -191,19 +220,34 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
               placeholder="Password"
               className="w-full bg-black border border-gray-600 rounded-md py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
+              // Auto-focus the password field if email is prefilled
+              autoFocus={isAccountSwitch}
             />
           </div>
 
           {/* Error message */}
-          {error && <div className="text-red-500 text-sm">{error}</div>}
+          {error && (
+            <div className="text-red-500 text-sm">
+              {error}
+              {isAccountSwitch && (
+                <span className="block mt-1">
+                  Please enter the password for this account
+                </span>
+              )}
+            </div>
+          )}
 
-          {/* Next button */}
+          {/* Sign in button */}
           <button
             type="submit"
             disabled={loading || !email || !password}
             className="w-full bg-white text-black font-bold py-3 px-4 rounded-full disabled:opacity-50"
           >
-            {loading ? "Signing in..." : "Next"}
+            {loading
+              ? "Signing in..."
+              : isAccountSwitch
+              ? "Switch Account"
+              : "Sign In"}
           </button>
         </form>
 

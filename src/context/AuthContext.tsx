@@ -15,6 +15,7 @@ import {
   initializeAccountSwitching,
   captureAuthSession,
 } from "@/lib/accountSwitcher";
+import { storeAccount } from "@/lib/accountManager";
 
 type AuthContextType = {
   user: User | null;
@@ -22,6 +23,7 @@ type AuthContextType = {
   isLoading: boolean;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  switchAccount: (accountId: string) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -30,6 +32,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   signOut: async () => {},
   refreshSession: async () => {},
+  switchAccount: async () => false,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -53,6 +56,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         // First check if we need to switch accounts
         const switched = await initializeAccountSwitching();
 
+        if (switched) {
+          console.log("Successfully switched accounts during initialization");
+        }
+
         // Then get the current session
         const { data, error } = await supabase.auth.getSession();
 
@@ -68,6 +75,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           // Capture the refresh token for future account switching
           if (data.session.user) {
             await captureAuthSession(data.session.user.id);
+
+            // Get user profile to store account data
+            try {
+              const { data: profileData } = await supabase
+                .from("profiles")
+                .select("username, full_name, avatar_url")
+                .eq("id", data.session.user.id)
+                .single();
+
+              // Store account data
+              if (profileData) {
+                storeAccount({
+                  id: data.session.user.id,
+                  email: data.session.user.email!,
+                  username: profileData.username,
+                  full_name: profileData.full_name,
+                  avatar_url: profileData.avatar_url,
+                });
+              }
+            } catch (profileError) {
+              console.warn(
+                "Error fetching profile during auth init:",
+                profileError
+              );
+            }
           }
         }
       } catch (error) {
@@ -83,6 +115,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      console.log("Auth state changed:", event);
+
       if (currentSession) {
         setSession(currentSession);
         setUser(currentSession.user);
@@ -150,9 +184,41 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const switchAccount = async (accountId: string) => {
+    try {
+      // Check if we're already using this account
+      if (user?.id === accountId) {
+        console.log("Already signed in with this account");
+        return true;
+      }
+
+      // Store the target account ID in localStorage and redirect to sign-in page
+      localStorage.setItem("switchToAccountId", accountId);
+
+      // Sign out current user first
+      await supabase.auth.signOut();
+
+      // Redirect only needed if the automatic account switching fails
+      // The AuthContext will attempt to switch accounts on initialization
+
+      // Return true to indicate successful initiation of account switch
+      return true;
+    } catch (error) {
+      console.error("Error initiating account switch:", error);
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, session, isLoading, signOut, refreshSession }}
+      value={{
+        user,
+        session,
+        isLoading,
+        signOut,
+        refreshSession,
+        switchAccount,
+      }}
     >
       {children}
     </AuthContext.Provider>
