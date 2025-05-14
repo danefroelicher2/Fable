@@ -6,24 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getStoredAccounts } from "@/lib/accountManager";
-import { captureAuthSession } from "@/lib/accountSwitcher";
-
-// Define types for our stored account
-interface StoredAccount {
-  id: string;
-  email: string;
-  username?: string | null;
-  full_name?: string | null;
-  avatar_url?: string | null;
-  last_used: number;
-}
-
-// Define target account type
-interface TargetAccount {
-  id: string;
-  email: string;
-  username?: string;
-}
 
 export default function SignInPage() {
   const router = useRouter();
@@ -34,10 +16,6 @@ export default function SignInPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [redirectPath, setRedirectPath] = useState("/");
-  const [isAccountSwitch, setIsAccountSwitch] = useState(false);
-  const [targetAccount, setTargetAccount] = useState<TargetAccount | null>(
-    null
-  );
 
   useEffect(() => {
     // Check for redirect parameter
@@ -55,35 +33,19 @@ export default function SignInPage() {
 
   const handleAccountSwitch = async (accountId: string) => {
     setLoading(true);
-    setIsAccountSwitch(true);
+    setMessage("Switching accounts... Please sign in again to continue.");
 
     try {
       // Find the account in stored accounts
-      const accounts: StoredAccount[] = getStoredAccounts();
+      const accounts = getStoredAccounts();
       const accountToSwitch = accounts.find((a) => a.id === accountId);
 
       if (accountToSwitch && accountToSwitch.email) {
         // Pre-fill the email field if we have the account info
         setEmail(accountToSwitch.email);
-        setTargetAccount({
-          id: accountToSwitch.id,
-          email: accountToSwitch.email,
-          // Make sure username is either string or undefined (not null)
-          username: accountToSwitch.username || undefined,
-        });
-
-        // Use a non-null value for the message
-        const displayName = accountToSwitch.username || accountToSwitch.email;
-        setMessage(`Sign in to switch to account: ${displayName}`);
-      } else {
-        // Account not found in stored accounts
-        setError("Account information not found. Please sign in normally.");
-        setIsAccountSwitch(false);
       }
     } catch (error) {
-      console.error("Error processing account switch:", error);
-      setError("Failed to process account switch. Please sign in normally.");
-      setIsAccountSwitch(false);
+      console.error("Error switching accounts:", error);
     } finally {
       setLoading(false);
     }
@@ -102,19 +64,6 @@ export default function SignInPage() {
 
       if (error) throw error;
 
-      // If account switch, check if we got the right account
-      if (isAccountSwitch && targetAccount) {
-        if (data.user?.id !== targetAccount.id) {
-          console.warn("Signed in to a different account than requested");
-          // Still continue, as we successfully signed in
-        }
-      }
-
-      // For account switching, store refresh token
-      if (data.user) {
-        await captureAuthSession(data.user.id);
-      }
-
       // Successful sign-in, redirect to the specified path or home
       router.push(redirectPath || "/");
     } catch (err: any) {
@@ -126,13 +75,6 @@ export default function SignInPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Don't allow sign up during account switch
-    if (isAccountSwitch) {
-      setError("Please sign in with the account email shown above.");
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
@@ -165,9 +107,7 @@ export default function SignInPage() {
   return (
     <div className="container mx-auto py-10">
       <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-3xl font-bold text-center mb-6">
-          {isAccountSwitch ? "Switch Account" : "Account Access"}
-        </h1>
+        <h1 className="text-3xl font-bold text-center mb-6">Account Access</h1>
 
         {message && (
           <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
@@ -189,12 +129,9 @@ export default function SignInPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={`w-full p-2 border rounded ${
-                isAccountSwitch ? "bg-gray-100" : ""
-              }`}
+              className="w-full p-2 border rounded"
               placeholder="Enter your email"
               required
-              readOnly={isAccountSwitch} // Make email read-only during account switch
             />
           </div>
 
@@ -208,7 +145,6 @@ export default function SignInPage() {
               className="w-full p-2 border rounded"
               placeholder="Enter your password"
               required
-              autoFocus={isAccountSwitch} // Focus password field during account switch
             />
             <div className="text-right mt-1">
               <Link
@@ -224,39 +160,21 @@ export default function SignInPage() {
             <button
               type="submit"
               disabled={loading}
-              className={`${
-                isAccountSwitch ? "w-full" : "w-1/2"
-              } bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50`}
+              className="w-1/2 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
             >
-              {loading
-                ? "Signing in..."
-                : isAccountSwitch
-                ? "Switch Account"
-                : "Sign In"}
+              {loading ? "Signing in..." : "Sign In"}
             </button>
 
-            {/* Only show Sign Up during normal sign in */}
-            {!isAccountSwitch && (
-              <button
-                type="button"
-                onClick={handleSignUp}
-                disabled={loading}
-                className="w-1/2 bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:opacity-50"
-              >
-                {loading ? "Processing..." : "Sign Up"}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleSignUp}
+              disabled={loading}
+              className="w-1/2 bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:opacity-50"
+            >
+              {loading ? "Processing..." : "Sign Up"}
+            </button>
           </div>
         </form>
-
-        {/* Cancel account switch option */}
-        {isAccountSwitch && (
-          <div className="mt-4 text-center">
-            <Link href="/" className="text-blue-600 hover:text-blue-800">
-              Cancel and return to home
-            </Link>
-          </div>
-        )}
 
         <div className="mt-6 pt-4 border-t border-gray-200 text-center">
           <p className="text-sm text-gray-600">
