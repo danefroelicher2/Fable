@@ -30,7 +30,9 @@ export function debugAccountSwitching(): Record<string, any> {
       console.log("Account coverage analysis:");
 
       for (const account of storedAccounts) {
-        const hasToken = tokens.some((t) => t.accountId === account.id);
+        const hasToken = tokens.some(
+          (t: { accountId: string }) => t.accountId === account.id
+        );
         console.log(
           `- Account ${account.id} (${account.email}): ${
             hasToken ? "Has token" : "No token"

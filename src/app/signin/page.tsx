@@ -8,6 +8,23 @@ import { supabase } from "@/lib/supabase";
 import { getStoredAccounts } from "@/lib/accountManager";
 import { captureAuthSession } from "@/lib/accountSwitcher";
 
+// Define types for our stored account
+interface StoredAccount {
+  id: string;
+  email: string;
+  username?: string | null;
+  full_name?: string | null;
+  avatar_url?: string | null;
+  last_used: number;
+}
+
+// Define target account type
+interface TargetAccount {
+  id: string;
+  email: string;
+  username?: string;
+}
+
 export default function SignInPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -18,11 +35,9 @@ export default function SignInPage() {
   const [error, setError] = useState<string | null>(null);
   const [redirectPath, setRedirectPath] = useState("/");
   const [isAccountSwitch, setIsAccountSwitch] = useState(false);
-  const [targetAccount, setTargetAccount] = useState<{
-    id: string;
-    email: string;
-    username?: string;
-  } | null>(null);
+  const [targetAccount, setTargetAccount] = useState<TargetAccount | null>(
+    null
+  );
 
   useEffect(() => {
     // Check for redirect parameter
@@ -44,7 +59,7 @@ export default function SignInPage() {
 
     try {
       // Find the account in stored accounts
-      const accounts = getStoredAccounts();
+      const accounts: StoredAccount[] = getStoredAccounts();
       const accountToSwitch = accounts.find((a) => a.id === accountId);
 
       if (accountToSwitch && accountToSwitch.email) {
@@ -53,13 +68,13 @@ export default function SignInPage() {
         setTargetAccount({
           id: accountToSwitch.id,
           email: accountToSwitch.email,
-          username: accountToSwitch.username,
+          // Make sure username is either string or undefined (not null)
+          username: accountToSwitch.username || undefined,
         });
-        setMessage(
-          `Sign in to switch to account: ${
-            accountToSwitch.username || accountToSwitch.email
-          }`
-        );
+
+        // Use a non-null value for the message
+        const displayName = accountToSwitch.username || accountToSwitch.email;
+        setMessage(`Sign in to switch to account: ${displayName}`);
       } else {
         // Account not found in stored accounts
         setError("Account information not found. Please sign in normally.");
