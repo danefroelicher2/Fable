@@ -97,14 +97,34 @@ export default function ProfileDropdown() {
     if (accountId === user?.id) return; // Already using this account
 
     try {
-      // First sign out current user
-      await supabase.auth.signOut();
+      // Get the stored accounts to find the account details
+      const accounts = getStoredAccounts();
+      const accountToSwitch = accounts.find((acc) => acc.id === accountId);
+
+      if (!accountToSwitch) {
+        console.error("Account not found in stored accounts");
+        return;
+      }
+
+      // Update loading state to give feedback
+      setIsDropdownOpen(false);
 
       // Update last used time for the account we're switching to
       updateLastUsed(accountId);
 
-      // Redirect to sign-in page with a special parameter
-      router.push(`/signin?accountSwitch=${accountId}`);
+      // Instead of signing out and redirecting, try to directly sign in
+      // using the stored credentials from another method
+
+      // For now, close the dropdown and refresh the page
+      // This will trigger a re-render of the ProfileDropdown
+      // and you can implement automatic login in a separate system
+
+      // Store the target account ID in localStorage
+      localStorage.setItem("switchToAccountId", accountId);
+
+      // Refresh the page to apply the changes
+      // This is a temporary solution until we implement direct account switching
+      window.location.href = "/";
     } catch (error) {
       console.error("Error switching accounts:", error);
     }

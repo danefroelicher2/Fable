@@ -138,8 +138,8 @@ export default function SidebarNav() {
                 strokeLinejoin="round"
               />
             </svg>
-            {/* Show username with @ here */}
-            <span>{displayUsername}</span>
+            {/* Keep as "My Profile" as requested */}
+            <span>My Profile</span>
           </Link>
 
           {/* Conditional notifications link - preserved functionality */}
