@@ -1,11 +1,10 @@
 // src/components/SignInModal.tsx
-// We need to update the modal container to have a higher z-index and prevent interaction with elements below it
 
 "use client";
 
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { storeAccount } from "@/lib/accountManager";
+import { storeAccount } from "@/lib/accountManager"; // Import the storeAccount function
 
 interface SignInModalProps {
   isOpen: boolean;
@@ -60,6 +59,7 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
     };
   }, [isOpen, onClose]);
 
+  // Handle sign in
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -110,11 +110,12 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] backdrop-blur-sm">
-      <div
-        className="fixed inset-0 bg-black bg-opacity-50"
-        onClick={onClose}
-      ></div>
+    // Fixed overlay - higher z-index and full-screen backdrop
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[9999] backdrop-blur-sm">
+      {/* Backdrop overlay that handles clicks outside the modal */}
+      <div className="fixed inset-0" onClick={onClose}></div>
+
+      {/* Modal content */}
       <div
         ref={modalRef}
         className="bg-black border border-gray-800 rounded-xl w-full max-w-md p-6 relative z-[10000]"
