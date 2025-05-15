@@ -3,6 +3,23 @@
 @import url("https://fonts.googleapis.com/css2?family=Tangerine:wght@700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&display=swap");
 
+/* Set the landing section to a specific height rather than full screen */
+.landing-section {
+  height: 80vh; /* Reduced from 100vh to make room for the history section */
+  min-height: 500px; /* Ensure minimum height for smaller screens */
+  background-color: black;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Style for the history section */
+.history-section {
+  background-color: #492603; /* Darker brown to complement the theme */
+  padding: 20px 0;
+  position: relative;
+  z-index: 10;
+}
+
 .font-cursive {
   font-family: "Tangerine", cursive;
 }
@@ -224,8 +241,56 @@
   }
 }
 
+/* Style overrides for ThisDayInHistory component when inside our landing */
+.history-section .bg-amber-50 {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.history-section .text-slate-800 {
+  color: #f4ebd0 !important; /* Light parchment color */
+}
+
+.history-section .text-amber-100 {
+  color: #f4ebd0 !important; /* Light parchment color */
+}
+
+.history-section .dark\:text-slate-200,
+.history-section .text-gray-600,
+.history-section .dark\:text-gray-400 {
+  color: #d6c8a9 !important; /* Slightly darker parchment */
+}
+
+.history-section .bg-white,
+.history-section .dark\:bg-gray-800 {
+  background-color: rgba(
+    112,
+    63,
+    22,
+    0.5
+  ) !important; /* Semi-transparent brown */
+  border-color: #5a2e0d !important;
+}
+
+.history-section .border-blue-600,
+.history-section .dark\:border-blue-500 {
+  border-color: #b45309 !important; /* Amber-600 */
+}
+
+.history-section .text-blue-600,
+.history-section .dark\:text-blue-400,
+.history-section .text-blue-800,
+.history-section .dark\:text-blue-300 {
+  color: #fcd34d !important; /* Amber-300 */
+}
+
 /* Media queries for responsiveness */
 @media (max-width: 640px) {
+  .landing-section {
+    height: 70vh; /* Even smaller on mobile */
+    min-height: 400px;
+  }
+
   .scroll-handle {
     min-width: 30px;
     height: 120px;
@@ -242,6 +307,7 @@
     min-height: 200px;
   }
 }
+
 @keyframes glowPulse {
   0%,
   100% {
