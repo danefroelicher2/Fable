@@ -46,31 +46,20 @@ const ImprovedScrollLanding = () => {
 
   return (
     <div className="flex flex-col w-full">
-      {/* Top section with LostLibrary title */}
+      {/* Top section with LostLibrary title - now larger, with reduced height */}
       <div className="relative top-title-section w-full flex items-center justify-center">
         <h1
-          className={`text-white text-6xl md:text-8xl lg:text-9xl font-bold tracking-wide glow-effect-white ${
+          className={`text-white text-8xl md:text-9xl lg:text-11xl font-bold tracking-wide glow-effect-white mega-title ${
             loaded ? "opacity-100 scale-100" : "opacity-0 scale-90"
           } transition-all duration-1000`}
         >
           LOSTLIBRARY
         </h1>
-
-        {/* Journey button below title */}
-        <div
-          className={`absolute bottom-12 ${
-            loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          } transition-all duration-1000 delay-300`}
-        >
-          <button className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-black px-8 py-3 rounded-full text-lg font-medium transition-colors shadow-md">
-            Begin Your Journey
-          </button>
-        </div>
       </div>
 
       {/* Bottom section with scroll and fire */}
       <div className="relative scroll-history-section w-full flex items-end justify-center">
-        {/* Fire effect background */}
+        {/* Fire effect background behind the scroll */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <div className="absolute bottom-0 w-full h-full fire-background">
             <div className="fire-container">

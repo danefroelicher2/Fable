@@ -3,10 +3,10 @@
 @import url("https://fonts.googleapis.com/css2?family=Tangerine:wght@700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&display=swap");
 
-/* Set sections with specific heights */
+/* Set sections with specific heights - reduced black space by 1/4 */
 .top-title-section {
-  height: 60vh; /* Top section takes 60% of viewport height */
-  min-height: 400px; /* Ensure minimum height for smaller screens */
+  height: 45vh; /* Reduced from 60vh (by 1/4 of the original) */
+  min-height: 300px; /* Ensure minimum height for smaller screens */
   background-color: black;
   display: flex;
   flex-direction: column;
@@ -15,8 +15,21 @@
   position: relative;
 }
 
+/* Mega title styling to span 70% of the black space */
+.mega-title {
+  width: 70%;
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+/* Extra large text size for the largest screens */
+.text-11xl {
+  font-size: 9rem;
+  line-height: 1;
+}
+
 .scroll-history-section {
-  height: 40vh; /* Bottom section takes 40% of viewport height */
+  height: 40vh; /* Keep bottom section height */
   min-height: 300px; /* Ensure minimum height for smaller screens */
   background-color: black;
   position: relative;
@@ -50,7 +63,7 @@
   margin-bottom: 20px;
 }
 
-/* Fire background and effect adjustments */
+/* Fire background and effect adjustments - restored original fire animation */
 .fire-background {
   background: linear-gradient(
     to top,
@@ -69,8 +82,10 @@
   overflow: hidden;
 }
 
-/* Sharper, more vertical flames */
-.fire-particle.sharp-flame {
+/* Original fire particles styling - modified from original for sharper look */
+.fire-particle {
+  position: absolute;
+  bottom: -20px;
   background: radial-gradient(
     ellipse at center,
     rgba(255, 200, 0, 0.9) 0%,
@@ -81,6 +96,8 @@
   border-radius: 40% 40% 10% 10%; /* Sharper top corners */
   filter: blur(3px); /* Less blur for sharper appearance */
   transform-origin: bottom;
+  animation: flameRise linear infinite;
+  z-index: 1;
 }
 
 @keyframes flameRise {
@@ -309,19 +326,17 @@
 /* Media queries for responsiveness */
 @media (max-width: 768px) {
   .top-title-section {
-    height: 50vh; /* Smaller on mobile */
+    height: 40vh; /* Smaller on mobile */
   }
 
   .scroll-history-section {
-    height: 50vh; /* Larger on mobile */
+    height: 45vh; /* Larger on mobile */
   }
 
   /* Main title responsiveness */
-  .top-title-section h1 {
-    font-size: 3rem !important;
-    text-align: center;
-    width: 100%;
-    padding: 0 1rem;
+  .mega-title {
+    width: 90%;
+    font-size: 4rem !important;
   }
 
   .scroll-content {
@@ -335,7 +350,9 @@
   }
 }
 
-/* Animation for flames */
-.fire-particle {
-  animation: flameRise linear infinite;
+/* Extra small screens */
+@media (max-width: 480px) {
+  .mega-title {
+    font-size: 3rem !important;
+  }
 }
