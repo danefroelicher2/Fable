@@ -58,6 +58,7 @@ const ImprovedScrollLanding = () => {
                   style={{
                     left: `${particle.left}%`,
                     animationDuration: `${particle.duration}s`,
+
                     animationDelay: `${particle.delay}s`,
                     width: `${particle.width}px`,
                     height: `${particle.height}px`,
@@ -70,13 +71,11 @@ const ImprovedScrollLanding = () => {
 
       {/* Realistic scroll container based on provided images */}
       <div
-        className={`relative z-10 w-full max-w-2xl mx-auto transform transition-all duration-1000 px-4
-          ${
-            scrolled
-              ? "translate-y-[-50px] scale-90 opacity-80"
-              : "translate-y-0 scale-100 opacity-100"
-          }
-          ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"}`}
+        className={`relative z-10 w-full max-w-2xl mx-auto transform transition-all duration-1000 px-4 ${
+          scrolled
+            ? "translate-y-[-50px] scale-90 opacity-80"
+            : "translate-y-0 scale-100 opacity-100"
+        } ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"}`}
       >
         <div className="realistic-scroll-container">
           {/* Scroll with handles - using images more similar to the references */}
@@ -89,10 +88,7 @@ const ImprovedScrollLanding = () => {
               <h1 className="font-cursive text-5xl sm:text-6xl md:text-7xl text-center mb-6 text-amber-900 tracking-wide glow-effect">
                 LostLibrary
               </h1>
-              <p className="aged-text text-lg text-center mb-8 max-w-md px-4">
-                Discover the forgotten tales of history, preserved for
-                generations to come
-              </p>
+              <p className="aged-text text-lg text-center mb-8 max-w-md px-4"></p>
               <div className="text-center">
                 <button className="bg-amber-900 text-amber-50 px-8 py-3 rounded-full text-lg font-medium hover:bg-amber-800 transition-colors shadow-md">
                   Begin Your Journey
