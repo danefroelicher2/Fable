@@ -3,60 +3,97 @@
 @import url("https://fonts.googleapis.com/css2?family=Tangerine:wght@700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&display=swap");
 
-/* Set the landing section to a specific height rather than full screen */
-.landing-section {
-  height: 80vh; /* Reduced from 100vh to make room for the history section */
-  min-height: 500px; /* Ensure minimum height for smaller screens */
+/* Set sections with specific heights */
+.top-title-section {
+  height: 60vh; /* Top section takes 60% of viewport height */
+  min-height: 400px; /* Ensure minimum height for smaller screens */
   background-color: black;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.scroll-history-section {
+  height: 40vh; /* Bottom section takes 40% of viewport height */
+  min-height: 300px; /* Ensure minimum height for smaller screens */
+  background-color: black;
+  position: relative;
   overflow: hidden;
-  position: relative;
 }
 
-/* Style for the history section */
-.history-section {
-  background-color: #492603; /* Darker brown to complement the theme */
-  padding: 20px 0;
-  position: relative;
-  z-index: 10;
+/* White glow effect for main title */
+.glow-effect-white {
+  animation: glowWhite 3s ease-in-out infinite alternate;
 }
 
-.font-cursive {
-  font-family: "Tangerine", cursive;
+@keyframes glowWhite {
+  from {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.7),
+      0 0 20px rgba(255, 255, 255, 0.5), 0 0 30px rgba(255, 255, 255, 0.3),
+      0 0 40px rgba(255, 255, 255, 0.2);
+  }
+  to {
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.9),
+      0 0 30px rgba(255, 255, 255, 0.7), 0 0 40px rgba(255, 255, 255, 0.5),
+      0 0 50px rgba(255, 255, 255, 0.3);
+  }
 }
 
-/* Fire effects */
+/* Position the scroll at the bottom */
+.bottom-scroll {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin-bottom: 20px;
+}
+
+/* Fire background and effect adjustments */
+.fire-background {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(128, 51, 0, 0.3) 40%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
 .fire-container {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 300px;
+  height: 100%;
   overflow: hidden;
 }
 
-.fire-particle {
-  position: absolute;
-  bottom: -20px;
+/* Sharper, more vertical flames */
+.fire-particle.sharp-flame {
   background: radial-gradient(
     ellipse at center,
-    rgba(255, 174, 0, 0.8) 0%,
-    rgba(255, 103, 0, 0.4) 60%,
+    rgba(255, 200, 0, 0.9) 0%,
+    rgba(255, 120, 0, 0.8) 30%,
+    rgba(255, 50, 0, 0.4) 70%,
     rgba(255, 30, 0, 0) 100%
   );
-  border-radius: 50% 50% 20% 20%;
-  transform: translateY(0px);
-  filter: blur(5px);
-  animation: flameRise linear infinite;
-  z-index: 1;
+  border-radius: 40% 40% 10% 10%; /* Sharper top corners */
+  filter: blur(3px); /* Less blur for sharper appearance */
+  transform-origin: bottom;
 }
 
 @keyframes flameRise {
   0% {
-    transform: translateY(0) scale(1);
+    transform: translateY(0) scaleY(1) scaleX(1);
     opacity: 1;
   }
+  50% {
+    transform: translateY(-100px) scaleY(1.4) scaleX(0.8); /* More vertical scaling */
+    opacity: 0.7;
+  }
   100% {
-    transform: translateY(-100px) scale(0.5);
+    transform: translateY(-200px) scaleY(0.5) scaleX(0.4);
     opacity: 0;
   }
 }
@@ -67,6 +104,7 @@
   display: flex;
   justify-content: center;
   padding: 0 20px;
+  margin-bottom: 20px; /* Push up from the very bottom edge */
 }
 
 .realistic-scroll {
@@ -74,7 +112,7 @@
   display: flex;
   align-items: center;
   width: 100%;
-  max-width: 800px;
+  max-width: 1000px; /* Wider scroll */
 }
 
 /* Scroll handles (wooden rollers) */
@@ -124,15 +162,22 @@
   position: relative;
   flex-grow: 1;
   background-color: #f4ebd0;
-  padding: 40px 10px;
+  padding: 20px 15px;
   border-radius: 0;
   z-index: 1;
-  min-height: 240px;
+  min-height: 200px;
+  max-height: 250px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   justify-content: center;
   overflow: hidden;
+  overflow-y: auto; /* Allow scrolling if content is too large */
+}
+
+/* History component inside scroll styling */
+.history-in-scroll {
+  width: 100%;
 }
 
 /* Parchment texture and aging effects */
@@ -188,136 +233,109 @@
   pointer-events: none;
 }
 
-/* Create torn/ragged edges on the top and bottom of the parchment */
-.scroll-content::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 15px;
-  background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,12 Q10,7 20,12 T40,12 T60,12 T80,12 T100,12 T120,12 T140,12 T160,12 T180,12 T200,12' fill='none' stroke='%23f4ebd0' stroke-width='24' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-size: 200px 15px;
-  background-repeat: repeat-x;
-  z-index: 3;
-}
-
-.scroll-content::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 15px;
-  background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,3 Q10,8 20,3 T40,3 T60,3 T80,3 T100,3 T120,3 T140,3 T160,3 T180,3 T200,3' fill='none' stroke='%23f4ebd0' stroke-width='24' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-size: 200px 15px;
-  background-repeat: repeat-x;
-  z-index: 3;
-}
-
-/* Aged text styling */
-.aged-text {
-  position: relative;
-  color: #5c4030;
-  letter-spacing: 0.5px;
-  z-index: 2;
-}
-
-/* Subtle glow effect for the title */
-.glow-effect {
-  animation: glow 3s ease-in-out infinite alternate;
-}
-
-@keyframes glow {
-  from {
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5),
-      0 0 10px rgba(255, 255, 255, 0.3), 0 0 15px rgba(197, 139, 0, 0.3),
-      0 0 20px rgba(197, 139, 0, 0.2);
-  }
-  to {
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5),
-      0 0 20px rgba(255, 255, 255, 0.3), 0 0 30px rgba(197, 139, 0, 0.3),
-      0 0 40px rgba(197, 139, 0, 0.2);
-  }
-}
-
-/* Style overrides for ThisDayInHistory component when inside our landing */
-.history-section .bg-amber-50 {
+/* Style overrides for ThisDayInHistory component when inside our scroll */
+.history-in-scroll .bg-amber-50,
+.history-in-scroll .dark\:bg-amber-950 {
   background-color: transparent !important;
   box-shadow: none !important;
+  padding: 0 !important;
+  margin-bottom: 0 !important;
 }
 
-.history-section .text-slate-800 {
-  color: #f4ebd0 !important; /* Light parchment color */
+/* Text color adjustments for the history component */
+.history-in-scroll .text-slate-800,
+.history-in-scroll .dark\:text-amber-100,
+.history-in-scroll h2 {
+  color: #5c4030 !important; /* Dark brown text color */
+  font-family: "Cinzel Decorative", serif;
+  margin-bottom: 0.5rem !important;
 }
 
-.history-section .text-amber-100 {
-  color: #f4ebd0 !important; /* Light parchment color */
+.history-in-scroll .text-slate-700,
+.history-in-scroll .dark\:text-slate-200,
+.history-in-scroll p {
+  color: #5c4030 !important;
 }
 
-.history-section .dark\:text-slate-200,
-.history-section .text-gray-600,
-.history-section .dark\:text-gray-400 {
-  color: #d6c8a9 !important; /* Slightly darker parchment */
-}
-
-.history-section .bg-white,
-.history-section .dark\:bg-gray-800 {
+/* Event cards */
+.history-in-scroll .bg-white,
+.history-in-scroll .dark\:bg-gray-800 {
   background-color: rgba(
-    112,
-    63,
-    22,
-    0.5
-  ) !important; /* Semi-transparent brown */
-  border-color: #5a2e0d !important;
+    244,
+    235,
+    208,
+    0.3
+  ) !important; /* Very light parchment */
+  border-color: #b38962 !important; /* Lighter brown border */
+  border-left-width: 4px !important;
 }
 
-.history-section .border-blue-600,
-.history-section .dark\:border-blue-500 {
-  border-color: #b45309 !important; /* Amber-600 */
+.history-in-scroll .border-blue-600,
+.history-in-scroll .dark\:border-blue-500 {
+  border-color: #b38962 !important; /* Lighter brown border */
 }
 
-.history-section .text-blue-600,
-.history-section .dark\:text-blue-400,
-.history-section .text-blue-800,
-.history-section .dark\:text-blue-300 {
-  color: #fcd34d !important; /* Amber-300 */
+.history-in-scroll .text-blue-600,
+.history-in-scroll .dark\:text-blue-400,
+.history-in-scroll .text-blue-800,
+.history-in-scroll .dark\:text-blue-300 {
+  color: #8b4513 !important; /* Darker brown for accents */
+}
+
+/* Make the title smaller inside the scroll */
+.history-in-scroll h2.text-2xl {
+  font-size: 1.5rem !important;
+  text-align: center !important;
+  margin-top: 0 !important;
+}
+
+/* Adjust the grid layout to be more compact */
+.history-in-scroll .grid {
+  gap: 0.5rem !important;
+}
+
+/* Hide the "More historical events" link to save space */
+.history-in-scroll .mt-4.text-center {
+  display: none !important;
+}
+
+/* Blue text within historical events */
+.history-in-scroll .text-blue-800,
+.history-in-scroll .dark\:text-blue-400 {
+  color: #8b4513 !important; /* Saddle brown */
+  font-weight: bold;
 }
 
 /* Media queries for responsiveness */
-@media (max-width: 640px) {
-  .landing-section {
-    height: 70vh; /* Even smaller on mobile */
-    min-height: 400px;
+@media (max-width: 768px) {
+  .top-title-section {
+    height: 50vh; /* Smaller on mobile */
+  }
+
+  .scroll-history-section {
+    height: 50vh; /* Larger on mobile */
+  }
+
+  /* Main title responsiveness */
+  .top-title-section h1 {
+    font-size: 3rem !important;
+    text-align: center;
+    width: 100%;
+    padding: 0 1rem;
+  }
+
+  .scroll-content {
+    padding: 15px 10px;
+    min-height: 180px;
   }
 
   .scroll-handle {
     min-width: 30px;
     height: 120px;
   }
-
-  .scroll-handle::before,
-  .scroll-handle::after {
-    width: 34px;
-    height: 20px;
-  }
-
-  .scroll-content {
-    padding: 30px 10px;
-    min-height: 200px;
-  }
 }
 
-@keyframes glowPulse {
-  0%,
-  100% {
-    text-shadow: 0 0 8px #ffb347, 0 0 12px #ffcc70;
-  }
-  50% {
-    text-shadow: 0 0 16px #ff6600, 0 0 24px #ffcc70;
-  }
-}
-
-.glow-effect {
-  animation: glowPulse 3s ease-in-out infinite;
+/* Animation for flames */
+.fire-particle {
+  animation: flameRise linear infinite;
 }
