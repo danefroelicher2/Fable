@@ -1,15 +1,30 @@
 // src/components/ImprovedScrollLanding.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import "./ImprovedScrollLanding.css";
 
 const ImprovedScrollLanding = () => {
   const [scrolled, setScrolled] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  // Using useMemo to calculate fire particle props once
+  const fireParticles = useMemo(() => {
+    return Array.from({ length: 20 }).map(() => ({
+      left: Math.floor(Math.random() * 100),
+      duration: 2 + Math.floor(Math.random() * 3),
+      delay: Math.floor(Math.random() * 2),
+      width: 20 + Math.floor(Math.random() * 30),
+      height: 40 + Math.floor(Math.random() * 60),
+    }));
+  }, []);
 
   // Handle scroll events to add animation effects
   useEffect(() => {
+    // Mark component as client-side rendered
+    setIsClient(true);
+
     const handleScroll = () => {
       const scrollPosition = window.scrollY;
       if (scrollPosition > 100) {
@@ -34,19 +49,21 @@ const ImprovedScrollLanding = () => {
       <div className="absolute inset-0 z-0">
         <div className="absolute bottom-0 w-full h-2/3 bg-gradient-to-t from-orange-900 via-orange-800 to-transparent opacity-50">
           <div className="fire-container">
-            {[...Array(20)].map((_, i) => (
-              <div
-                key={i}
-                className="fire-particle"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  animationDuration: `${2 + Math.random() * 3}s`,
-                  animationDelay: `${Math.random() * 2}s`,
-                  width: `${20 + Math.random() * 30}px`,
-                  height: `${40 + Math.random() * 60}px`,
-                }}
-              />
-            ))}
+            {/* Only render particles on client-side to avoid hydration issues */}
+            {isClient &&
+              fireParticles.map((particle, i) => (
+                <div
+                  key={i}
+                  className="fire-particle"
+                  style={{
+                    left: `${particle.left}%`,
+                    animationDuration: `${particle.duration}s`,
+                    animationDelay: `${particle.delay}s`,
+                    width: `${particle.width}px`,
+                    height: `${particle.height}px`,
+                  }}
+                />
+              ))}
           </div>
         </div>
       </div>
