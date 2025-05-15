@@ -33,6 +33,16 @@ const ImprovedScrollLanding = () => {
     setLoaded(true);
   }, []);
 
+  // Generate particle positions for better distribution
+  const flamePositions = useMemo(() => {
+    return Array.from({ length: 12 }).map((_, i) => ({
+      left: i * 8.33, // Distribute across the screen (12 flames = ~8.33% spacing)
+      delay: Math.random() * 2,
+      scale: 0.8 + Math.random() * 0.8, // Random scale between 0.8 and 1.6
+      height: 130 + Math.random() * 80, // Random height between 130px and 210px
+    }));
+  }, []);
+
   return (
     <div className="flex flex-col w-full">
       {/* Top section with LostLibrary title */}
@@ -50,112 +60,44 @@ const ImprovedScrollLanding = () => {
       <div className="relative scroll-history-section w-full flex items-end justify-center">
         {/* Realistic fire effect */}
         <div className="absolute inset-x-0 bottom-0 z-0 fire-container">
-          {/* Base layer with the realistic fire effect */}
+          {/* Fire with jagged flames */}
           <div className="fire-base">
-            <div className="flame-wrapper">
-              <div className="flame red"></div>
-              <div className="flame orange"></div>
-              <div className="flame gold"></div>
-              <div className="flame white"></div>
-            </div>
-            <div
-              className="flame-wrapper"
-              style={{ left: "10%", animationDelay: "-0.5s" }}
-            >
-              <div className="flame red"></div>
-              <div className="flame orange"></div>
-              <div className="flame gold"></div>
-              <div className="flame white"></div>
-            </div>
-            <div
-              className="flame-wrapper"
-              style={{ left: "20%", animationDelay: "-1.2s" }}
-            >
-              <div className="flame red"></div>
-              <div className="flame orange"></div>
-              <div className="flame gold"></div>
-              <div className="flame white"></div>
-            </div>
-            <div
-              className="flame-wrapper"
-              style={{ left: "30%", animationDelay: "-0.8s" }}
-            >
-              <div className="flame red"></div>
-              <div className="flame orange"></div>
-              <div className="flame gold"></div>
-              <div className="flame white"></div>
-            </div>
-            <div
-              className="flame-wrapper"
-              style={{ left: "40%", animationDelay: "-0.6s" }}
-            >
-              <div className="flame red"></div>
-              <div className="flame orange"></div>
-              <div className="flame gold"></div>
-              <div className="flame white"></div>
-            </div>
-            <div
-              className="flame-wrapper"
-              style={{ left: "50%", animationDelay: "-1.5s" }}
-            >
-              <div className="flame red"></div>
-              <div className="flame orange"></div>
-              <div className="flame gold"></div>
-              <div className="flame white"></div>
-            </div>
-            <div
-              className="flame-wrapper"
-              style={{ left: "60%", animationDelay: "-0.9s" }}
-            >
-              <div className="flame red"></div>
-              <div className="flame orange"></div>
-              <div className="flame gold"></div>
-              <div className="flame white"></div>
-            </div>
-            <div
-              className="flame-wrapper"
-              style={{ left: "70%", animationDelay: "-0.3s" }}
-            >
-              <div className="flame red"></div>
-              <div className="flame orange"></div>
-              <div className="flame gold"></div>
-              <div className="flame white"></div>
-            </div>
-            <div
-              className="flame-wrapper"
-              style={{ left: "80%", animationDelay: "-1.1s" }}
-            >
-              <div className="flame red"></div>
-              <div className="flame orange"></div>
-              <div className="flame gold"></div>
-              <div className="flame white"></div>
-            </div>
-            <div
-              className="flame-wrapper"
-              style={{ left: "90%", animationDelay: "-0.7s" }}
-            >
-              <div className="flame red"></div>
-              <div className="flame orange"></div>
-              <div className="flame gold"></div>
-              <div className="flame white"></div>
-            </div>
+            {isClient &&
+              flamePositions.map((flamePos, i) => (
+                <div
+                  key={`flame-container-${i}`}
+                  className="jagged-flame-container"
+                  style={{
+                    left: `${flamePos.left}%`,
+                    height: `${flamePos.height}px`,
+                    animationDelay: `${flamePos.delay}s`,
+                    transform: `translateX(-50%) scale(${flamePos.scale})`,
+                  }}
+                >
+                  <div className="jagged-flame jagged-flame-outer"></div>
+                  <div className="jagged-flame jagged-flame-inner"></div>
+                  <div className="jagged-flame jagged-flame-core"></div>
+                </div>
+              ))}
           </div>
 
-          {/* Sparks effect */}
+          {/* Floating sparks and embers */}
           {isClient &&
             Array.from({ length: 50 }).map((_, i) => (
               <div
-                key={i}
+                key={`spark-${i}`}
                 className="spark"
                 style={{
                   left: `${Math.random() * 100}%`,
                   animationDuration: `${0.5 + Math.random() * 2}s`,
                   animationDelay: `${Math.random() * 2}s`,
+                  width: Math.random() > 0.8 ? "3px" : "1px", // Occasionally larger sparks
+                  height: Math.random() > 0.8 ? "4px" : "2px",
                 }}
               ></div>
             ))}
 
-          {/* Glow overlay */}
+          {/* Red/orange glow at bottom */}
           <div className="fire-glow"></div>
         </div>
 
