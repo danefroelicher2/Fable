@@ -10,17 +10,6 @@ const ImprovedScrollLanding = () => {
   const [loaded, setLoaded] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
-  // Using useMemo to calculate fire particle props once
-  const fireParticles = useMemo(() => {
-    return Array.from({ length: 25 }).map(() => ({
-      left: Math.floor(Math.random() * 100),
-      duration: 2 + Math.floor(Math.random() * 3),
-      delay: Math.floor(Math.random() * 2),
-      width: 30 + Math.floor(Math.random() * 40), // Wider particles
-      height: 80 + Math.floor(Math.random() * 120), // Taller, more vertical flames
-    }));
-  }, []);
-
   // Handle scroll events to add animation effects
   useEffect(() => {
     // Mark component as client-side rendered
@@ -46,7 +35,7 @@ const ImprovedScrollLanding = () => {
 
   return (
     <div className="flex flex-col w-full">
-      {/* Top section with LostLibrary title - now larger, with reduced height */}
+      {/* Top section with LostLibrary title */}
       <div className="relative top-title-section w-full flex items-center justify-center">
         <h1
           className={`text-white text-8xl md:text-9xl lg:text-11xl font-bold tracking-wide glow-effect-white mega-title ${
@@ -59,27 +48,115 @@ const ImprovedScrollLanding = () => {
 
       {/* Bottom section with scroll and fire */}
       <div className="relative scroll-history-section w-full flex items-end justify-center">
-        {/* Fire effect background behind the scroll */}
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          <div className="absolute bottom-0 w-full h-full fire-background">
-            <div className="fire-container">
-              {/* Only render particles on client-side to avoid hydration issues */}
-              {isClient &&
-                fireParticles.map((particle, i) => (
-                  <div
-                    key={i}
-                    className="fire-particle sharp-flame"
-                    style={{
-                      left: `${particle.left}%`,
-                      animationDuration: `${particle.duration}s`,
-                      animationDelay: `${particle.delay}s`,
-                      width: `${particle.width}px`,
-                      height: `${particle.height}px`,
-                    }}
-                  />
-                ))}
+        {/* Realistic fire effect */}
+        <div className="absolute inset-x-0 bottom-0 z-0 fire-container">
+          {/* Base layer with the realistic fire effect */}
+          <div className="fire-base">
+            <div className="flame-wrapper">
+              <div className="flame red"></div>
+              <div className="flame orange"></div>
+              <div className="flame gold"></div>
+              <div className="flame white"></div>
+            </div>
+            <div
+              className="flame-wrapper"
+              style={{ left: "10%", animationDelay: "-0.5s" }}
+            >
+              <div className="flame red"></div>
+              <div className="flame orange"></div>
+              <div className="flame gold"></div>
+              <div className="flame white"></div>
+            </div>
+            <div
+              className="flame-wrapper"
+              style={{ left: "20%", animationDelay: "-1.2s" }}
+            >
+              <div className="flame red"></div>
+              <div className="flame orange"></div>
+              <div className="flame gold"></div>
+              <div className="flame white"></div>
+            </div>
+            <div
+              className="flame-wrapper"
+              style={{ left: "30%", animationDelay: "-0.8s" }}
+            >
+              <div className="flame red"></div>
+              <div className="flame orange"></div>
+              <div className="flame gold"></div>
+              <div className="flame white"></div>
+            </div>
+            <div
+              className="flame-wrapper"
+              style={{ left: "40%", animationDelay: "-0.6s" }}
+            >
+              <div className="flame red"></div>
+              <div className="flame orange"></div>
+              <div className="flame gold"></div>
+              <div className="flame white"></div>
+            </div>
+            <div
+              className="flame-wrapper"
+              style={{ left: "50%", animationDelay: "-1.5s" }}
+            >
+              <div className="flame red"></div>
+              <div className="flame orange"></div>
+              <div className="flame gold"></div>
+              <div className="flame white"></div>
+            </div>
+            <div
+              className="flame-wrapper"
+              style={{ left: "60%", animationDelay: "-0.9s" }}
+            >
+              <div className="flame red"></div>
+              <div className="flame orange"></div>
+              <div className="flame gold"></div>
+              <div className="flame white"></div>
+            </div>
+            <div
+              className="flame-wrapper"
+              style={{ left: "70%", animationDelay: "-0.3s" }}
+            >
+              <div className="flame red"></div>
+              <div className="flame orange"></div>
+              <div className="flame gold"></div>
+              <div className="flame white"></div>
+            </div>
+            <div
+              className="flame-wrapper"
+              style={{ left: "80%", animationDelay: "-1.1s" }}
+            >
+              <div className="flame red"></div>
+              <div className="flame orange"></div>
+              <div className="flame gold"></div>
+              <div className="flame white"></div>
+            </div>
+            <div
+              className="flame-wrapper"
+              style={{ left: "90%", animationDelay: "-0.7s" }}
+            >
+              <div className="flame red"></div>
+              <div className="flame orange"></div>
+              <div className="flame gold"></div>
+              <div className="flame white"></div>
             </div>
           </div>
+
+          {/* Sparks effect */}
+          {isClient &&
+            Array.from({ length: 50 }).map((_, i) => (
+              <div
+                key={i}
+                className="spark"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDuration: `${0.5 + Math.random() * 2}s`,
+                  animationDelay: `${Math.random() * 2}s`,
+                }}
+              ></div>
+            ))}
+
+          {/* Glow overlay */}
+          <div className="fire-glow"></div>
         </div>
 
         {/* Realistic scroll container at the bottom */}
@@ -93,14 +170,14 @@ const ImprovedScrollLanding = () => {
           }`}
         >
           <div className="realistic-scroll-container">
-            {/* Scroll with handles - using images more similar to the references */}
+            {/* Scroll with handles */}
             <div className="realistic-scroll">
               {/* Left scroll handle */}
               <div className="scroll-handle scroll-handle-left"></div>
 
-              {/* Main parchment area - now contains This Day in History */}
+              {/* Main parchment area with ThisDayInHistory */}
               <div className="scroll-content">
-                {/* Using the ThisDayInHistory component inside the scroll */}
+                {/* ThisDayInHistory component inside the scroll */}
                 <div className="history-in-scroll">
                   <ThisDayInHistory />
                 </div>
@@ -112,7 +189,7 @@ const ImprovedScrollLanding = () => {
           </div>
         </div>
 
-        {/* Scroll indicator - kept for visual effect */}
+        {/* Scroll indicator */}
         <div
           className={`absolute top-4 left-1/2 transform -translate-x-1/2 transition-opacity duration-500 ${
             scrolled ? "opacity-0" : "opacity-100"

@@ -3,10 +3,10 @@
 @import url("https://fonts.googleapis.com/css2?family=Tangerine:wght@700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&display=swap");
 
-/* Set sections with specific heights - reduced black space by 1/4 */
+/* Set sections with specific heights */
 .top-title-section {
-  height: 45vh; /* Reduced from 60vh (by 1/4 of the original) */
-  min-height: 300px; /* Ensure minimum height for smaller screens */
+  height: 45vh;
+  min-height: 300px;
   background-color: black;
   display: flex;
   flex-direction: column;
@@ -15,7 +15,7 @@
   position: relative;
 }
 
-/* Mega title styling to span 70% of the black space */
+/* Mega title styling */
 .mega-title {
   width: 70%;
   text-align: center;
@@ -29,8 +29,8 @@
 }
 
 .scroll-history-section {
-  height: 40vh; /* Keep bottom section height */
-  min-height: 300px; /* Ensure minimum height for smaller screens */
+  height: 40vh;
+  min-height: 300px;
   background-color: black;
   position: relative;
   overflow: hidden;
@@ -63,65 +63,181 @@
   margin-bottom: 20px;
 }
 
-/* Fire background and effect adjustments - restored original fire animation */
-.fire-background {
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0) 0%,
-    rgba(128, 51, 0, 0.3) 40%,
-    rgba(0, 0, 0, 0) 100%
-  );
-}
-
+/* Realistic Fire Effects - Based on actual fire image */
 .fire-container {
   position: absolute;
   bottom: 0;
-  left: 0;
-  right: 0;
-  height: 100%;
+  width: 100%;
+  height: 180px;
   overflow: hidden;
-}
-
-/* Original fire particles styling - modified from original for sharper look */
-.fire-particle {
-  position: absolute;
-  bottom: -20px;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(255, 200, 0, 0.9) 0%,
-    rgba(255, 120, 0, 0.8) 30%,
-    rgba(255, 50, 0, 0.4) 70%,
-    rgba(255, 30, 0, 0) 100%
-  );
-  border-radius: 40% 40% 10% 10%; /* Sharper top corners */
-  filter: blur(3px); /* Less blur for sharper appearance */
-  transform-origin: bottom;
-  animation: flameRise linear infinite;
   z-index: 1;
 }
 
-@keyframes flameRise {
+.fire-base {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  bottom: -50px;
+  background: rgba(30, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.fire-glow {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 150px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 80, 0, 0.35) 0%,
+    rgba(255, 30, 0, 0.2) 40%,
+    rgba(0, 0, 0, 0) 70%
+  );
+  z-index: 5;
+  pointer-events: none;
+  animation: glowPulse 3s ease-in-out infinite alternate;
+}
+
+@keyframes glowPulse {
   0% {
-    transform: translateY(0) scaleY(1) scaleX(1);
-    opacity: 1;
-  }
-  50% {
-    transform: translateY(-100px) scaleY(1.4) scaleX(0.8); /* More vertical scaling */
     opacity: 0.7;
   }
   100% {
-    transform: translateY(-200px) scaleY(0.5) scaleX(0.4);
+    opacity: 1;
+  }
+}
+
+/* Realistic flame elements */
+.flame-wrapper {
+  position: absolute;
+  bottom: -50px;
+  left: 0%;
+  width: 40px;
+  height: 140px;
+  transform: scale(1.5, 1.5);
+  transform-origin: center bottom;
+  animation: sideways 3s ease-in-out infinite alternate;
+  z-index: 2;
+}
+
+@keyframes sideways {
+  0% {
+    transform: scale(1.5, 1.5) translate(-10px, 0) skew(0deg);
+  }
+  50% {
+    transform: scale(1.5, 1.5) translate(10px, -10px) skew(5deg);
+  }
+  100% {
+    transform: scale(1.5, 1.5) translate(-10px, 0) skew(-5deg);
+  }
+}
+
+.flame {
+  position: absolute;
+  bottom: 0;
+  border-radius: 50% 0 50% 50%;
+  transform: scale(0.8, 1);
+  transform-origin: center bottom;
+  mix-blend-mode: screen;
+}
+
+.red {
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 30, 0, 1);
+  box-shadow: 0 0 10px 5px rgba(255, 60, 0, 0.3);
+  animation: flicker 2s ease-in-out infinite;
+}
+
+.orange {
+  left: 5%;
+  width: 90%;
+  height: 90%;
+  background: rgba(255, 90, 0, 1);
+  box-shadow: 0 0 12px 6px rgba(255, 100, 0, 0.5);
+  animation: flicker 2.5s ease-in-out 0.3s infinite;
+}
+
+.gold {
+  left: 15%;
+  width: 70%;
+  height: 70%;
+  background: rgba(255, 160, 0, 1);
+  box-shadow: 0 0 15px 7px rgba(255, 170, 0, 0.5);
+  animation: flicker 2.2s ease-in-out 0.5s infinite;
+}
+
+.white {
+  left: 25%;
+  width: 50%;
+  height: 50%;
+  background: rgba(255, 230, 200, 1);
+  box-shadow: 0 0 18px 8px rgba(255, 230, 200, 0.5);
+  animation: flicker 1.8s ease-in-out 0.8s infinite;
+}
+
+/* Flame flicker animation - more organic movement */
+@keyframes flicker {
+  0%,
+  100% {
+    transform: scale(0.8, 1) translateY(0);
+  }
+  10% {
+    transform: scale(0.85, 1.1) translateY(-5px) rotate(-1deg);
+  }
+  30% {
+    transform: scale(0.75, 0.9) translateY(5px) rotate(2deg);
+  }
+  50% {
+    transform: scale(0.9, 1.2) translateY(-10px) rotate(-1deg);
+  }
+  70% {
+    transform: scale(0.8, 1) translateY(0) rotate(1deg);
+  }
+  90% {
+    transform: scale(0.85, 1.1) translateY(-5px) rotate(0deg);
+  }
+}
+
+/* Sparks flying up */
+.spark {
+  position: absolute;
+  bottom: 0;
+  width: 2px;
+  height: 3px;
+  background: #ff4500;
+  border-radius: 50%;
+  box-shadow: 0 0 3px 1px rgba(255, 250, 230, 0.8);
+  animation: sparkRise linear infinite;
+  z-index: 4;
+}
+
+@keyframes sparkRise {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-100px)
+      translateX(calc(20px - (40px * var(--random, 0.5))));
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-200px)
+      translateX(calc(40px - (80px * var(--random, 0.5))));
     opacity: 0;
   }
 }
 
-/* Realistic scroll styling based on reference images */
+/* Realistic scroll styling */
 .realistic-scroll-container {
   width: 100%;
   display: flex;
   justify-content: center;
   padding: 0 20px;
-  margin-bottom: 20px; /* Push up from the very bottom edge */
+  margin-bottom: 20px;
 }
 
 .realistic-scroll {
@@ -129,7 +245,8 @@
   display: flex;
   align-items: center;
   width: 100%;
-  max-width: 1000px; /* Wider scroll */
+  max-width: 1000px;
+  z-index: 10; /* Ensure scroll is above fire */
 }
 
 /* Scroll handles (wooden rollers) */
@@ -184,17 +301,12 @@
   z-index: 1;
   min-height: 200px;
   max-height: 250px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2), 0 0 10px rgba(255, 50, 0, 0.3); /* Glow from fire */
   display: flex;
   flex-direction: column;
   justify-content: center;
   overflow: hidden;
-  overflow-y: auto; /* Allow scrolling if content is too large */
-}
-
-/* History component inside scroll styling */
-.history-in-scroll {
-  width: 100%;
+  overflow-y: auto;
 }
 
 /* Parchment texture and aging effects */
@@ -348,11 +460,34 @@
     min-width: 30px;
     height: 120px;
   }
+
+  /* Scale down fire effects for mobile */
+  .fire-container {
+    height: 120px;
+  }
+
+  .flame-wrapper {
+    transform: scale(1, 1);
+  }
 }
 
 /* Extra small screens */
 @media (max-width: 480px) {
   .mega-title {
     font-size: 3rem !important;
+  }
+
+  .fire-container {
+    height: 100px;
+  }
+
+  /* Further reduce flames */
+  .flame-wrapper {
+    transform: scale(0.8, 0.8);
+  }
+
+  /* Show fewer sparks */
+  .spark:nth-child(n + 20) {
+    display: none;
   }
 }
