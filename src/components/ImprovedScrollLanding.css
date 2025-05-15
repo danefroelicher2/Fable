@@ -1,0 +1,244 @@
+/* src/components/ImprovedScrollLanding.css */
+
+@import url("https://fonts.googleapis.com/css2?family=Tangerine:wght@700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&display=swap");
+
+.font-cursive {
+  font-family: "Tangerine", cursive;
+}
+
+/* Fire effects */
+.fire-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 300px;
+  overflow: hidden;
+}
+
+.fire-particle {
+  position: absolute;
+  bottom: -20px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 174, 0, 0.8) 0%,
+    rgba(255, 103, 0, 0.4) 60%,
+    rgba(255, 30, 0, 0) 100%
+  );
+  border-radius: 50% 50% 20% 20%;
+  transform: translateY(0px);
+  filter: blur(5px);
+  animation: flameRise linear infinite;
+  z-index: 1;
+}
+
+@keyframes flameRise {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Realistic scroll styling based on reference images */
+.realistic-scroll-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0 20px;
+}
+
+.realistic-scroll {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 800px;
+}
+
+/* Scroll handles (wooden rollers) */
+.scroll-handle {
+  position: relative;
+  min-width: 40px;
+  height: 150px;
+  background-color: #703f16;
+  border-radius: 20px;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+  z-index: 2;
+}
+
+.scroll-handle::before,
+.scroll-handle::after {
+  content: "";
+  position: absolute;
+  width: 44px;
+  height: 30px;
+  background-color: #5a2e0d;
+  border-radius: 5px;
+  left: -2px;
+}
+
+.scroll-handle::before {
+  top: -10px;
+}
+
+.scroll-handle::after {
+  bottom: -10px;
+}
+
+.scroll-handle-left {
+  margin-right: -10px;
+  transform: rotate(0deg);
+  background-image: linear-gradient(to right, #5a2e0d, #703f16);
+}
+
+.scroll-handle-right {
+  margin-left: -10px;
+  transform: rotate(0deg);
+  background-image: linear-gradient(to left, #5a2e0d, #703f16);
+}
+
+/* Main parchment content area */
+.scroll-content {
+  position: relative;
+  flex-grow: 1;
+  background-color: #f4ebd0;
+  padding: 40px 10px;
+  border-radius: 0;
+  z-index: 1;
+  min-height: 240px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Parchment texture and aging effects */
+.scroll-content::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23d2b48c' fill-opacity='0.1'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+  opacity: 0.7;
+}
+
+/* Aged edges on parchment */
+.scroll-content::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    /* Top edge */ linear-gradient(
+      to bottom,
+      rgba(193, 154, 107, 0.3) 0%,
+      rgba(193, 154, 107, 0.1) 5%,
+      rgba(0, 0, 0, 0) 10%
+    ),
+    /* Bottom edge */
+      linear-gradient(
+        to top,
+        rgba(193, 154, 107, 0.3) 0%,
+        rgba(193, 154, 107, 0.1) 5%,
+        rgba(0, 0, 0, 0) 10%
+      ),
+    /* Left edge - darker near the roll */
+      linear-gradient(
+        to right,
+        rgba(139, 69, 19, 0.4) 0%,
+        rgba(193, 154, 107, 0.1) 5%,
+        rgba(0, 0, 0, 0) 20%
+      ),
+    /* Right edge - darker near the roll */
+      linear-gradient(
+        to left,
+        rgba(139, 69, 19, 0.4) 0%,
+        rgba(193, 154, 107, 0.1) 5%,
+        rgba(0, 0, 0, 0) 20%
+      );
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Create torn/ragged edges on the top and bottom of the parchment */
+.scroll-content::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 15px;
+  background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,12 Q10,7 20,12 T40,12 T60,12 T80,12 T100,12 T120,12 T140,12 T160,12 T180,12 T200,12' fill='none' stroke='%23f4ebd0' stroke-width='24' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-size: 200px 15px;
+  background-repeat: repeat-x;
+  z-index: 3;
+}
+
+.scroll-content::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 15px;
+  background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,3 Q10,8 20,3 T40,3 T60,3 T80,3 T100,3 T120,3 T140,3 T160,3 T180,3 T200,3' fill='none' stroke='%23f4ebd0' stroke-width='24' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-size: 200px 15px;
+  background-repeat: repeat-x;
+  z-index: 3;
+}
+
+/* Aged text styling */
+.aged-text {
+  position: relative;
+  color: #5c4030;
+  letter-spacing: 0.5px;
+  z-index: 2;
+}
+
+/* Subtle glow effect for the title */
+.glow-effect {
+  animation: glow 3s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5),
+      0 0 10px rgba(255, 255, 255, 0.3), 0 0 15px rgba(197, 139, 0, 0.3),
+      0 0 20px rgba(197, 139, 0, 0.2);
+  }
+  to {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5),
+      0 0 20px rgba(255, 255, 255, 0.3), 0 0 30px rgba(197, 139, 0, 0.3),
+      0 0 40px rgba(197, 139, 0, 0.2);
+  }
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 640px) {
+  .scroll-handle {
+    min-width: 30px;
+    height: 120px;
+  }
+
+  .scroll-handle::before,
+  .scroll-handle::after {
+    width: 34px;
+    height: 20px;
+  }
+
+  .scroll-content {
+    padding: 30px 10px;
+    min-height: 200px;
+  }
+}
