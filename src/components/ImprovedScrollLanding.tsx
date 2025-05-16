@@ -11,9 +11,11 @@ const ImprovedScrollLanding = () => {
   const [isClient, setIsClient] = useState(false);
   const flameTotalCount = 10; // Number of flame clusters
   const sparkTotalCount = 50; // Number of sparks
+  const shootingStarCount = 5; // Number of shooting stars
 
   // Refs for the fire container to manage animations more efficiently
   const fireContainerRef = useRef<HTMLDivElement>(null);
+  const starryNightRef = useRef<HTMLDivElement>(null);
 
   // Handle scroll events to add animation effects
   useEffect(() => {
@@ -34,10 +36,51 @@ const ImprovedScrollLanding = () => {
     // Set loaded state after component mounts for entrance animations
     setLoaded(true);
 
+    // Create shooting stars at random intervals
+    const shootingStarInterval = setInterval(() => {
+      if (starryNightRef.current) {
+        createShootingStar();
+      }
+    }, 2000);
+
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      clearInterval(shootingStarInterval);
     };
   }, []);
+
+  // Create a shooting star element
+  const createShootingStar = () => {
+    if (!starryNightRef.current || !isClient) return;
+
+    // Create the shooting star element
+    const star = document.createElement("div");
+    star.className = "shooting-star";
+
+    // Random position, angle, and speed
+    const startTop = Math.random() * 50; // Start from top half of the screen
+    const startLeft = Math.random() * 100;
+    const angle = Math.random() * 60 - 30; // -30 to 30 degrees
+    const length = 50 + Math.random() * 150; // Length of the shooting star
+    const travelDistance = 200 + Math.random() * 200; // How far it travels
+    const travelHeight = Math.tan((angle * Math.PI) / 180) * travelDistance;
+    const duration = 0.5 + Math.random() * 1; // Animation duration in seconds
+
+    // Set styles
+    star.style.top = `${startTop}%`;
+    star.style.left = `${startLeft}%`;
+    star.style.width = `${length}px`;
+    star.style.transform = `rotate(${angle}deg)`;
+    star.style.setProperty("--travel-distance", `${travelDistance}px`);
+    star.style.setProperty("--travel-height", `${travelHeight}px`);
+    star.style.animationDuration = `${duration}s`;
+
+    // Add to the container and remove when animation ends
+    starryNightRef.current.appendChild(star);
+    setTimeout(() => {
+      star.remove();
+    }, duration * 1000);
+  };
 
   // Create a dynamic flame wrapper element
   const FlameWrapper = ({ index }: { index: number }) => {
@@ -92,6 +135,23 @@ const ImprovedScrollLanding = () => {
     <div className="flex flex-col w-full">
       {/* Top section with LostLibrary title */}
       <div className="relative top-title-section w-full flex items-center justify-center">
+        {/* Starry night sky background container */}
+        <div className="starry-night-background" ref={starryNightRef}>
+          {/* Static stars background */}
+          <div className="stars-layer"></div>
+
+          {/* Twinkling stars animation */}
+          <div className="twinkling-stars"></div>
+
+          {/* Nebula effect (colorful clouds) */}
+          <div className="nebula-effect"></div>
+
+          {/* Nebula dust particles */}
+          <div className="nebula-dust"></div>
+
+          {/* Shooting stars will be added dynamically */}
+        </div>
+
         <h1
           className={`text-white text-8xl md:text-9xl lg:text-11xl font-bold tracking-wide glow-effect-white mega-title ${
             loaded ? "opacity-100 scale-100" : "opacity-0 scale-90"
