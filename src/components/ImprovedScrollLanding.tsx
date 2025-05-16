@@ -1,7 +1,7 @@
 // src/components/ImprovedScrollLanding.tsx
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import ThisDayInHistory from "@/components/ThisDayInHistory";
 import "./ImprovedScrollLanding.css";
 
@@ -9,6 +9,11 @@ const ImprovedScrollLanding = () => {
   const [scrolled, setScrolled] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const flameTotalCount = 10; // Number of flame clusters
+  const sparkTotalCount = 50; // Number of sparks
+
+  // Refs for the fire container to manage animations more efficiently
+  const fireContainerRef = useRef<HTMLDivElement>(null);
 
   // Handle scroll events to add animation effects
   useEffect(() => {
@@ -25,23 +30,63 @@ const ImprovedScrollLanding = () => {
     };
 
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
-  // Set loaded state after component mounts for entrance animations
-  useEffect(() => {
+    // Set loaded state after component mounts for entrance animations
     setLoaded(true);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
-  // Generate particle positions for better distribution
-  const flamePositions = useMemo(() => {
-    return Array.from({ length: 12 }).map((_, i) => ({
-      left: i * 8.33, // Distribute across the screen (12 flames = ~8.33% spacing)
-      delay: Math.random() * 2,
-      scale: 0.8 + Math.random() * 0.8, // Random scale between 0.8 and 1.6
-      height: 130 + Math.random() * 80, // Random height between 130px and 210px
-    }));
-  }, []);
+  // Create a dynamic flame wrapper element
+  const FlameWrapper = ({ index }: { index: number }) => {
+    // Distribute flame wrappers evenly
+    const leftPosition = (index / flameTotalCount) * 100;
+    // Randomize animation delays for natural flame movement
+    const animationDelay = -(Math.random() * 2).toFixed(1);
+
+    return (
+      <div
+        className="flame-wrapper"
+        style={{
+          left: `${leftPosition}%`,
+          animationDelay: `${animationDelay}s`,
+          // Add some randomness to scale for varied flame sizes
+          transform: `scale(${0.8 + Math.random() * 0.8}, ${
+            1 + Math.random() * 0.5
+          })`,
+        }}
+      >
+        <div className="flame red"></div>
+        <div className="flame orange"></div>
+        <div className="flame gold"></div>
+        <div className="flame white"></div>
+      </div>
+    );
+  };
+
+  // Create a spark element
+  const Spark = ({ index }: { index: number }) => {
+    // Generate random properties for each spark
+    const leftPosition = Math.random() * 100;
+    const animationDuration = (0.5 + Math.random() * 2).toFixed(2);
+    const animationDelay = (Math.random() * 2).toFixed(2);
+    const size = 1 + Math.random() * 2; // Varied spark sizes
+
+    return (
+      <div
+        className="spark"
+        style={{
+          left: `${leftPosition}%`,
+          width: `${size}px`,
+          height: `${size}px`,
+          animationDuration: `${animationDuration}s`,
+          animationDelay: `${animationDelay}s`,
+        }}
+      />
+    );
+  };
 
   return (
     <div className="flex flex-col w-full">
@@ -58,46 +103,44 @@ const ImprovedScrollLanding = () => {
 
       {/* Bottom section with scroll and fire */}
       <div className="relative scroll-history-section w-full flex items-end justify-center">
-        {/* Realistic fire effect */}
-        <div className="absolute inset-x-0 bottom-0 z-0 fire-container">
-          {/* Fire with jagged flames */}
+        {/* Advanced fire effect container */}
+        <div
+          className="absolute inset-x-0 bottom-0 z-0 fire-container"
+          ref={fireContainerRef}
+        >
+          {/* Base layer with multiple realistic flame clusters */}
           <div className="fire-base">
+            {/* Dynamic flame wrappers */}
             {isClient &&
-              flamePositions.map((flamePos, i) => (
-                <div
-                  key={`flame-container-${i}`}
-                  className="jagged-flame-container"
-                  style={{
-                    left: `${flamePos.left}%`,
-                    height: `${flamePos.height}px`,
-                    animationDelay: `${flamePos.delay}s`,
-                    transform: `translateX(-50%) scale(${flamePos.scale})`,
-                  }}
-                >
-                  <div className="jagged-flame jagged-flame-outer"></div>
-                  <div className="jagged-flame jagged-flame-inner"></div>
-                  <div className="jagged-flame jagged-flame-core"></div>
-                </div>
+              Array.from({ length: flameTotalCount }).map((_, i) => (
+                <FlameWrapper key={`flame-${i}`} index={i} />
               ))}
           </div>
 
-          {/* Floating sparks and embers */}
+          {/* Ember and spark effects */}
           {isClient &&
-            Array.from({ length: 50 }).map((_, i) => (
-              <div
-                key={`spark-${i}`}
-                className="spark"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  animationDuration: `${0.5 + Math.random() * 2}s`,
-                  animationDelay: `${Math.random() * 2}s`,
-                  width: Math.random() > 0.8 ? "3px" : "1px", // Occasionally larger sparks
-                  height: Math.random() > 0.8 ? "4px" : "2px",
-                }}
-              ></div>
+            Array.from({ length: sparkTotalCount }).map((_, i) => (
+              <Spark key={`spark-${i}`} index={i} />
             ))}
 
-          {/* Red/orange glow at bottom */}
+          {/* Secondary sparks (smaller, faster) */}
+          {isClient &&
+            Array.from({ length: 20 }).map((_, i) => (
+              <div
+                key={`tiny-spark-${i}`}
+                className="tiny-spark"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDuration: `${0.3 + Math.random() * 1}s`,
+                  animationDelay: `${Math.random() * 1}s`,
+                }}
+              />
+            ))}
+
+          {/* Smoke effect overlays */}
+          <div className="smoke-layer"></div>
+
+          {/* Fire glow effect */}
           <div className="fire-glow"></div>
         </div>
 
@@ -115,7 +158,9 @@ const ImprovedScrollLanding = () => {
             {/* Scroll with handles */}
             <div className="realistic-scroll">
               {/* Left scroll handle */}
-              <div className="scroll-handle scroll-handle-left"></div>
+              <div className="scroll-handle scroll-handle-left">
+                <div className="scroll-handle-detail"></div>
+              </div>
 
               {/* Main parchment area with ThisDayInHistory */}
               <div className="scroll-content">
@@ -126,7 +171,9 @@ const ImprovedScrollLanding = () => {
               </div>
 
               {/* Right scroll handle */}
-              <div className="scroll-handle scroll-handle-right"></div>
+              <div className="scroll-handle scroll-handle-right">
+                <div className="scroll-handle-detail"></div>
+              </div>
             </div>
           </div>
         </div>
