@@ -380,6 +380,7 @@ export default function SidebarNav() {
                     <Link
                       href="/premium"
                       className="flex items-center px-4 py-3 hover:bg-gray-700 text-white"
+                      onClick={() => setIsMoreMenuOpen(false)} // Close menu after clicking
                     >
                       <svg
                         className="w-6 h-6 mr-3"
@@ -402,6 +403,7 @@ export default function SidebarNav() {
                       <Link
                         href="/profile/drafts"
                         className="flex items-center px-4 py-3 hover:bg-gray-700 text-white"
+                        onClick={() => setIsMoreMenuOpen(false)} // Close menu after clicking
                       >
                         <svg
                           className="w-6 h-6 mr-3"
@@ -421,13 +423,10 @@ export default function SidebarNav() {
                       </Link>
                     ) : (
                       <button
-                        onClick={() =>
-                          router.push(
-                            `/signin?redirect=${encodeURIComponent(
-                              "/profile/drafts"
-                            )}`
-                          )
-                        }
+                        onClick={() => {
+                          setIsMoreMenuOpen(false); // Close menu first
+                          router.push("/signin?redirect=/profile/drafts");
+                        }}
                         className="flex items-center px-4 py-3 hover:bg-gray-700 text-white w-full text-left"
                       >
                         <svg
@@ -451,6 +450,7 @@ export default function SidebarNav() {
                     <Link
                       href="/profile/account-settings"
                       className="flex items-center px-4 py-3 hover:bg-gray-700 text-white"
+                      onClick={() => setIsMoreMenuOpen(false)} // Close menu after clicking
                     >
                       <svg
                         className="w-6 h-6 mr-3"
