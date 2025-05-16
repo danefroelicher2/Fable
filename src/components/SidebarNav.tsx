@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import ProfileDropdown from "./ProfileDropdown";
 import NotificationBadge from "./NotificationBadge";
 import MessageBadge from "./MessageBadge";
@@ -15,6 +15,9 @@ export default function SidebarNav() {
   const router = useRouter();
   const { user } = useAuth();
   const [profileData, setProfileData] = useState<any>(null);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [showMoreButton, setShowMoreButton] = useState(true);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
 
   // Get the URL for the user's public profile
   const publicProfileUrl = user ? `/user/${user.id}` : "/signin";
@@ -23,6 +26,48 @@ export default function SidebarNav() {
   const handlePostClick = () => {
     router.push("/write");
   };
+
+  // Detect zoom level using window width to determine if we should show the More button
+  useEffect(() => {
+    const checkZoomLevel = () => {
+      // This is a rough approximation - we're assuming standard screen sizes
+      // If the viewport height is greater than a certain threshold,
+      // we assume the zoom level is lower and can fit all items
+      // This threshold can be adjusted as needed
+      if (window.innerHeight > 800) {
+        setShowMoreButton(false);
+      } else {
+        setShowMoreButton(true);
+      }
+    };
+
+    // Check on component mount
+    checkZoomLevel();
+
+    // Check on window resize (which happens when zooming)
+    window.addEventListener("resize", checkZoomLevel);
+
+    return () => {
+      window.removeEventListener("resize", checkZoomLevel);
+    };
+  }, []);
+
+  // Close the More menu when clicking outside of it
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        moreMenuRef.current &&
+        !moreMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsMoreMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Fetch profile data to get username
   useEffect(() => {
@@ -54,6 +99,11 @@ export default function SidebarNav() {
       : user?.email
       ? `@${user.email.split("@")[0]}`
       : "@user";
+
+  // Toggle More menu
+  const toggleMoreMenu = () => {
+    setIsMoreMenuOpen(!isMoreMenuOpen);
+  };
 
   return (
     <nav className="bg-gray-900 text-white w-64 fixed left-0 top-0 bottom-0 overflow-y-auto flex flex-col">
@@ -138,11 +188,10 @@ export default function SidebarNav() {
                 strokeLinejoin="round"
               />
             </svg>
-            {/* Keep as "My Profile" as requested */}
             <span>My Profile</span>
           </Link>
 
-          {/* Conditional notifications link - preserved functionality */}
+          {/* Notifications link */}
           {user ? (
             <Link
               href="/notifications"
@@ -168,7 +217,6 @@ export default function SidebarNav() {
               </svg>
               <span>Notifications</span>
 
-              {/* Notification Badge - positioned absolutely */}
               <div className="absolute top-2 left-5">
                 <NotificationBadge className="h-5 w-5 flex items-center justify-center" />
               </div>
@@ -200,7 +248,7 @@ export default function SidebarNav() {
             </button>
           )}
 
-          {/* Messages link - add right after notifications */}
+          {/* Messages link */}
           {user ? (
             <Link
               href="/messages"
@@ -224,7 +272,6 @@ export default function SidebarNav() {
               </svg>
               <span>Messages</span>
 
-              {/* Message Badge - positioned absolutely */}
               <div className="absolute top-2 left-5">
                 <MessageBadge className="h-5 w-5 flex items-center justify-center" />
               </div>
@@ -302,124 +349,264 @@ export default function SidebarNav() {
             <span>Bookmarks</span>
           </Link>
 
-          <Link
-            href="/premium"
-            className={`flex items-center px-4 py-3 ${
-              pathname === "/premium" ? "bg-gray-800" : "hover:bg-gray-800"
-            }`}
-          >
-            <svg
-              className="w-6 h-6 mr-3"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span>Premium</span>
-          </Link>
+          {/* Items that will only show when More button is hidden (lower zoom) */}
+          {!showMoreButton && (
+            <>
+              <Link
+                href="/premium"
+                className={`flex items-center px-4 py-3 ${
+                  pathname === "/premium" ? "bg-gray-800" : "hover:bg-gray-800"
+                }`}
+              >
+                <svg
+                  className="w-6 h-6 mr-3"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span>Premium</span>
+              </Link>
 
-          {/* Conditional Saved Drafts link - For consistency with Notifications */}
-          {user ? (
-            <Link
-              href="/profile/drafts"
-              className={`flex items-center px-4 py-3 ${
-                pathname === "/profile/drafts"
-                  ? "bg-gray-800"
-                  : "hover:bg-gray-800"
-              }`}
-            >
-              <svg
-                className="w-6 h-6 mr-3"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+              {/* Saved Drafts link */}
+              {user ? (
+                <Link
+                  href="/profile/drafts"
+                  className={`flex items-center px-4 py-3 ${
+                    pathname === "/profile/drafts"
+                      ? "bg-gray-800"
+                      : "hover:bg-gray-800"
+                  }`}
+                >
+                  <svg
+                    className="w-6 h-6 mr-3"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <span>Saved Drafts</span>
+                </Link>
+              ) : (
+                <button
+                  onClick={() =>
+                    router.push(
+                      `/signin?redirect=${encodeURIComponent(
+                        "/profile/drafts"
+                      )}`
+                    )
+                  }
+                  className="flex items-center px-4 py-3 hover:bg-gray-800 w-full text-left"
+                >
+                  <svg
+                    className="w-6 h-6 mr-3"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <span>Saved Drafts</span>
+                </button>
+              )}
+
+              <Link
+                href="/profile/account-settings"
+                className={`flex items-center px-4 py-3 ${
+                  pathname === "/profile/account-settings"
+                    ? "bg-gray-800"
+                    : "hover:bg-gray-800"
+                }`}
               >
-                <path
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span>Saved Drafts</span>
-            </Link>
-          ) : (
-            <button
-              onClick={() =>
-                router.push(
-                  `/signin?redirect=${encodeURIComponent("/profile/drafts")}`
-                )
-              }
-              className="flex items-center px-4 py-3 hover:bg-gray-800 w-full text-left"
-            >
-              <svg
-                className="w-6 h-6 mr-3"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span>Saved Drafts</span>
-            </button>
+                <svg
+                  className="w-6 h-6 mr-3"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span>Account Settings</span>
+              </Link>
+            </>
           )}
-
-          <Link
-            href="/profile/account-settings"
-            className={`flex items-center px-4 py-3 ${
-              pathname === "/profile/account-settings"
-                ? "bg-gray-800"
-                : "hover:bg-gray-800"
-            }`}
-          >
-            <svg
-              className="w-6 h-6 mr-3"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span>Account Settings</span>
-          </Link>
         </div>
       </div>
 
       {/* Post Button and Profile Dropdown in a sticky footer */}
       <div className="mt-auto p-4 space-y-3">
+        {/* Post button */}
         <button
           onClick={handlePostClick}
           className="bg-white hover:bg-gray-200 text-gray-900 font-bold py-3 px-4 rounded-full w-full transition-colors"
         >
           Post
         </button>
+
+        {/* More button - only shown when needed */}
+        {showMoreButton && (
+          <div className="relative" ref={moreMenuRef}>
+            <button
+              onClick={toggleMoreMenu}
+              className="flex items-center justify-center px-4 py-3 hover:bg-gray-800 w-full text-left rounded-full transition-colors"
+            >
+              <svg
+                className="w-6 h-6 mr-3"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span>More</span>
+            </button>
+
+            {/* Dropdown menu */}
+            {isMoreMenuOpen && (
+              <div className="absolute bottom-full left-0 mb-2 w-56 rounded-md shadow-lg bg-gray-800 z-50">
+                <div className="py-1">
+                  <Link
+                    href="/premium"
+                    className="flex items-center px-4 py-3 hover:bg-gray-700 text-white"
+                  >
+                    <svg
+                      className="w-6 h-6 mr-3"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    <span>Premium</span>
+                  </Link>
+
+                  {user ? (
+                    <Link
+                      href="/profile/drafts"
+                      className="flex items-center px-4 py-3 hover:bg-gray-700 text-white"
+                    >
+                      <svg
+                        className="w-6 h-6 mr-3"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <span>Saved Drafts</span>
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() =>
+                        router.push(
+                          `/signin?redirect=${encodeURIComponent(
+                            "/profile/drafts"
+                          )}`
+                        )
+                      }
+                      className="flex items-center px-4 py-3 hover:bg-gray-700 text-white w-full text-left"
+                    >
+                      <svg
+                        className="w-6 h-6 mr-3"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <span>Saved Drafts</span>
+                    </button>
+                  )}
+
+                  <Link
+                    href="/profile/account-settings"
+                    className="flex items-center px-4 py-3 hover:bg-gray-700 text-white"
+                  >
+                    <svg
+                      className="w-6 h-6 mr-3"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    <span>Account Settings</span>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {user && <ProfileDropdown />}
       </div>
