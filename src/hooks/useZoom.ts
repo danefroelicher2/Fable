@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
  * @param threshold The viewport height threshold to determine if showing the More button
  * @returns A boolean indicating if the More button should be shown
  */
-export function useZoom(threshold = 800) {
+export function useZoom(threshold = 900) {
   const [showMoreButton, setShowMoreButton] = useState(true);
 
   useEffect(() => {
