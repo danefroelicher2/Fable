@@ -56,7 +56,7 @@ export default function SidebarNav() {
       : "@user";
 
   return (
-    <nav className="bg-gray-900 text-white h-screen w-64 fixed flex flex-col">
+    <nav className="bg-gray-900 text-white w-64 fixed left-0 top-0 bottom-0 overflow-y-auto flex flex-col">
       {/* Logo */}
       <div className="p-4">
         <Link href="/" className="block">
@@ -66,9 +66,9 @@ export default function SidebarNav() {
         </Link>
       </div>
 
-      {/* Main Navigation */}
-      <div className="mt-8 flex-grow">
-        <div className="space-y-2">
+      {/* Main Navigation - using flex-grow to allow scrolling for overflow */}
+      <div className="flex-grow overflow-y-auto">
+        <div className="space-y-1 py-2">
           {/* Home Button - Added at the top of navigation */}
           <Link
             href="/"
@@ -412,21 +412,17 @@ export default function SidebarNav() {
         </div>
       </div>
 
-      {/* Flexible spacer to push Post button up from the bottom */}
-      <div className="flex-grow"></div>
-
-      {/* Post Button */}
-      <div className="px-4 py-4">
+      {/* Post Button and Profile Dropdown in a sticky footer */}
+      <div className="mt-auto p-4 space-y-3">
         <button
           onClick={handlePostClick}
           className="bg-white hover:bg-gray-200 text-gray-900 font-bold py-3 px-4 rounded-full w-full transition-colors"
         >
           Post
         </button>
-      </div>
 
-      {/* Profile Dropdown at the bottom */}
-      <div className="px-4 pb-4">{user && <ProfileDropdown />}</div>
+        {user && <ProfileDropdown />}
+      </div>
     </nav>
   );
 }
