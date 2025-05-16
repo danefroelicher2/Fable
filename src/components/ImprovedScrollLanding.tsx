@@ -82,76 +82,93 @@ const ImprovedScrollLanding = () => {
     }, duration * 1000);
   };
 
-  // Create a dynamic flame wrapper element
-  const FlameWrapper = ({ index }: { index: number }) => {
-    // Distribute flame wrappers evenly
-    const leftPosition = (index / flameTotalCount) * 100;
-    // Randomize animation delays for natural flame movement
-    const animationDelay = -(Math.random() * 2).toFixed(1);
+  // Create jagged flame elements
+  const createJaggedFlames = () => {
+    if (!isClient) return null;
 
-    return (
-      <div
-        className="flame-wrapper"
-        style={{
-          left: `${leftPosition}%`,
-          animationDelay: `${animationDelay}s`,
-          // Add some randomness to scale for varied flame sizes
-          transform: `scale(${0.8 + Math.random() * 0.8}, ${
-            1 + Math.random() * 0.5
-          })`,
-        }}
-      >
-        <div className="flame red"></div>
-        <div className="flame orange"></div>
-        <div className="flame gold"></div>
-        <div className="flame white"></div>
-      </div>
-    );
+    const flames = [];
+
+    for (let i = 0; i < flameTotalCount; i++) {
+      const leftPosition = (i / flameTotalCount) * 100; // Distribute evenly across container
+      const randomScale = 0.8 + Math.random() * 0.8; // Random scale factor
+      const randomDelay = -(Math.random() * 2).toFixed(1); // Random animation delay
+
+      flames.push(
+        <div
+          key={`flame-${i}`}
+          className="jagged-flame-container"
+          style={{
+            left: `${leftPosition}%`,
+            animationDelay: `${randomDelay}s`,
+            transform: `scale(${randomScale}, ${1 + Math.random() * 0.5})`,
+          }}
+        >
+          <div className="jagged-flame jagged-flame-outer"></div>
+          <div className="jagged-flame jagged-flame-inner"></div>
+          <div className="jagged-flame jagged-flame-core"></div>
+        </div>
+      );
+    }
+
+    return flames;
   };
 
-  // Create a spark element
-  const Spark = ({ index }: { index: number }) => {
-    // Generate random properties for each spark
-    const leftPosition = Math.random() * 100;
-    const animationDuration = (0.5 + Math.random() * 2).toFixed(2);
-    const animationDelay = (Math.random() * 2).toFixed(2);
-    const size = 1 + Math.random() * 2; // Varied spark sizes
+  // Create spark elements
+  const createSparks = () => {
+    if (!isClient) return null;
 
-    return (
-      <div
-        className="spark"
-        style={{
-          left: `${leftPosition}%`,
-          width: `${size}px`,
-          height: `${size}px`,
-          animationDuration: `${animationDuration}s`,
-          animationDelay: `${animationDelay}s`,
-        }}
-      />
-    );
+    const sparks = [];
+
+    for (let i = 0; i < sparkTotalCount; i++) {
+      const leftPosition = Math.random() * 100; // Random horizontal position
+      const size = 1 + Math.random() * 2; // Random size
+      const animationDuration = (0.5 + Math.random() * 2).toFixed(2); // Random duration
+      const animationDelay = (Math.random() * 2).toFixed(2); // Random delay
+      const randomFactor = Math.random(); // Random factor for trajectory
+
+      sparks.push(
+        <div
+          key={`spark-${i}`}
+          className="spark"
+          style={
+            {
+              left: `${leftPosition}%`,
+              width: `${size}px`,
+              height: `${size}px`,
+              animationDuration: `${animationDuration}s`,
+              animationDelay: `${animationDelay}s`,
+              "--random": randomFactor,
+            } as React.CSSProperties
+          }
+        />
+      );
+    }
+
+    return sparks;
   };
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="scroll-landing-container flex flex-col w-full">
+      {/* Unified starry night background that spans the entire component */}
+      <div className="starry-night-background" ref={starryNightRef}>
+        {/* Static stars background */}
+        <div className="stars-layer"></div>
+        <div className="stars-layer-bottom"></div>
+
+        {/* Twinkling stars animation */}
+        <div className="twinkling-stars"></div>
+
+        {/* Nebula effect (colorful clouds) */}
+        <div className="nebula-effect"></div>
+
+        {/* Nebula dust particles */}
+        <div className="nebula-dust"></div>
+
+        {/* Shooting stars will be added dynamically */}
+      </div>
+
       {/* Top section with LostLibrary title */}
       <div className="relative top-title-section w-full flex items-center justify-center">
-        {/* Starry night sky background container */}
-        <div className="starry-night-background" ref={starryNightRef}>
-          {/* Static stars background */}
-          <div className="stars-layer"></div>
-
-          {/* Twinkling stars animation */}
-          <div className="twinkling-stars"></div>
-
-          {/* Nebula effect (colorful clouds) */}
-          <div className="nebula-effect"></div>
-
-          {/* Nebula dust particles */}
-          <div className="nebula-dust"></div>
-
-          {/* Shooting stars will be added dynamically */}
-        </div>
-
         <h1
           className={`text-white text-8xl md:text-9xl lg:text-11xl font-bold tracking-wide glow-effect-white mega-title ${
             loaded ? "opacity-100 scale-100" : "opacity-0 scale-90"
@@ -163,42 +180,18 @@ const ImprovedScrollLanding = () => {
 
       {/* Bottom section with scroll and fire */}
       <div className="relative scroll-history-section w-full flex items-end justify-center">
-        {/* Advanced fire effect container */}
+        {/* Fire effects container */}
         <div
-          className="absolute inset-x-0 bottom-0 z-0 fire-container"
+          className="absolute inset-x-0 bottom-0 fire-container"
           ref={fireContainerRef}
         >
-          {/* Base layer with multiple realistic flame clusters */}
           <div className="fire-base">
-            {/* Dynamic flame wrappers */}
-            {isClient &&
-              Array.from({ length: flameTotalCount }).map((_, i) => (
-                <FlameWrapper key={`flame-${i}`} index={i} />
-              ))}
+            {/* Jagged flames rendered by createJaggedFlames function */}
+            {createJaggedFlames()}
           </div>
 
-          {/* Ember and spark effects */}
-          {isClient &&
-            Array.from({ length: sparkTotalCount }).map((_, i) => (
-              <Spark key={`spark-${i}`} index={i} />
-            ))}
-
-          {/* Secondary sparks (smaller, faster) */}
-          {isClient &&
-            Array.from({ length: 20 }).map((_, i) => (
-              <div
-                key={`tiny-spark-${i}`}
-                className="tiny-spark"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  animationDuration: `${0.3 + Math.random() * 1}s`,
-                  animationDelay: `${Math.random() * 1}s`,
-                }}
-              />
-            ))}
-
-          {/* Smoke effect overlays */}
-          <div className="smoke-layer"></div>
+          {/* Sparks generated by createSparks function */}
+          {createSparks()}
 
           {/* Fire glow effect */}
           <div className="fire-glow"></div>
