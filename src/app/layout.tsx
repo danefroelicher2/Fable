@@ -28,9 +28,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="h-full">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 dark:bg-gray-900`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 dark:bg-gray-900 h-full`}
       >
         <AuthProvider>
           <ThemeProvider>
@@ -39,8 +39,8 @@ export default function RootLayout({
               <SidebarNav />
 
               {/* Main Content */}
-              <main className="flex-1 md:ml-64 pt-4 pb-20 md:pb-12">
-                <div className="px-4 sm:px-6 lg:px-8">{children}</div>
+              <main className="flex-1 md:ml-64 pt-4 pb-12 w-full overflow-auto">
+                {children}
               </main>
             </div>
           </ThemeProvider>
