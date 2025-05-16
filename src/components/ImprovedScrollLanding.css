@@ -519,3 +519,119 @@
     height: 100px;
   }
 }
+/* src/components/ImprovedScrollLanding.css (continued) */
+
+.history-in-scroll .border-blue-600,
+.history-in-scroll .dark\:border-blue-500 {
+  border-color: #b38962 !important; /* Lighter brown border */
+}
+
+.history-in-scroll .text-blue-600,
+.history-in-scroll .dark\:text-blue-400,
+.history-in-scroll .text-blue-800,
+.history-in-scroll .dark\:text-blue-300 {
+  color: #8b4513 !important; /* Darker brown for accents */
+}
+
+/* Make the title smaller inside the scroll */
+.history-in-scroll h2.text-2xl {
+  font-size: 1.5rem !important;
+  text-align: center !important;
+  margin-top: 0 !important;
+}
+
+/* Adjust the grid layout to be more compact */
+.history-in-scroll .grid {
+  gap: 0.5rem !important;
+}
+
+/* Hide the "More historical events" link to save space */
+.history-in-scroll .mt-4.text-center {
+  display: none !important;
+}
+
+/* Blue text within historical events */
+.history-in-scroll .text-blue-800,
+.history-in-scroll .dark\:text-blue-400 {
+  color: #8b4513 !important; /* Saddle brown */
+  font-weight: bold;
+}
+
+/* Fix z-index and position for coexistence with sidebar */
+.scroll-landing-container {
+  position: relative;
+  z-index: 5; /* Make sure it's lower than the sidebar's z-index */
+}
+
+/* Ensure content doesn't overlap with sidebar on desktop */
+@media (min-width: 768px) {
+  .scroll-landing-container main {
+    margin-left: 16rem !important; /* 16rem = 64px - typical sidebar width */
+  }
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 768px) {
+  .top-title-section {
+    height: 40vh; /* Smaller on mobile */
+  }
+
+  .scroll-history-section {
+    height: 45vh; /* Larger on mobile */
+  }
+
+  /* Main title responsiveness */
+  .mega-title {
+    width: 90%;
+    font-size: 4rem !important;
+  }
+
+  .scroll-content {
+    padding: 15px 10px;
+    min-height: 180px;
+  }
+
+  .scroll-handle {
+    min-width: 30px;
+    height: 120px;
+  }
+
+  /* Adjust nebula effect on mobile */
+  .nebula-effect {
+    filter: blur(10px);
+  }
+
+  /* On mobile screens, the starry background should cover the full width */
+  .starry-night-background {
+    left: 0;
+    width: 100%;
+  }
+
+  /* Fix for mobile to ensure the component respects the full width */
+  .scroll-landing-container {
+    padding-left: 0 !important;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .mega-title {
+    font-size: 3rem !important;
+  }
+
+  .scroll-content {
+    min-height: 150px;
+    max-height: 200px;
+  }
+
+  .scroll-handle {
+    min-width: 25px;
+    height: 100px;
+  }
+}
+
+/* Ensure the sidebar is always visible and on top */
+nav.bg-gray-900 {
+  z-index: 50 !important; /* Higher z-index than the landing page */
+  position: fixed !important;
+}
