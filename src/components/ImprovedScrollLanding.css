@@ -7,12 +7,13 @@
 .top-title-section {
   height: 45vh;
   min-height: 300px;
-  background-color: black;
+  position: relative;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  position: relative;
+  background-color: transparent !important;
 }
 
 /* Mega title styling */
@@ -20,6 +21,9 @@
   width: 70%;
   text-align: center;
   letter-spacing: 0.05em;
+  text-shadow: 0 0 20px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+  position: relative;
 }
 
 /* Extra large text size for the largest screens */
@@ -31,9 +35,9 @@
 .scroll-history-section {
   height: 40vh;
   min-height: 300px;
-  background-color: black;
   position: relative;
   overflow: hidden;
+  background-color: transparent;
 }
 
 /* White glow effect for main title */
@@ -62,555 +66,6 @@
   right: 0;
   margin-bottom: 20px;
 }
-
-/* SHARP REALISTIC FIRE EFFECTS */
-.fire-container {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  height: 220px; /* Taller container for flames */
-  overflow: hidden;
-  z-index: 1;
-}
-
-.fire-base {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  bottom: -20px;
-  background: linear-gradient(
-    to top,
-    rgba(60, 0, 0, 0.4) 0%,
-    rgba(70, 10, 0, 0.2) 40%,
-    rgba(0, 0, 0, 0) 100%
-  );
-  z-index: 1;
-}
-
-/* Base for flames with gradient effect */
-.fire-glow {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 60px; /* Just the bottom glow */
-  background: radial-gradient(
-    ellipse at center bottom,
-    rgba(255, 80, 0, 0.6) 0%,
-    rgba(255, 30, 0, 0.3) 50%,
-    rgba(30, 0, 0, 0.1) 100%
-  );
-  z-index: 3;
-  pointer-events: none;
-}
-
-/* Jagged flames with realistic shapes */
-.jagged-flame-container {
-  position: absolute;
-  bottom: -20px; /* Starts slightly below the container */
-  width: 60px; /* Base width for flames */
-  transform-origin: center bottom;
-  /* Animation for flame swaying */
-  animation: flameSwayAndHeight 3s ease-in-out infinite alternate;
-  z-index: 2;
-}
-
-/* Outer flame layer - more red/orange */
-.jagged-flame {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: radial-gradient(
-    ellipse at center bottom,
-    rgba(255, 160, 0, 0.5) 0%,
-    rgba(255, 60, 0, 0.9) 40%,
-    rgba(255, 0, 0, 0.4) 100%
-  );
-  /* Use clip-path for jagged flame appearance */
-  filter: blur(1px);
-  transform-origin: center bottom;
-  mix-blend-mode: screen;
-}
-
-/* The outer flame layer - most red parts */
-.jagged-flame-outer {
-  opacity: 0.7;
-  height: 100%;
-  clip-path: polygon(
-    30% 0%,
-    70% 0%,
-    90% 10%,
-    85% 25%,
-    95% 40%,
-    80% 55%,
-    90% 70%,
-    70% 85%,
-    50% 100%,
-    30% 85%,
-    10% 70%,
-    20% 55%,
-    5% 40%,
-    15% 25%,
-    10% 10%
-  );
-  animation: flickerOuter 2s ease-in-out infinite alternate;
-  z-index: 1;
-}
-
-/* The middle flame layer - orange parts */
-.jagged-flame-inner {
-  opacity: 0.9;
-  height: 85%;
-  width: 80%;
-  left: 10%;
-  background-image: radial-gradient(
-    ellipse at center bottom,
-    rgba(255, 200, 0, 0.8) 0%,
-    rgba(255, 120, 0, 0.9) 40%,
-    rgba(255, 60, 0, 0.6) 100%
-  );
-  clip-path: polygon(
-    35% 0%,
-    65% 0%,
-    80% 15%,
-    70% 30%,
-    90% 50%,
-    75% 65%,
-    85% 80%,
-    60% 95%,
-    50% 100%,
-    40% 95%,
-    15% 80%,
-    25% 65%,
-    10% 50%,
-    30% 30%,
-    20% 15%
-  );
-  animation: flickerInner 2.5s ease-in-out 0.5s infinite alternate;
-  z-index: 2;
-}
-
-/* The core flame layer - brightest yellow parts */
-.jagged-flame-core {
-  opacity: 1;
-  height: 70%;
-  width: 60%;
-  left: 20%;
-  background-image: radial-gradient(
-    ellipse at center bottom,
-    rgba(255, 255, 100, 0.9) 0%,
-    rgba(255, 200, 0, 0.8) 40%,
-    rgba(255, 120, 0, 0.4) 100%
-  );
-  clip-path: polygon(
-    40% 0%,
-    60% 0%,
-    70% 20%,
-    60% 35%,
-    80% 55%,
-    65% 70%,
-    75% 85%,
-    55% 95%,
-    50% 100%,
-    45% 95%,
-    25% 85%,
-    35% 70%,
-    20% 55%,
-    40% 35%,
-    30% 20%
-  );
-  filter: blur(1px);
-  box-shadow: 0 0 20px 10px rgba(255, 230, 0, 0.3);
-  animation: flickerCore 1.8s ease-in-out 0.3s infinite alternate;
-  z-index: 3;
-}
-
-/* Animation for the flame container swaying and varying height */
-@keyframes flameSwayAndHeight {
-  0% {
-    transform: translateX(-50%) scale(1) skew(0deg);
-    height: 100%;
-  }
-  25% {
-    transform: translateX(-52%) scale(1.05, 1.1) skew(2deg);
-    height: 105%;
-  }
-  50% {
-    transform: translateX(-50%) scale(0.95, 1) skew(-1deg);
-    height: 95%;
-  }
-  75% {
-    transform: translateX(-48%) scale(1.05, 1.12) skew(-2deg);
-    height: 108%;
-  }
-  100% {
-    transform: translateX(-50%) scale(1) skew(0deg);
-    height: 100%;
-  }
-}
-
-/* Animations for the flame layers flickering */
-@keyframes flickerOuter {
-  0%,
-  100% {
-    opacity: 0.7;
-    transform: scaleY(1) skew(0deg);
-  }
-  25% {
-    opacity: 0.6;
-    transform: scaleY(1.1) skew(1deg);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scaleY(0.9) skew(-1deg);
-  }
-  75% {
-    opacity: 0.7;
-    transform: scaleY(1.05) skew(0.5deg);
-  }
-}
-
-@keyframes flickerInner {
-  0%,
-  100% {
-    opacity: 0.9;
-    transform: scaleY(1) translateY(0);
-  }
-  25% {
-    opacity: 1;
-    transform: scaleY(1.15) translateY(-5px);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scaleY(0.85) translateY(2px);
-  }
-  75% {
-    opacity: 0.95;
-    transform: scaleY(1.1) translateY(-3px);
-  }
-}
-
-@keyframes flickerCore {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scaleY(1) translateY(0);
-    filter: blur(1px) brightness(1);
-  }
-  25% {
-    opacity: 0.95;
-    transform: scaleY(1.2) translateY(-8px);
-    filter: blur(0.5px) brightness(1.1);
-  }
-  50% {
-    opacity: 1;
-    transform: scaleY(0.8) translateY(3px);
-    filter: blur(1.5px) brightness(0.95);
-  }
-  75% {
-    opacity: 0.9;
-    transform: scaleY(1.15) translateY(-5px);
-    filter: blur(0.8px) brightness(1.05);
-  }
-}
-
-/* Sparks flying up */
-.spark {
-  position: absolute;
-  bottom: 20px;
-  background: rgba(255, 180, 30, 0.9);
-  border-radius: 50%;
-  box-shadow: 0 0 4px 2px rgba(255, 200, 0, 0.6);
-  animation: sparkRise linear infinite;
-  z-index: 4;
-}
-
-@keyframes sparkRise {
-  0% {
-    transform: translateY(0) translateX(0) scale(1);
-    opacity: 1;
-  }
-  30% {
-    transform: translateY(-80px)
-      translateX(calc(15px * var(--random, 0.5) - 7.5px)) scale(0.8);
-    opacity: 0.8;
-  }
-  60% {
-    transform: translateY(-160px)
-      translateX(calc(30px * var(--random, 0.5) - 15px)) scale(0.6);
-    opacity: 0.4;
-  }
-  100% {
-    transform: translateY(-240px)
-      translateX(calc(40px * var(--random, 0.5) - 20px)) scale(0.2);
-    opacity: 0;
-  }
-}
-
-/* Realistic scroll styling */
-.realistic-scroll-container {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  padding: 0 20px;
-  margin-bottom: 20px;
-}
-
-.realistic-scroll {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  max-width: 1000px;
-  z-index: 10; /* Ensure scroll is above fire */
-}
-
-/* Scroll handles (wooden rollers) */
-.scroll-handle {
-  position: relative;
-  min-width: 40px;
-  height: 150px;
-  background-color: #703f16;
-  border-radius: 20px;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
-  z-index: 2;
-}
-
-.scroll-handle::before,
-.scroll-handle::after {
-  content: "";
-  position: absolute;
-  width: 44px;
-  height: 30px;
-  background-color: #5a2e0d;
-  border-radius: 5px;
-  left: -2px;
-}
-
-.scroll-handle::before {
-  top: -10px;
-}
-
-.scroll-handle::after {
-  bottom: -10px;
-}
-
-.scroll-handle-left {
-  margin-right: -10px;
-  transform: rotate(0deg);
-  background-image: linear-gradient(to right, #5a2e0d, #703f16);
-}
-
-.scroll-handle-right {
-  margin-left: -10px;
-  transform: rotate(0deg);
-  background-image: linear-gradient(to left, #5a2e0d, #703f16);
-}
-
-/* Main parchment content area */
-.scroll-content {
-  position: relative;
-  flex-grow: 1;
-  background-color: #f4ebd0;
-  padding: 20px 15px;
-  border-radius: 0;
-  z-index: 1;
-  min-height: 200px;
-  max-height: 250px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2), 0 0 10px rgba(255, 50, 0, 0.3); /* Glow from fire */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  overflow: hidden;
-  overflow-y: auto;
-}
-
-/* Parchment texture and aging effects */
-.scroll-content::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23d2b48c' fill-opacity='0.1'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  mix-blend-mode: multiply;
-  opacity: 0.7;
-}
-
-/* Aged edges on parchment */
-.scroll-content::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: 
-    /* Top edge */ linear-gradient(
-      to bottom,
-      rgba(193, 154, 107, 0.3) 0%,
-      rgba(193, 154, 107, 0.1) 5%,
-      rgba(0, 0, 0, 0) 10%
-    ),
-    /* Bottom edge */
-      linear-gradient(
-        to top,
-        rgba(193, 154, 107, 0.3) 0%,
-        rgba(193, 154, 107, 0.1) 5%,
-        rgba(0, 0, 0, 0) 10%
-      ),
-    /* Left edge - darker near the roll */
-      linear-gradient(
-        to right,
-        rgba(139, 69, 19, 0.4) 0%,
-        rgba(193, 154, 107, 0.1) 5%,
-        rgba(0, 0, 0, 0) 20%
-      ),
-    /* Right edge - darker near the roll */
-      linear-gradient(
-        to left,
-        rgba(139, 69, 19, 0.4) 0%,
-        rgba(193, 154, 107, 0.1) 5%,
-        rgba(0, 0, 0, 0) 20%
-      );
-  z-index: 2;
-  pointer-events: none;
-}
-
-/* Style overrides for ThisDayInHistory component when inside our scroll */
-.history-in-scroll .bg-amber-50,
-.history-in-scroll .dark\:bg-amber-950 {
-  background-color: transparent !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  margin-bottom: 0 !important;
-}
-
-/* Text color adjustments for the history component */
-.history-in-scroll .text-slate-800,
-.history-in-scroll .dark\:text-amber-100,
-.history-in-scroll h2 {
-  color: #5c4030 !important; /* Dark brown text color */
-  font-family: "Cinzel Decorative", serif;
-  margin-bottom: 0.5rem !important;
-}
-
-.history-in-scroll .text-slate-700,
-.history-in-scroll .dark\:text-slate-200,
-.history-in-scroll p {
-  color: #5c4030 !important;
-}
-
-/* Event cards */
-.history-in-scroll .bg-white,
-.history-in-scroll .dark\:bg-gray-800 {
-  background-color: rgba(
-    244,
-    235,
-    208,
-    0.3
-  ) !important; /* Very light parchment */
-  border-color: #b38962 !important; /* Lighter brown border */
-  border-left-width: 4px !important;
-}
-
-.history-in-scroll .border-blue-600,
-.history-in-scroll .dark\:border-blue-500 {
-  border-color: #b38962 !important; /* Lighter brown border */
-}
-
-.history-in-scroll .text-blue-600,
-.history-in-scroll .dark\:text-blue-400,
-.history-in-scroll .text-blue-800,
-.history-in-scroll .dark\:text-blue-300 {
-  color: #8b4513 !important; /* Darker brown for accents */
-}
-
-/* Make the title smaller inside the scroll */
-.history-in-scroll h2.text-2xl {
-  font-size: 1.5rem !important;
-  text-align: center !important;
-  margin-top: 0 !important;
-}
-
-/* Adjust the grid layout to be more compact */
-.history-in-scroll .grid {
-  gap: 0.5rem !important;
-}
-
-/* Hide the "More historical events" link to save space */
-.history-in-scroll .mt-4.text-center {
-  display: none !important;
-}
-
-/* Blue text within historical events */
-.history-in-scroll .text-blue-800,
-.history-in-scroll .dark\:text-blue-400 {
-  color: #8b4513 !important; /* Saddle brown */
-  font-weight: bold;
-}
-
-/* Media queries for responsiveness */
-@media (max-width: 768px) {
-  .top-title-section {
-    height: 40vh; /* Smaller on mobile */
-  }
-
-  .scroll-history-section {
-    height: 45vh; /* Larger on mobile */
-  }
-
-  /* Main title responsiveness */
-  .mega-title {
-    width: 90%;
-    font-size: 4rem !important;
-  }
-
-  .scroll-content {
-    padding: 15px 10px;
-    min-height: 180px;
-  }
-
-  .scroll-handle {
-    min-width: 30px;
-    height: 120px;
-  }
-
-  /* Adjust flames on mobile */
-  .jagged-flame-container {
-    width: 40px; /* Smaller flames on mobile */
-  }
-
-  .fire-container {
-    height: 180px; /* Smaller height on mobile */
-  }
-}
-
-/* Extra small screens */
-@media (max-width: 480px) {
-  .mega-title {
-    font-size: 3rem !important;
-  }
-
-  .scroll-content {
-    min-height: 150px;
-    max-height: 200px;
-  }
-
-  .jagged-flame-container {
-    width: 30px; /* Even smaller flames on very small screens */
-  }
-
-  .scroll-handle {
-    min-width: 25px;
-    height: 100px;
-  }
-}
-css
-/* Add these styles to your src/components/ImprovedScrollLanding.css file */
 
 /* Starry night sky background */
 .starry-night-background {
@@ -812,23 +267,255 @@ css
   filter: blur(1px);
 }
 
-/* Title style adjustment for better visibility with the starry background */
-.top-title-section {
-  /* Keep other styles and just update background */
+/* Realistic scroll styling */
+.realistic-scroll-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0 20px;
+  margin-bottom: 20px;
+}
+
+.realistic-scroll {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 1000px;
+  z-index: 10; /* Ensure scroll is above the background */
+}
+
+/* Scroll handles (wooden rollers) */
+.scroll-handle {
+  position: relative;
+  min-width: 40px;
+  height: 150px;
+  background-color: #703f16;
+  border-radius: 20px;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+  z-index: 2;
+}
+
+.scroll-handle::before,
+.scroll-handle::after {
+  content: "";
+  position: absolute;
+  width: 44px;
+  height: 30px;
+  background-color: #5a2e0d;
+  border-radius: 5px;
+  left: -2px;
+}
+
+.scroll-handle::before {
+  top: -10px;
+}
+
+.scroll-handle::after {
+  bottom: -10px;
+}
+
+.scroll-handle-left {
+  margin-right: -10px;
+  transform: rotate(0deg);
+  background-image: linear-gradient(to right, #5a2e0d, #703f16);
+}
+
+.scroll-handle-right {
+  margin-left: -10px;
+  transform: rotate(0deg);
+  background-image: linear-gradient(to left, #5a2e0d, #703f16);
+}
+
+/* Main parchment content area */
+.scroll-content {
+  position: relative;
+  flex-grow: 1;
+  background-color: #f4ebd0;
+  padding: 20px 15px;
+  border-radius: 0;
+  z-index: 1;
+  min-height: 200px;
+  max-height: 250px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  overflow-y: auto;
+}
+
+/* Parchment texture and aging effects */
+.scroll-content::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23d2b48c' fill-opacity='0.1'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+  opacity: 0.7;
+}
+
+/* Aged edges on parchment */
+.scroll-content::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    /* Top edge */ linear-gradient(
+      to bottom,
+      rgba(193, 154, 107, 0.3) 0%,
+      rgba(193, 154, 107, 0.1) 5%,
+      rgba(0, 0, 0, 0) 10%
+    ),
+    /* Bottom edge */
+      linear-gradient(
+        to top,
+        rgba(193, 154, 107, 0.3) 0%,
+        rgba(193, 154, 107, 0.1) 5%,
+        rgba(0, 0, 0, 0) 10%
+      ),
+    /* Left edge - darker near the roll */
+      linear-gradient(
+        to right,
+        rgba(139, 69, 19, 0.4) 0%,
+        rgba(193, 154, 107, 0.1) 5%,
+        rgba(0, 0, 0, 0) 20%
+      ),
+    /* Right edge - darker near the roll */
+      linear-gradient(
+        to left,
+        rgba(139, 69, 19, 0.4) 0%,
+        rgba(193, 154, 107, 0.1) 5%,
+        rgba(0, 0, 0, 0) 20%
+      );
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Style overrides for ThisDayInHistory component when inside our scroll */
+.history-in-scroll .bg-amber-50,
+.history-in-scroll .dark\:bg-amber-950 {
   background-color: transparent !important;
-  position: relative;
-  z-index: 10;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin-bottom: 0 !important;
 }
 
-.mega-title {
-  text-shadow: 0 0 20px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 0, 0, 0.4);
-  z-index: 20;
-  position: relative;
+/* Text color adjustments for the history component */
+.history-in-scroll .text-slate-800,
+.history-in-scroll .dark\:text-amber-100,
+.history-in-scroll h2 {
+  color: #5c4030 !important; /* Dark brown text color */
+  font-family: "Cinzel Decorative", serif;
+  margin-bottom: 0.5rem !important;
 }
 
-/* Responsive adjustments for smaller screens */
+.history-in-scroll .text-slate-700,
+.history-in-scroll .dark\:text-slate-200,
+.history-in-scroll p {
+  color: #5c4030 !important;
+}
+
+/* Event cards */
+.history-in-scroll .bg-white,
+.history-in-scroll .dark\:bg-gray-800 {
+  background-color: rgba(
+    244,
+    235,
+    208,
+    0.3
+  ) !important; /* Very light parchment */
+  border-color: #b38962 !important; /* Lighter brown border */
+  border-left-width: 4px !important;
+}
+
+.history-in-scroll .border-blue-600,
+.history-in-scroll .dark\:border-blue-500 {
+  border-color: #b38962 !important; /* Lighter brown border */
+}
+
+.history-in-scroll .text-blue-600,
+.history-in-scroll .dark\:text-blue-400,
+.history-in-scroll .text-blue-800,
+.history-in-scroll .dark\:text-blue-300 {
+  color: #8b4513 !important; /* Darker brown for accents */
+}
+
+/* Make the title smaller inside the scroll */
+.history-in-scroll h2.text-2xl {
+  font-size: 1.5rem !important;
+  text-align: center !important;
+  margin-top: 0 !important;
+}
+
+/* Adjust the grid layout to be more compact */
+.history-in-scroll .grid {
+  gap: 0.5rem !important;
+}
+
+/* Hide the "More historical events" link to save space */
+.history-in-scroll .mt-4.text-center {
+  display: none !important;
+}
+
+/* Blue text within historical events */
+.history-in-scroll .text-blue-800,
+.history-in-scroll .dark\:text-blue-400 {
+  color: #8b4513 !important; /* Saddle brown */
+  font-weight: bold;
+}
+
+/* Media queries for responsiveness */
 @media (max-width: 768px) {
+  .top-title-section {
+    height: 40vh; /* Smaller on mobile */
+  }
+
+  .scroll-history-section {
+    height: 45vh; /* Larger on mobile */
+  }
+
+  /* Main title responsiveness */
+  .mega-title {
+    width: 90%;
+    font-size: 4rem !important;
+  }
+
+  .scroll-content {
+    padding: 15px 10px;
+    min-height: 180px;
+  }
+
+  .scroll-handle {
+    min-width: 30px;
+    height: 120px;
+  }
+
+  /* Adjust nebula effect on mobile */
   .nebula-effect {
     filter: blur(10px);
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .mega-title {
+    font-size: 3rem !important;
+  }
+
+  .scroll-content {
+    min-height: 150px;
+    max-height: 200px;
+  }
+
+  .scroll-handle {
+    min-width: 25px;
+    height: 100px;
   }
 }
