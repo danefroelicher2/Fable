@@ -63,23 +63,17 @@ export default function Home() {
           {/* Left side content */}
           <div className="w-full md:w-1/2 text-gray-900 z-10 mb-10 md:mb-0">
             <h2 className="text-2xl font-semibold tracking-wide mb-3">
-              WELCOME HOME
+              WELCOME TO FABLE
             </h2>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-              Historians and
+              Where Stories
               <br />
-              Time-travelers
+              Come Alive
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-gray-700 max-w-xl">
-              Join a community of history enthusiasts exploring the fascinating
-              stories of our shared past.
+              Join a community of writers and readers exploring worlds both real
+              and imagined.
             </p>
-            <Link
-              href="/blog"
-              className="inline-block bg-red-600 text-white px-8 py-4 rounded-md font-semibold hover:bg-red-700 transition-colors text-lg"
-            >
-              Explore Articles
-            </Link>
           </div>
 
           {/* Right side image */}
