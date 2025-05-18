@@ -63,7 +63,7 @@ export default function Home() {
           {/* Left side content */}
           <div className="w-full md:w-1/2 text-gray-900 z-10 mb-10 md:mb-0">
             <h2 className="text-2xl font-semibold tracking-wide mb-3">
-              WELCOME TO THE PAST
+              WELCOME HOME
             </h2>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
               Historians and
