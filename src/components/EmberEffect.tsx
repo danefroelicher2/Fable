@@ -1,41 +1,34 @@
 // src/components/EmberEffect.tsx
 "use client";
 
-import { useEffect, useState, ReactElement } from "react";
 import styles from "./EmberEffect.module.css";
 
 export default function EmberEffect() {
-  const [embers, setEmbers] = useState<ReactElement[]>([]);
+  // Generate more ember particles (30 instead of 20) for a more dramatic effect
+  const emberElements = Array.from({ length: 30 }, (_, i) => {
+    const size = 3 + Math.random() * 6; // Larger size between 3-9px
+    const left = Math.random() * 100; // Random horizontal position
+    const animationDelay = Math.random() * 5; // Shorter delay up to 5s for more frequent embers
+    const animationDuration = 5 + Math.random() * 10; // Faster animation between 5-15s
 
-  useEffect(() => {
-    // Generate 20 ember particles with random positions and animations
-    const emberElements: ReactElement[] = [];
-    for (let i = 0; i < 20; i++) {
-      const size = 2 + Math.random() * 4; // Random size between 2-6px
-      const left = Math.random() * 100; // Random horizontal position
-      const animationDelay = Math.random() * 10; // Random delay up to 10s
-      const animationDuration = 10 + Math.random() * 15; // Random duration between 10-25s
-
-      emberElements.push(
-        <div
-          key={i}
-          className={styles.ember}
-          style={{
-            width: `${size}px`,
-            height: `${size}px`,
-            left: `${left}%`,
-            animationDelay: `${animationDelay}s`,
-            animationDuration: `${animationDuration}s`,
-          }}
-        />
-      );
-    }
-    setEmbers(emberElements);
-  }, []);
+    return (
+      <div
+        key={i}
+        className={styles.ember}
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          left: `${left}%`,
+          animationDelay: `${animationDelay}s`,
+          animationDuration: `${animationDuration}s`,
+        }}
+      />
+    );
+  });
 
   return (
     <div className={styles.emberContainer}>
-      {embers}
+      {emberElements}
       <div className={styles.emberGlow} />
     </div>
   );
