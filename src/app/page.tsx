@@ -3,6 +3,7 @@ import Link from "next/link";
 import ThisDayInHistory from "@/components/ThisDayInHistory";
 import FanArticles from "@/components/FanArticles";
 import Image from "next/image";
+import EmberEffect from "@/components/EmberEffect";
 
 // Mock data for testing - featured posts
 const featuredPosts = [
@@ -58,7 +59,19 @@ export default function Home() {
               "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEWFhYWDg4N3d3dtbW17e3t1dXWBgYGHh4d5eXlzc3OLi4ubm5uVlZWPj4+NjY19fX2JiYl/f39ra2uRkZGZmZlpaWmXl5dvb29xcXGTk5NnZ2c4zIgcAAABkklEQVR4nJXTiZaDIAwE0EmBEFagCNj//86AolZbjnMqr0l2JgFZVY0xKi/v+/6IOGecc9baBoe01o7jcTfHrXZZFuAdnsfD9OdZiVJKkTWHcj8u5ZrVelIrmexRRYn5TaJQpH9brchXVKtdO2R7rbYQ2Z+kWl1Ny/J68Flr7TxniwLeB0e1wundQFjnlBoTOegdxGq1+XiNQx4uJx51zZ1EnsT1ujhELW7OS7icrLWO291ygbZtw2mt9ZSY1Fzj4fwCB5WrP5Uk+dmRrxMRbStF1OtEMtpWdl498D8JrTY/qXzVHvKLRGSWbFCvvWzkDxJRx9PlfugheZK9wyPw2F9HxIaJ5K4zJTKCbCNP4nZNUmQn38e4NcldZ0qEiO5+dzV5kNzIa3BPMpFcyCsxX0leZGpkWCMbYh8k/0AkYJtPA4+pDb6QQw8Ri5sy5aLcnDHHAmVC5FBW1Q5BTjLV0iiK/KJDqR6Fofq4MqikiFGnxYVUZXk5l4QYKXXKUTnRr4MQIxMRJw4xUnx040014Nq4MILgwgAAAABJRU5ErkJggg==')",
           }}
         ></div>
+        <div className="relative flex flex-col md:flex-row items-center py-16 px-6 md:px-12">
+          {/* Add the EmberEffect here */}
+          <EmberEffect />
 
+          {/* Your existing content remains unchanged */}
+          <div className="w-full md:w-1/2 text-gray-900 z-10 mb-10 md:mb-0">
+            {/* Left side content */}
+          </div>
+
+          <div className="w-full md:w-1/2 flex justify-center md:justify-end z-10">
+            {/* Right side image */}
+          </div>
+        </div>
         <div className="relative flex flex-col md:flex-row items-center py-16 px-6 md:px-12">
           {/* Left side content */}
           <div className="w-full md:w-1/2 text-gray-900 z-10 mb-10 md:mb-0">
