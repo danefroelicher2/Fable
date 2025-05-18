@@ -84,12 +84,12 @@ export default function Home() {
 
           {/* Right side image */}
           <div className="w-full md:w-1/2 flex justify-center md:justify-end z-10">
-            <div className="relative w-full max-w-lg h-80 md:h-96 lg:h-[500px]">
+            <div className="relative w-full max-w-lg h-80 md:h-96 lg:h-[500px] overflow-visible">
               <Image
                 src="/images/dragonog.png"
                 alt="Dragon illustration"
                 fill
-                className="object-contain"
+                className="object-contain scale-[1.6] origin-center translate-x-[-5%] translate-y-[10%] transform-gpu"
                 priority
               />
             </div>
