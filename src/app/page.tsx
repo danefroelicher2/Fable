@@ -62,6 +62,7 @@ export default function Home() {
 
         <div className="relative flex flex-col md:flex-row items-center py-16 px-6 md:px-12">
           {/* Left side content */}
+
           <div className="w-full md:w-1/2 text-gray-900 z-10 mb-10 md:mb-0">
             <h2 className="text-2xl font-semibold tracking-wide mb-3">
               WELCOME TO FABLE
