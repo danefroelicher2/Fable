@@ -48,8 +48,8 @@ const historicalEras = [
 export default function Home() {
   return (
     <div className="container mx-auto px-4">
-      {/* Hero Section - Matching dragon's background more precisely */}
-      <div className="relative overflow-hidden bg-[#f8f7f2] rounded-lg mb-12 border border-[#eae9e4]">
+      {/* Hero Section - Using exact specified color #FAE3C6 */}
+      <div className="relative overflow-hidden bg-[#FAF0D7] rounded-lg mb-12 border border-[#e8d2b5]">
         {/* Very subtle texture */}
         <div
           className="absolute inset-0 opacity-5 bg-repeat"
@@ -86,7 +86,7 @@ export default function Home() {
           <div className="w-full md:w-1/2 flex justify-center md:justify-end z-10">
             <div className="relative w-full max-w-lg h-80 md:h-96 lg:h-[500px]">
               <Image
-                src="/images/dragon.png"
+                src="/images/dragonog.png"
                 alt="Dragon illustration"
                 fill
                 className="object-contain"
