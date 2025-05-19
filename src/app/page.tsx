@@ -1,9 +1,8 @@
-// src/app/page.tsx
+// Modified src/app/page.tsx
 import Link from "next/link";
 import ThisDayInHistory from "@/components/ThisDayInHistory";
 import FanArticles from "@/components/FanArticles";
-import Image from "next/image";
-import EmberEffect from "@/components/EmberEffect";
+import HorizontalCommunityFeed from "@/components/HorizontalCommunityFeed";
 
 // Mock data for testing - featured posts
 const featuredPosts = [
@@ -62,39 +61,73 @@ export default function Home() {
 
         <div className="relative flex flex-col md:flex-row items-center py-16 px-6 md:px-12">
           {/* Left side content */}
-
           <div className="w-full md:w-1/2 text-gray-900 z-10 mb-10 md:mb-0">
             <h2 className="text-2xl font-semibold tracking-wide mb-3">
-              WELCOME TO FABLE
+              WELCOME TO THE PAST
             </h2>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-              Where Stories
+              Historians and
               <br />
-              Come Alive
+              Time-travelers
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-gray-700 max-w-xl">
-              Join a community of writers and readers exploring worlds both real
-              and imagined.
+              Join a community of history enthusiasts exploring the fascinating
+              stories of our shared past.
             </p>
+            <Link
+              href="/blog"
+              className="inline-block bg-red-600 text-white px-8 py-4 rounded-md font-semibold hover:bg-red-700 transition-colors text-lg"
+            >
+              Explore Articles
+            </Link>
           </div>
 
           {/* Right side image */}
           <div className="w-full md:w-1/2 flex justify-center md:justify-end z-10">
-            <div className="relative w-full max-w-lg h-80 md:h-96 lg:h-[500px] overflow-visible">
-              <Image
+            <div className="relative w-full max-w-lg h-80 md:h-96 lg:h-[500px]">
+              {/* Assuming you have this image - if not, replace with a valid image */}
+              <img
                 src="/images/dragonog.png"
                 alt="Dragon illustration"
-                fill
-                className="object-contain scale-[1.6] origin-center translate-x-[-5%] translate-y-[10%] transform-gpu"
-                priority
+                className="object-contain w-full h-full"
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* This Day in History Widget - Preserved */}
+      {/* This Day in History Widget */}
       <ThisDayInHistory />
+
+      {/* NEW: Community Articles Horizontal Feed Section */}
+      <section className="mb-16">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-3xl font-bold text-gray-900">
+            Community Articles
+          </h2>
+          <Link
+            href="/feed"
+            className="text-red-800 hover:text-red-600 flex items-center"
+          >
+            See all
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 ml-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </Link>
+        </div>
+        <div className="bg-[#f8f7f2] p-6 rounded-lg border border-[#eae9e4]">
+          <HorizontalCommunityFeed />
+        </div>
+      </section>
 
       {/* Fan Articles */}
       <FanArticles />
