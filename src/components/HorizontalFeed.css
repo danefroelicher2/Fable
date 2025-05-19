@@ -1,0 +1,85 @@
+/* src/components/HorizontalFeed.css */
+
+/* Custom scrollbar for horizontal feeds */
+.horizontal-feed-container {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  position: relative;
+}
+
+/* For Chrome, Edge, and Safari */
+.horizontal-feed-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.horizontal-feed-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.horizontal-feed-container::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 20px;
+}
+
+.horizontal-feed-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.8);
+}
+
+/* Fade effect for indicating more content */
+.horizontal-feed-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 40px;
+  background: linear-gradient(
+    to right,
+    rgba(248, 247, 242, 0),
+    rgba(248, 247, 242, 0.8) 60%
+  );
+  pointer-events: none;
+}
+
+/* Add some padding to allow space for the fade gradient */
+.horizontal-feed-inner {
+  padding-right: 40px;
+}
+
+/* Card animations */
+.feed-card {
+  transition: all 0.3s ease;
+}
+
+.feed-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Card skeleton loading animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-loader {
+  background: linear-gradient(
+    90deg,
+    rgba(226, 232, 240, 0.6) 25%,
+    rgba(226, 232, 240, 0.9) 50%,
+    rgba(226, 232, 240, 0.6) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .horizontal-feed-card {
+    min-width: 220px; /* smaller cards on mobile */
+  }
+}
