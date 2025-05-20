@@ -75,12 +75,6 @@ export default function Home() {
               Join a community of writers and readers exploring worlds both real
               and imagined.
             </p>
-            <Link
-              href="/blog"
-              className="inline-block bg-red-600 text-white px-8 py-4 rounded-md font-semibold hover:bg-red-700 transition-colors text-lg"
-            >
-              Explore Articles
-            </Link>
           </div>
 
           {/* Right side image */}
