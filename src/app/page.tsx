@@ -1,8 +1,11 @@
-// Modified src/app/page.tsx
+// src/app/page.tsx with auto-scrolling community feed
 import Link from "next/link";
 import ThisDayInHistory from "@/components/ThisDayInHistory";
 import FanArticles from "@/components/FanArticles";
-import HorizontalCommunityFeed from "@/components/HorizontalCommunityFeed";
+import Image from "next/image";
+import EmberEffect from "@/components/EmberEffect";
+import AutoScrollingCommunityFeed from "@/components/AutoScrollingCommunityFeed";
+import CommunityFeedHeading from "@/components/CommunityFeedHeading";
 
 // Mock data for testing - featured posts
 const featuredPosts = [
@@ -55,12 +58,13 @@ export default function Home() {
           className="absolute inset-0 opacity-5 bg-repeat"
           style={{
             backgroundImage:
-              "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEWFhYWDg4N3d3dtbW17e3t1dXWBgYGHh4d5eXlzc3OLi4ubm5uVlZWPj4+NjY19fX2JiYl/f39ra2uRkZGZmZlpaWmXl5dvb29xcXGTk5NnZ2c4zIgcAAABkklEQVR4nJXTiZaDIAwE0EmBEFagCNj//86AolZbjnMqr0l2JgFZVY0xKi/v+/6IOGecc9baBoe01o7jcTfHrXZZFuAdnsfD9OdZiVJKkTWHcj8u5ZrVelIrmexRRYn5TaJQpH9brchXVKtdO2R7rbYQ2Z+kWl1Ny/J68Flr7TxniwLeB0e1wundQFjnlBoTOegdxGq1+XiNQx4uJx51zZ1EnsT1ujhELW7OS7icrLWO291ygbZtw2mt9ZSY1Fzj4fwCB5WrP5Uk+dmRrxMRbStF1OtEMtpWdl498D8JrTY/qXzVHvKLRGSWbFCvvWzkDxJRx9PlfugheZK9wyPw2F9HxIaJ5K4zJTKCbCNP4nZNUmQn38e4NcldZ0qEiO5+dzV5kNzIa3BPMpFcyCsxX0leZGpkWCMbYh8k/0AkYJtPA4+pDb6QQw8Ri5sy5aLcnDHHAmVC5FBW1Q5BTjLV0iiK/KJDqR6Fofq4MqikiFGnxYVUZXk5l4QYKXXKUTnRr4MQIxMRJw4xUnx040014Nq4MILgwgAAAABJRU5ErkJggg==')",
+              "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEWFhYWDg4N3d3dtbW17e3t1dXWBgYGHh4d5eXlzc3OLi4ubm5uVlZWPj4+NjY19fX2JiYl/f39ra2uRkZGZmZlpaWmXl5dvb29xcXGTk5NnZ2c4zIgcAAABkklEQVR4nJXTiZaDIAwE0EmBEFagCNj//86AolZbjnMqr0l2JgFZVY0xKi/v+/6IOGecc9baBoe01o7jcTfHrXZZFuAdnsfD9OdZiVJKkTWHcj8u5ZrVelIrmexRRYn5TaJQpH9brchXVKtdO2R7rbYQ2Z+kWl1Ny/J68Flr7TxniwLeB0e1wundQFjnlBoTOegdxGq1+XiNQx4uJx51zZ1EnsT1ujhELW7OS7icrLWO291ygbZtw2mt9ZSY1Fzj4fwCB5WrP5Uk+dmRrxMRbStF1OtEMtpWdl498D8JrTY/qXzVHvKLRGSWbFCvvWzkDxJRx9PlfugheZK9wyPw2F9HxIaJ5K4zJTKCbCNP4nZNUmQn38e4NcldZ0qEiO5+dzV5kNzIa3BPMpFcyCsxX0leZGpkWCMbYh8k/0AkYJtPA4+pDb6QQw8Ri5sy5aLcnDHHAmVC5FBW1Q5BTjLV0iiK/KJDqR6Fofq4MqikiFGnxYVUZXk5l4QYKXXKUTnRr4MQIxMRJw4xUnx040114Nq4MILgwgAAAABJRU5ErkJggg==')",
           }}
         ></div>
 
         <div className="relative flex flex-col md:flex-row items-center py-16 px-6 md:px-12">
           {/* Left side content */}
+
           <div className="w-full md:w-1/2 text-gray-900 z-10 mb-10 md:mb-0">
             <h2 className="text-2xl font-semibold tracking-wide mb-3">
               WELCOME TO FABLE
@@ -78,12 +82,13 @@ export default function Home() {
 
           {/* Right side image */}
           <div className="w-full md:w-1/2 flex justify-center md:justify-end z-10">
-            <div className="relative w-full max-w-lg h-80 md:h-96 lg:h-[500px]">
-              {/* Assuming you have this image - if not, replace with a valid image */}
-              <img
+            <div className="relative w-full max-w-lg h-80 md:h-96 lg:h-[500px] overflow-visible">
+              <Image
                 src="/images/dragonog.png"
                 alt="Dragon illustration"
-                className="object-contain w-full h-full"
+                fill
+                className="object-contain scale-[1.6] origin-center translate-x-[-5%] translate-y-[10%] transform-gpu"
+                priority
               />
             </div>
           </div>
@@ -93,33 +98,11 @@ export default function Home() {
       {/* This Day in History Widget */}
       <ThisDayInHistory />
 
-      {/* NEW: Community Articles Horizontal Feed Section */}
+      {/* NEW: Auto-Scrolling Community Articles Section */}
       <section className="mb-16">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Community Articles
-          </h2>
-          <Link
-            href="/feed"
-            className="text-red-800 hover:text-red-600 flex items-center"
-          >
-            See all
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 ml-1"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </Link>
-        </div>
+        <CommunityFeedHeading />
         <div className="bg-[#f8f7f2] p-6 rounded-lg border border-[#eae9e4]">
-          <HorizontalCommunityFeed />
+          <AutoScrollingCommunityFeed />
         </div>
       </section>
 
