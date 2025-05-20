@@ -1,0 +1,96 @@
+/* src/components/AutoScrollingFeed.css */
+
+/* Container and inner scrollable area */
+.auto-scrolling-container {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  padding: 10px 0;
+}
+
+.auto-scrolling-inner {
+  display: flex;
+  flex-wrap: nowrap;
+  /* Remove scrollbar for auto-scrolling effect */
+  overflow: hidden;
+  position: relative;
+  /* Will be controlled via JS */
+  transform: translateZ(0);
+}
+
+/* Card styling */
+.feed-card {
+  transition: all 0.3s ease;
+  transform: translateZ(0); /* Hardware acceleration */
+  will-change: transform; /* Optimize animations */
+}
+
+.feed-card:hover {
+  transform: translateY(-5px);
+  transition: all 0.3s ease;
+}
+
+/* Loading animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-loader {
+  background: linear-gradient(
+    90deg,
+    rgba(226, 232, 240, 0.6) 25%,
+    rgba(226, 232, 240, 0.9) 50%,
+    rgba(226, 232, 240, 0.6) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Custom styling specifically for the auto-scrolling feed */
+.auto-scrolling-container::before,
+.auto-scrolling-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Left fade gradient */
+.auto-scrolling-container::before {
+  left: 0;
+  background: linear-gradient(
+    to right,
+    rgba(248, 247, 242, 1),
+    rgba(248, 247, 242, 0)
+  );
+}
+
+/* Right fade gradient */
+.auto-scrolling-container::after {
+  right: 0;
+  background: linear-gradient(
+    to left,
+    rgba(248, 247, 242, 1),
+    rgba(248, 247, 242, 0)
+  );
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .feed-card {
+    min-width: 220px; /* smaller cards on mobile */
+  }
+
+  .auto-scrolling-container::before,
+  .auto-scrolling-container::after {
+    width: 20px; /* Smaller gradients on mobile */
+  }
+}
