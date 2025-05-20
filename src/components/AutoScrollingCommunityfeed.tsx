@@ -5,7 +5,6 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import "./AutoScrollingFeed.css";
 
 interface Article {
   id: string;
@@ -202,11 +201,11 @@ export default function AutoScrollingCommunityFeed() {
               key={index}
               className="min-w-[280px] feed-card bg-white rounded-lg shadow-md overflow-hidden flex-shrink-0 border border-[#eae9e4]"
             >
-              <div className="h-36 skeleton-loader"></div>
+              <div className="h-36 bg-gray-200 animate-pulse"></div>
               <div className="p-4">
-                <div className="h-5 skeleton-loader rounded w-3/4 mb-2"></div>
-                <div className="h-4 skeleton-loader rounded w-1/2 mb-2"></div>
-                <div className="h-4 skeleton-loader rounded w-full mb-2"></div>
+                <div className="h-5 bg-gray-200 rounded w-3/4 mb-2 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 rounded w-full mb-2 animate-pulse"></div>
               </div>
             </div>
           ))}
@@ -243,7 +242,8 @@ export default function AutoScrollingCommunityFeed() {
     >
       <div
         ref={scrollContainerRef}
-        className="auto-scrolling-inner flex space-x-6"
+        className="auto-scrolling-inner flex space-x-6 overflow-x-auto scrollbar-hide"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {articles.map((article, index) => (
           <Link

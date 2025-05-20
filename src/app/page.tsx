@@ -1,10 +1,8 @@
-// src/app/page.tsx with auto-scrolling community feed
+// src/app/page.tsx
 import Link from "next/link";
 import ThisDayInHistory from "@/components/ThisDayInHistory";
 import FanArticles from "@/components/FanArticles";
 import Image from "next/image";
-import EmberEffect from "@/components/EmberEffect";
-import AutoScrollingCommunityFeed from "@/components/AutoScrollingCommunityFeed";
 import CommunityFeedHeading from "@/components/CommunityFeedHeading";
 
 // Mock data for testing - featured posts
@@ -64,7 +62,6 @@ export default function Home() {
 
         <div className="relative flex flex-col md:flex-row items-center py-16 px-6 md:px-12">
           {/* Left side content */}
-
           <div className="w-full md:w-1/2 text-gray-900 z-10 mb-10 md:mb-0">
             <h2 className="text-2xl font-semibold tracking-wide mb-3">
               WELCOME TO FABLE
@@ -78,6 +75,12 @@ export default function Home() {
               Join a community of writers and readers exploring worlds both real
               and imagined.
             </p>
+            <Link
+              href="/blog"
+              className="inline-block bg-red-600 text-white px-8 py-4 rounded-md font-semibold hover:bg-red-700 transition-colors text-lg"
+            >
+              Explore Articles
+            </Link>
           </div>
 
           {/* Right side image */}
@@ -98,11 +101,23 @@ export default function Home() {
       {/* This Day in History Widget */}
       <ThisDayInHistory />
 
-      {/* NEW: Auto-Scrolling Community Articles Section */}
+      {/* NEW: Community Articles Section */}
       <section className="mb-16">
         <CommunityFeedHeading />
         <div className="bg-[#f8f7f2] p-6 rounded-lg border border-[#eae9e4]">
-          <AutoScrollingCommunityFeed />
+          {/* Temporarily commented out because of casing issues */}
+          {/* <AutoScrollingCommunityFeed /> */}
+          <div className="text-center py-6">
+            <p className="text-gray-600 mb-4">
+              Latest community articles will appear here
+            </p>
+            <Link
+              href="/feed"
+              className="inline-block bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
+            >
+              View Community Feed
+            </Link>
+          </div>
         </div>
       </section>
 
