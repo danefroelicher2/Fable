@@ -41,7 +41,7 @@ export default function AutoScrollingCommunityFeed() {
 
   // Animation state with increased speed
   const [scrollPosition, setScrollPosition] = useState(0);
-  const scrollSpeed = 1.5; // Increased from 0.5 to 1.5 for faster scrolling
+  const scrollSpeed = 1.25; // Increased from 0.5 to 1.5 for faster scrolling
 
   // Format date (e.g., "Mar 15, 2024")
   const formatDate = (dateString: string) => {
