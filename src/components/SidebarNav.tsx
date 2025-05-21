@@ -30,11 +30,7 @@ export default function SidebarNav() {
   // Detect zoom level using window width to determine if we should show the More button
   useEffect(() => {
     const checkZoomLevel = () => {
-      // This is a rough approximation - we're assuming standard screen sizes
-      // If the viewport height is greater than a certain threshold,
-      // we assume the zoom level is lower and can fit all items
-      // This threshold can be adjusted as needed
-      if (window.innerHeight > 700) {
+      if (window.innerHeight > 800) {
         setShowMoreButton(false);
       } else {
         setShowMoreButton(true);
@@ -191,6 +187,29 @@ export default function SidebarNav() {
             <span>My Profile</span>
           </Link>
 
+          <Link
+            href="/feed"
+            className={`flex items-center px-4 py-3 ${
+              pathname === "/feed" ? "bg-gray-800" : "hover:bg-gray-800"
+            }`}
+          >
+            <svg
+              className="w-6 h-6 mr-3"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7M6 17a1 1 0 011 1"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span>Feed</span>
+          </Link>
+
           {/* Notifications link */}
           {user ? (
             <Link
@@ -326,29 +345,6 @@ export default function SidebarNav() {
             <span>Communities</span>
           </Link>
 
-          <Link
-            href="/bookmarks"
-            className={`flex items-center px-4 py-3 ${
-              pathname === "/bookmarks" ? "bg-gray-800" : "hover:bg-gray-800"
-            }`}
-          >
-            <svg
-              className="w-6 h-6 mr-3"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span>Bookmarks</span>
-          </Link>
-
           {/* More Button - Moved here right after Bookmarks */}
           {showMoreButton && (
             <div className="relative" ref={moreMenuRef}>
@@ -377,6 +373,31 @@ export default function SidebarNav() {
               {isMoreMenuOpen && (
                 <div className="absolute bottom-full left-0 mb-2 w-full rounded-md shadow-lg bg-gray-800 z-50">
                   <div className="py-1">
+                    <Link
+                      href="/bookmarks"
+                      className={`flex items-center px-4 py-3 ${
+                        pathname === "/bookmarks"
+                          ? "bg-gray-800"
+                          : "hover:bg-gray-800"
+                      }`}
+                    >
+                      <svg
+                        className="w-6 h-6 mr-3"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <span>Bookmarks</span>
+                    </Link>
+
                     <Link
                       href="/premium"
                       className="flex items-center px-4 py-3 hover:bg-gray-700 text-white"
@@ -505,6 +526,31 @@ export default function SidebarNav() {
                   />
                 </svg>
                 <span>Premium</span>
+              </Link>
+
+              <Link
+                href="/bookmarks"
+                className={`flex items-center px-4 py-3 ${
+                  pathname === "/bookmarks"
+                    ? "bg-gray-800"
+                    : "hover:bg-gray-800"
+                }`}
+              >
+                <svg
+                  className="w-6 h-6 mr-3"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span>Bookmarks</span>
               </Link>
 
               {/* Saved Drafts link */}
