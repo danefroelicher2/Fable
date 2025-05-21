@@ -1088,6 +1088,8 @@ export default function ProfilePage() {
                   </div>
                 ) : (
                   <div>
+                    // In src/app/profile/page.tsx // Find the Instagram-style
+                    grid of articles and update the hover overlay:
                     {/* Instagram-style grid of articles */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {articles.map((article) => (
@@ -1126,6 +1128,22 @@ export default function ProfilePage() {
                                     viewBox="0 0 20 20"
                                     fill="currentColor"
                                   >
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                  {article.view_count || 0} views
+                                </span>
+                                <span className="flex items-center">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4 mr-1"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                  >
                                     <path
                                       fillRule="evenodd"
                                       d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
@@ -1140,7 +1158,6 @@ export default function ProfilePage() {
                         </Link>
                       ))}
                     </div>
-
                     {articles.length > 0 && (
                       <div className="mt-6 text-center">
                         <Link
