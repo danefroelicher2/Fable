@@ -37,19 +37,17 @@ export default function AutoScrollingCommunityFeed() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
-  const [isPaused, setIsPaused] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Animation state
+  // Animation state with increased speed
   const [scrollPosition, setScrollPosition] = useState(0);
-  const scrollSpeed = 0.5; // pixels per frame - adjust for faster/slower scrolling
-  const pauseDuration = 3000; // 3 seconds pause when hovering
+  const scrollSpeed = 1.5; // Increased from 0.5 to 1.5 for faster scrolling
 
   useEffect(() => {
     fetchRecentArticles();
   }, []);
 
-  // Animation effect - refined implementation
+  // Animation effect - refined implementation with no pause functionality
   useEffect(() => {
     if (!scrollContainerRef.current || articles.length === 0 || loading) {
       return; // Don't animate if we don't have articles or still loading
@@ -57,6 +55,7 @@ export default function AutoScrollingCommunityFeed() {
 
     let animationFrameId: number;
     let lastTimestamp: number | null = null;
+    let currentScrollPos = scrollPosition; // Local variable to track position
 
     const animate = (timestamp: number) => {
       if (!lastTimestamp) {
@@ -66,23 +65,26 @@ export default function AutoScrollingCommunityFeed() {
       const deltaTime = timestamp - lastTimestamp;
       lastTimestamp = timestamp;
 
-      if (!isPaused && scrollContainerRef.current) {
+      if (scrollContainerRef.current) {
         // Calculate new scroll position based on delta time for smooth animation
-        const newPosition = scrollPosition + (scrollSpeed * deltaTime) / 16; // normalize to ~60fps
+        currentScrollPos += (scrollSpeed * deltaTime) / 16; // normalize to ~60fps
 
         // Handle edge case: reaching the end
         const container = scrollContainerRef.current;
         const maxScrollLeft = container.scrollWidth - container.clientWidth;
 
-        if (newPosition >= maxScrollLeft) {
+        if (currentScrollPos >= maxScrollLeft) {
           // Reset to beginning for infinite scroll
-          setScrollPosition(0);
+          currentScrollPos = 0;
           container.scrollLeft = 0;
-          setScrollPosition(0); // Optionally skip this since scrollLeft is source of truth
         } else {
           // Update scroll position
-          setScrollPosition(newPosition);
-          container.scrollLeft = newPosition;
+          container.scrollLeft = currentScrollPos;
+        }
+
+        // Update the React state occasionally to avoid re-renders
+        if (Math.abs(scrollPosition - currentScrollPos) > 50) {
+          setScrollPosition(currentScrollPos);
         }
       }
 
@@ -99,19 +101,7 @@ export default function AutoScrollingCommunityFeed() {
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [isPaused, scrollPosition, articles, loading]);
-
-  // Mouse event handlers for pausing
-  const handleMouseEnter = () => {
-    setIsPaused(true);
-  };
-
-  const handleMouseLeave = () => {
-    // Add a delay before resuming scrolling
-    setTimeout(() => {
-      setIsPaused(false);
-    }, pauseDuration);
-  };
+  }, [articles, loading]); // Removed scrollPosition and isPaused from dependencies
 
   async function fetchRecentArticles() {
     try {
@@ -126,7 +116,7 @@ export default function AutoScrollingCommunityFeed() {
         )
         .eq("is_published", true)
         .order("published_at", { ascending: false })
-        .limit(15);
+        .limit(15); // Explicitly limit to exactly 15 most recent articles
 
       if (error) throw error;
 
@@ -171,16 +161,9 @@ export default function AutoScrollingCommunityFeed() {
         })
       );
 
-      // If we have fewer than 6 articles, duplicate them to ensure smooth scrolling
-      let finalArticles = [...articlesWithUserInfo];
-      if (finalArticles.length < 6) {
-        // Duplicate the articles to ensure we have enough for scrolling
-        while (finalArticles.length < 12) {
-          finalArticles = [...finalArticles, ...articlesWithUserInfo];
-        }
-      }
-
-      setArticles(finalArticles);
+      // No longer need to duplicate articles for infinite scrolling
+      // We'll handle that differently with our true infinite scroll implementation
+      setArticles(articlesWithUserInfo);
     } catch (error: any) {
       console.error("Error fetching recent articles:", error);
       setError("Failed to load recent articles");
@@ -241,11 +224,7 @@ export default function AutoScrollingCommunityFeed() {
   }
 
   return (
-    <div
-      className="auto-scrolling-container"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
+    <div className="auto-scrolling-container">
       <div
         ref={scrollContainerRef}
         className="auto-scrolling-inner flex space-x-6 overflow-x-auto scrollbar-hide"
