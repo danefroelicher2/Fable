@@ -43,6 +43,15 @@ export default function AutoScrollingCommunityFeed() {
   const [scrollPosition, setScrollPosition] = useState(0);
   const scrollSpeed = 1.5; // Increased from 0.5 to 1.5 for faster scrolling
 
+  // Format date (e.g., "Mar 15, 2024")
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
   useEffect(() => {
     fetchRecentArticles();
   }, []);
@@ -186,14 +195,42 @@ export default function AutoScrollingCommunityFeed() {
     }
   }
 
-  // Format date (e.g., "Mar 15, 2024")
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+  // Generate card element for an article to avoid code duplication
+  const generateArticleCard = (article: Article, index: number | string) => (
+    <Link
+      key={`${article.id}-${index}`}
+      href={`/articles/${article.slug}`}
+      className="min-w-[280px] feed-card bg-white rounded-lg shadow-md overflow-hidden flex-shrink-0 border border-[#eae9e4] hover:shadow-lg transition-shadow"
+    >
+      <div className="h-36 bg-slate-200 overflow-hidden">
+        {article.image_url ? (
+          <img
+            src={article.image_url}
+            alt={article.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-slate-500 p-2">
+            <p className="text-center text-sm line-clamp-3">{article.title}</p>
+          </div>
+        )}
+      </div>
+      <div className="p-4">
+        <h3 className="font-medium text-gray-900 mb-1 line-clamp-2">
+          {article.title}
+        </h3>
+        <div className="flex items-center text-sm text-gray-500 mb-2">
+          <span className="inline-block">
+            {article.profiles?.full_name ||
+              article.profiles?.username ||
+              "Anonymous"}
+          </span>
+          <span className="mx-1">•</span>
+          <span>{formatDate(article.published_at)}</span>
+        </div>
+      </div>
+    </Link>
+  );
 
   if (loading) {
     return (
@@ -243,43 +280,15 @@ export default function AutoScrollingCommunityFeed() {
         ref={scrollContainerRef}
         className="auto-scrolling-inner flex space-x-6 overflow-x-auto scrollbar-hide"
       >
-        {articles.map((article, index) => (
-          <Link
-            key={`${article.id}-${index}`} // Using index for duplicated articles
-            href={`/articles/${article.slug}`}
-            className="min-w-[280px] feed-card bg-white rounded-lg shadow-md overflow-hidden flex-shrink-0 border border-[#eae9e4] hover:shadow-lg transition-shadow"
-          >
-            <div className="h-36 bg-slate-200 overflow-hidden">
-              {article.image_url ? (
-                <img
-                  src={article.image_url}
-                  alt={article.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-slate-500 p-2">
-                  <p className="text-center text-sm line-clamp-3">
-                    {article.title}
-                  </p>
-                </div>
-              )}
-            </div>
-            <div className="p-4">
-              <h3 className="font-medium text-gray-900 mb-1 line-clamp-2">
-                {article.title}
-              </h3>
-              <div className="flex items-center text-sm text-gray-500 mb-2">
-                <span className="inline-block">
-                  {article.profiles?.full_name ||
-                    article.profiles?.username ||
-                    "Anonymous"}
-                </span>
-                <span className="mx-1">•</span>
-                <span>{formatDate(article.published_at)}</span>
-              </div>
-            </div>
-          </Link>
-        ))}
+        {/* Main article cards */}
+        {articles.map((article, index) => generateArticleCard(article, index))}
+
+        {/* Clone the first few cards to create seamless looping */}
+        {articles
+          .slice(0, 3)
+          .map((article, index) =>
+            generateArticleCard(article, `clone-${index}`)
+          )}
 
         {/* View more link - at the end but not part of scrolling content */}
         <Link
