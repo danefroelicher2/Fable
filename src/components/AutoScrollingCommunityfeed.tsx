@@ -47,7 +47,7 @@ export default function AutoScrollingCommunityFeed() {
     fetchRecentArticles();
   }, []);
 
-  // Animation effect - refined implementation with no pause functionality
+  // Animation effect - refined implementation with true infinite scroll
   useEffect(() => {
     if (!scrollContainerRef.current || articles.length === 0 || loading) {
       return; // Don't animate if we don't have articles or still loading
@@ -56,6 +56,7 @@ export default function AutoScrollingCommunityFeed() {
     let animationFrameId: number;
     let lastTimestamp: number | null = null;
     let currentScrollPos = scrollPosition; // Local variable to track position
+    let jumpingBack = false; // Flag to avoid visual stutter when looping
 
     const animate = (timestamp: number) => {
       if (!lastTimestamp) {
@@ -66,24 +67,37 @@ export default function AutoScrollingCommunityFeed() {
       lastTimestamp = timestamp;
 
       if (scrollContainerRef.current) {
-        // Calculate new scroll position based on delta time for smooth animation
-        currentScrollPos += (scrollSpeed * deltaTime) / 16; // normalize to ~60fps
-
-        // Handle edge case: reaching the end
         const container = scrollContainerRef.current;
-        const maxScrollLeft = container.scrollWidth - container.clientWidth;
 
-        if (currentScrollPos >= maxScrollLeft) {
-          // Reset to beginning for infinite scroll
-          currentScrollPos = 0;
-          container.scrollLeft = 0;
-        } else {
+        // Don't update scroll position if we're in the middle of resetting
+        if (!jumpingBack) {
+          // Calculate new scroll position based on delta time for smooth animation
+          currentScrollPos += (scrollSpeed * deltaTime) / 16; // normalize to ~60fps
+
           // Update scroll position
           container.scrollLeft = currentScrollPos;
+
+          // Get visible width and full scroll width
+          const visibleWidth = container.clientWidth;
+          const scrollWidth = container.scrollWidth;
+
+          // When we get close to the end (within last card width)
+          if (currentScrollPos >= scrollWidth - visibleWidth - 300) {
+            // We've reached the end, prepare to reset to the beginning
+            jumpingBack = true;
+
+            // Use a timeout to make the jump back smoother (invisible to user)
+            setTimeout(() => {
+              // Jump back to the start position (with a small offset to avoid flash)
+              currentScrollPos = 0;
+              container.scrollLeft = 0;
+              jumpingBack = false;
+            }, 30); // Short delay to avoid visual stutter
+          }
         }
 
-        // Update the React state occasionally to avoid re-renders
-        if (Math.abs(scrollPosition - currentScrollPos) > 50) {
+        // Only update React state occasionally to avoid re-renders
+        if (!jumpingBack && Math.abs(scrollPosition - currentScrollPos) > 50) {
           setScrollPosition(currentScrollPos);
         }
       }
@@ -101,7 +115,7 @@ export default function AutoScrollingCommunityFeed() {
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [articles, loading]); // Removed scrollPosition and isPaused from dependencies
+  }, [articles, loading]); // Removed scrollPosition from dependencies
 
   async function fetchRecentArticles() {
     try {
