@@ -265,6 +265,10 @@ export default function UserPublishedArticles({
         // Updated grid display with 4 columns - REMOVED CATEGORY LABEL BUBBLE
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {articles.map((article) => (
+            // In src/components/UserPublishedArticles.tsx
+            // Add view count display to the grid layout
+
+            // Find the grid display section and update it:
             <div key={article.id} className="relative group">
               <Link
                 href={`/articles/${article.slug}`}
@@ -285,7 +289,6 @@ export default function UserPublishedArticles({
                       </span>
                     </div>
                   )}
-                  {/* Category tag bubble removed from here */}
                 </div>
 
                 {/* Title and date below image */}
@@ -293,9 +296,27 @@ export default function UserPublishedArticles({
                   <h3 className="text-gray-800 font-medium text-sm line-clamp-2">
                     {article.title}
                   </h3>
-                  <p className="text-gray-500 text-xs mt-1">
-                    {formatDate(article.published_at)}
-                  </p>
+                  <div className="flex justify-between items-center mt-1">
+                    <p className="text-gray-500 text-xs">
+                      {formatDate(article.published_at)}
+                    </p>
+                    <div className="text-gray-500 text-xs flex items-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-3 w-3 mr-1"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                        <path
+                          fillRule="evenodd"
+                          d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      {article.view_count || 0}
+                    </div>
+                  </div>
                 </div>
               </Link>
 
