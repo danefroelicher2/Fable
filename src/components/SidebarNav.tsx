@@ -200,7 +200,14 @@ export default function SidebarNav() {
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
-                d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7M6 17a1 1 0 011 1"
+                d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M7 8h10M7 12h10M7 16h5"
                 stroke="currentColor"
                 strokeWidth="2"
                 strokeLinecap="round"
