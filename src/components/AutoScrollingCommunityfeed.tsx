@@ -32,6 +32,15 @@ interface Article extends BaseArticle {
   profiles: ProfileData | null;
 }
 
+// Format date helper (outside component to avoid redeclaration issues)
+const formatDate = (dateString: string): string => {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
 export default function AutoScrollingCommunityFeed() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,16 +50,7 @@ export default function AutoScrollingCommunityFeed() {
 
   // Animation state with increased speed
   const [scrollPosition, setScrollPosition] = useState(0);
-  const scrollSpeed = 1.25; // Increased from 0.5 to 1.5 for faster scrolling
-
-  // Format date (e.g., "Mar 15, 2024")
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+  const scrollSpeed = 0.87;
 
   useEffect(() => {
     fetchRecentArticles();
@@ -67,6 +67,9 @@ export default function AutoScrollingCommunityFeed() {
     let currentScrollPos = scrollPosition; // Local variable to track position
     let jumpingBack = false; // Flag to avoid visual stutter when looping
 
+    // Calculate the width of an element plus spacing
+    const elementWidth = 280 + 24; // Card width (min-width) + spacing (space-x-6 = 1.5rem = 24px)
+
     const animate = (timestamp: number) => {
       if (!lastTimestamp) {
         lastTimestamp = timestamp;
@@ -75,38 +78,45 @@ export default function AutoScrollingCommunityFeed() {
       const deltaTime = timestamp - lastTimestamp;
       lastTimestamp = timestamp;
 
-      if (scrollContainerRef.current) {
+      if (scrollContainerRef.current && !jumpingBack) {
         const container = scrollContainerRef.current;
 
-        // Don't update scroll position if we're in the middle of resetting
-        if (!jumpingBack) {
-          // Calculate new scroll position based on delta time for smooth animation
-          currentScrollPos += (scrollSpeed * deltaTime) / 16; // normalize to ~60fps
+        // Calculate new scroll position based on delta time for smooth animation
+        currentScrollPos += (scrollSpeed * deltaTime) / 16; // normalize to ~60fps
 
-          // Update scroll position
-          container.scrollLeft = currentScrollPos;
+        // Update scroll position
+        container.scrollLeft = currentScrollPos;
 
-          // Get visible width and full scroll width
-          const visibleWidth = container.clientWidth;
-          const scrollWidth = container.scrollWidth;
+        // Get visible width and total scroll width
+        const visibleWidth = container.clientWidth;
+        const totalWidth = container.scrollWidth;
 
-          // When we get close to the end (within last card width)
-          if (currentScrollPos >= scrollWidth - visibleWidth - 300) {
-            // We've reached the end, prepare to reset to the beginning
-            jumpingBack = true;
+        // Calculate the threshold where we should jump back
+        // Jump back when the last "real" article is about to go out of view
+        // and the clones are starting to be visible
+        const numberOfArticles = articles.length;
+        const jumpThreshold =
+          numberOfArticles * elementWidth - visibleWidth / 2;
 
-            // Use a timeout to make the jump back smoother (invisible to user)
+        // When it's time to seamlessly loop back to beginning
+        if (currentScrollPos >= jumpThreshold) {
+          jumpingBack = true;
+
+          // Use RAF for the jump to better sync with rendering
+          requestAnimationFrame(() => {
+            // Instant jump back to the appropriate position (0 for full reset)
+            currentScrollPos = 0;
+            container.scrollLeft = 0;
+
+            // Reset our flag after a slight delay
             setTimeout(() => {
-              // Jump back to the start position (with a small offset to avoid flash)
-              currentScrollPos = 0;
-              container.scrollLeft = 0;
               jumpingBack = false;
-            }, 30); // Short delay to avoid visual stutter
-          }
+            }, 16); // One frame delay at 60fps
+          });
         }
 
         // Only update React state occasionally to avoid re-renders
-        if (!jumpingBack && Math.abs(scrollPosition - currentScrollPos) > 50) {
+        if (Math.abs(scrollPosition - currentScrollPos) > 50) {
           setScrollPosition(currentScrollPos);
         }
       }
@@ -283,9 +293,9 @@ export default function AutoScrollingCommunityFeed() {
         {/* Main article cards */}
         {articles.map((article, index) => generateArticleCard(article, index))}
 
-        {/* Clone the first few cards to create seamless looping */}
+        {/* Clone enough cards to fill at least one viewport width for seamless looping */}
         {articles
-          .slice(0, 3)
+          .slice(0, Math.min(5, articles.length))
           .map((article, index) =>
             generateArticleCard(article, `clone-${index}`)
           )}
