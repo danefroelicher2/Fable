@@ -7,7 +7,7 @@ export default function CommunityFeedHeading() {
   return (
     <div className="flex justify-between items-center mb-4">
       <div>
-        <h2 className="text-3xl font-bold text-gray-900">Community Articles</h2>
+        <h2 className="text-3xl font-bold text-gray-900">Trending</h2>
         <p className="text-gray-600">Latest articles from our writers</p>
       </div>
       <Link
