@@ -100,19 +100,7 @@ export default function Home() {
       <section className="mb-16">
         <CommunityFeedHeading />
         <div className="bg-[#f8f7f2] p-6 rounded-lg border border-[#eae9e4]">
-          {/* Temporarily commented out because of casing issues */}
-          {/* <AutoScrollingCommunityFeed /> */}
-          <div className="text-center py-6">
-            <p className="text-gray-600 mb-4">
-              Latest community articles will appear here
-            </p>
-            <Link
-              href="/feed"
-              className="inline-block bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
-            >
-              View Community Feed
-            </Link>
-          </div>
+          <AutoScrollingCommunityFeed />
         </div>
       </section>
 
@@ -209,5 +197,5 @@ export default function Home() {
         </div>
       </section>
     </div>
-  );
+  ); // src/app/page.tsx
 }
