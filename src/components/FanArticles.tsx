@@ -67,7 +67,7 @@ const fanArticles = [
 export default function FanArticles() {
   const featuredArticle = fanArticles.find((article) => article.featured);
   const sideArticles = fanArticles.filter((article) => !article.featured);
-  
+
   // Split side articles for left and right columns
   const leftColumnArticles = sideArticles.slice(0, 2);
   const rightColumnArticles = sideArticles.slice(2);
@@ -75,7 +75,9 @@ export default function FanArticles() {
   return (
     <section className="mb-16">
       <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Fan Articles</h2>
+        <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
+          Featured
+        </h2>
         <Link
           href="/contribute"
           className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-semibold"
@@ -88,7 +90,10 @@ export default function FanArticles() {
         {/* Left column */}
         <div className="md:col-span-3 space-y-6">
           {leftColumnArticles.map((article) => (
-            <div key={article.id} className="bg-white dark:bg-gray-800 overflow-hidden">
+            <div
+              key={article.id}
+              className="bg-white dark:bg-gray-800 overflow-hidden"
+            >
               <div className="relative">
                 <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700 mb-3">
                   <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
@@ -111,7 +116,9 @@ export default function FanArticles() {
                   {article.title}
                 </Link>
               </h3>
-              <p className="text-gray-700 dark:text-gray-300 text-sm px-2 pb-2">{article.excerpt}</p>
+              <p className="text-gray-700 dark:text-gray-300 text-sm px-2 pb-2">
+                {article.excerpt}
+              </p>
             </div>
           ))}
         </div>
@@ -143,7 +150,9 @@ export default function FanArticles() {
                     {featuredArticle.title}
                   </Link>
                 </h3>
-                <p className="text-gray-700 dark:text-gray-300 mb-4">{featuredArticle.excerpt}</p>
+                <p className="text-gray-700 dark:text-gray-300 mb-4">
+                  {featuredArticle.excerpt}
+                </p>
                 <Link
                   href={`/fan-articles/${featuredArticle.slug}`}
                   className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium"
@@ -158,7 +167,10 @@ export default function FanArticles() {
         {/* Right column */}
         <div className="md:col-span-3 space-y-6">
           {rightColumnArticles.map((article) => (
-            <div key={article.id} className="bg-white dark:bg-gray-800 overflow-hidden">
+            <div
+              key={article.id}
+              className="bg-white dark:bg-gray-800 overflow-hidden"
+            >
               <div className="relative">
                 <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700 mb-3">
                   <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
@@ -181,7 +193,9 @@ export default function FanArticles() {
                   {article.title}
                 </Link>
               </h3>
-              <p className="text-gray-700 dark:text-gray-300 text-sm px-2 pb-2">{article.excerpt}</p>
+              <p className="text-gray-700 dark:text-gray-300 text-sm px-2 pb-2">
+                {article.excerpt}
+              </p>
             </div>
           ))}
         </div>
