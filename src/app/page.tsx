@@ -4,6 +4,7 @@ import ThisDayInHistory from "@/components/ThisDayInHistory";
 import FanArticles from "@/components/FanArticles";
 import Image from "next/image";
 import CommunityFeedHeading from "@/components/CommunityFeedHeading";
+import AutoScrollingCommunityFeed from "@/components/AutoScrollingCommunityFeed";
 
 // Mock data for testing - featured posts
 const featuredPosts = [

@@ -5,8 +5,17 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import "./AutoScrollingFeed.css"; // Import the CSS file
 
-interface Article {
+// Type for profile data
+interface ProfileData {
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
+// Type for article data without profile details
+interface BaseArticle {
   id: string;
   title: string;
   slug: string;
@@ -16,11 +25,11 @@ interface Article {
   view_count: number;
   image_url?: string | null;
   user_id: string;
-  profiles?: {
-    username: string | null;
-    full_name: string | null;
-    avatar_url: string | null;
-  };
+}
+
+// Extend BaseArticle with profile information
+interface Article extends BaseArticle {
+  profiles: ProfileData | null;
 }
 
 export default function AutoScrollingCommunityFeed() {
@@ -31,7 +40,7 @@ export default function AutoScrollingCommunityFeed() {
   const [isPaused, setIsPaused] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Variables to track scrolling state
+  // Animation state
   const [scrollPosition, setScrollPosition] = useState(0);
   const scrollSpeed = 0.5; // pixels per frame - adjust for faster/slower scrolling
   const pauseDuration = 3000; // 3 seconds pause when hovering
@@ -40,63 +49,65 @@ export default function AutoScrollingCommunityFeed() {
     fetchRecentArticles();
   }, []);
 
-  // Animation effect
+  // Animation effect - refined implementation
   useEffect(() => {
+    if (!scrollContainerRef.current || articles.length === 0 || loading) {
+      return; // Don't animate if we don't have articles or still loading
+    }
+
     let animationFrameId: number;
-    let lastTime = 0;
-    let pauseTimeout: NodeJS.Timeout | null = null;
+    let lastTimestamp: number | null = null;
 
-    // Function to handle the scrolling animation
     const animate = (timestamp: number) => {
-      if (!lastTime) lastTime = timestamp;
-      const deltaTime = timestamp - lastTime;
-      lastTime = timestamp;
-
-      if (!isPaused && scrollContainerRef.current) {
-        // Calculate new scroll position
-        let newPosition = scrollPosition + scrollSpeed * (deltaTime / 16); // Normalize to ~60fps
-
-        // Handle edge case: when reaching the end, reset to the beginning
-        const containerWidth = scrollContainerRef.current.scrollWidth;
-        const viewportWidth = scrollContainerRef.current.offsetWidth;
-
-        if (newPosition > containerWidth - viewportWidth) {
-          // Reset to beginning with a small offset to create a smooth transition
-          newPosition = 0;
-        }
-
-        // Update state and DOM
-        setScrollPosition(newPosition);
-        scrollContainerRef.current.scrollLeft = newPosition;
+      if (!lastTimestamp) {
+        lastTimestamp = timestamp;
       }
 
-      // Continue animation loop
+      const deltaTime = timestamp - lastTimestamp;
+      lastTimestamp = timestamp;
+
+      if (!isPaused && scrollContainerRef.current) {
+        // Calculate new scroll position based on delta time for smooth animation
+        const newPosition = scrollPosition + (scrollSpeed * deltaTime) / 16; // normalize to ~60fps
+
+        // Handle edge case: reaching the end
+        const container = scrollContainerRef.current;
+        const maxScrollLeft = container.scrollWidth - container.clientWidth;
+
+        if (newPosition >= maxScrollLeft) {
+          // Reset to beginning for infinite scroll
+          setScrollPosition(0);
+          container.scrollLeft = 0;
+          setScrollPosition(0); // Optionally skip this since scrollLeft is source of truth
+        } else {
+          // Update scroll position
+          setScrollPosition(newPosition);
+          container.scrollLeft = newPosition;
+        }
+      }
+
+      // Continue the animation loop
       animationFrameId = requestAnimationFrame(animate);
     };
 
-    // Start the animation if articles are loaded and not in loading state
-    if (!loading && articles.length > 0) {
-      animationFrameId = requestAnimationFrame(animate);
-    }
+    // Start the animation
+    animationFrameId = requestAnimationFrame(animate);
 
-    // Clean up the animation frame
+    // Clean up when component unmounts
     return () => {
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
       }
-      if (pauseTimeout) {
-        clearTimeout(pauseTimeout);
-      }
     };
-  }, [isPaused, loading, articles, scrollPosition]);
+  }, [isPaused, scrollPosition, articles, loading]);
 
-  // Mouse event handlers
+  // Mouse event handlers for pausing
   const handleMouseEnter = () => {
     setIsPaused(true);
   };
 
   const handleMouseLeave = () => {
-    // Small delay before resuming scrolling
+    // Add a delay before resuming scrolling
     setTimeout(() => {
       setIsPaused(false);
     }, pauseDuration);
@@ -107,25 +118,15 @@ export default function AutoScrollingCommunityFeed() {
       setLoading(true);
       setError(null);
 
-      // Fetch recent articles from public_articles table
+      // bypass type checking with 'any'
       const { data, error } = await (supabase as any)
         .from("public_articles")
         .select(
-          `
-          id, 
-          title, 
-          slug, 
-          excerpt, 
-          category, 
-          published_at, 
-          view_count,
-          image_url,
-          user_id
-        `
+          "id, title, slug, excerpt, category, published_at, view_count, image_url, user_id"
         )
         .eq("is_published", true)
         .order("published_at", { ascending: false })
-        .limit(15); // Get more articles for continuous scrolling
+        .limit(15);
 
       if (error) throw error;
 
@@ -137,10 +138,12 @@ export default function AutoScrollingCommunityFeed() {
       }
 
       // Fetch user information for each article
-      const articlesWithUserInfo = await Promise.all(
-        data.map(async (article: Article) => {
+      const articlesWithUserInfo: Article[] = await Promise.all(
+        data.map(async (article: BaseArticle) => {
           try {
-            const { data: userData, error: userError } = await (supabase as any)
+            // Fetch user profile separately for each article
+            // @ts-ignore - We're using a simple string for the select statement to avoid type issues
+            const { data: userData, error: userError } = await supabase
               .from("profiles")
               .select("username, full_name, avatar_url")
               .eq("id", article.user_id)
@@ -154,7 +157,10 @@ export default function AutoScrollingCommunityFeed() {
               return { ...article, profiles: null };
             }
 
-            return { ...article, profiles: userData };
+            return {
+              ...article,
+              profiles: userData as ProfileData,
+            };
           } catch (err) {
             console.warn(
               `Error processing user for article ${article.id}:`,
@@ -243,7 +249,6 @@ export default function AutoScrollingCommunityFeed() {
       <div
         ref={scrollContainerRef}
         className="auto-scrolling-inner flex space-x-6 overflow-x-auto scrollbar-hide"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {articles.map((article, index) => (
           <Link
