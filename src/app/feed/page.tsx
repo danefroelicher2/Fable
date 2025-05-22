@@ -401,13 +401,10 @@ export default function PublicFeed() {
         );
       } else {
         return (
-          <div className="mt-4 md:mt-0 flex space-x-4 items-center">
-            <Link
-              href="/search-users"
-              className="text-blue-600 hover:text-blue-800"
-            >
-              Find Users
-            </Link>
+          <div className="text-center py-8 bg-white rounded-lg shadow-md">
+            <p className="text-lg text-gray-600">
+              No articles found in this category.
+            </p>
             {user && (
               <Link
                 href="/write"
@@ -437,19 +434,21 @@ export default function PublicFeed() {
           <h1 className="text-3xl font-bold mb-2">Community Feed</h1>
         </div>
 
-        <div className="mt-4 md:mt-0 flex space-x-4">
+        <div className="mt-4 md:mt-0 flex space-x-4 items-center">
           <Link
             href="/search-users"
-            className="text-blue-600 hover:text-blue-800 self-center"
+            className="text-blue-600 hover:text-blue-800"
           >
             Find Users
           </Link>
-          <Link
-            href="/write"
-            className="bg-blue-600 text-white font-bold py-2 w- rounded hover:bg-blue-700 flex items-center justify-center"
-          >
-            Post
-          </Link>
+          {user && (
+            <Link
+              href="/write"
+              className="text-blue-600 hover:text-blue-800 font-bold"
+            >
+              Post
+            </Link>
+          )}
         </div>
       </div>
 
