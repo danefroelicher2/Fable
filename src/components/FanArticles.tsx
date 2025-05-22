@@ -248,7 +248,7 @@ export default function FanArticles() {
           {leftColumnArticles.map((article) => (
             <div
               key={article.id}
-              className="bg-white dark:bg-gray-800 overflow-hidden"
+              className="bg-white dark:bg-gray-800 overflow-hidden flex flex-col"
             >
               <div className="relative">
                 <Link
@@ -277,21 +277,23 @@ export default function FanArticles() {
                   </span>
                 </div>
               </div>
-              <h3 className="text-lg font-bold mb-2 leading-tight uppercase px-2">
-                <Link
-                  href={article.slug ? `/articles/${article.slug}` : "#"}
-                  className={`text-gray-900 dark:text-gray-100 ${
-                    article.slug
-                      ? "hover:text-red-600 dark:hover:text-red-400"
-                      : "cursor-default"
-                  }`}
-                >
-                  {article.title}
-                </Link>
-              </h3>
-              <p className="text-gray-700 dark:text-gray-300 text-sm px-2 pb-2">
-                {article.excerpt}
-              </p>
+              <div className="flex flex-col flex-grow">
+                <h3 className="text-lg font-bold mb-2 leading-tight uppercase px-2">
+                  <Link
+                    href={article.slug ? `/articles/${article.slug}` : "#"}
+                    className={`text-gray-900 dark:text-gray-100 ${
+                      article.slug
+                        ? "hover:text-red-600 dark:hover:text-red-400"
+                        : "cursor-default"
+                    }`}
+                  >
+                    {article.title}
+                  </Link>
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 text-sm px-2 pb-2 flex-grow">
+                  {article.excerpt}
+                </p>
+              </div>
             </div>
           ))}
         </div>
@@ -299,7 +301,7 @@ export default function FanArticles() {
         {/* Center featured article */}
         {featuredArticle && (
           <div className="md:col-span-6">
-            <div className="bg-white dark:bg-gray-800 overflow-hidden h-full">
+            <div className="bg-white dark:bg-gray-800 overflow-hidden h-full flex flex-col">
               <div className="relative">
                 <Link
                   href={
@@ -311,7 +313,7 @@ export default function FanArticles() {
                     featuredArticle.slug ? "cursor-pointer" : "cursor-default"
                   }
                 >
-                  <div className="aspect-[16/9] bg-gray-200 dark:bg-gray-700 mb-3">
+                  <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700 mb-3">
                     {featuredArticle.image_url ? (
                       <img
                         src={featuredArticle.image_url}
@@ -333,7 +335,7 @@ export default function FanArticles() {
                   </span>
                 </div>
               </div>
-              <div className="px-3 pb-3">
+              <div className="px-3 pb-3 flex flex-col flex-grow">
                 <h3 className="text-2xl font-bold mb-3 leading-tight uppercase">
                   <Link
                     href={
@@ -350,13 +352,13 @@ export default function FanArticles() {
                     {featuredArticle.title}
                   </Link>
                 </h3>
-                <p className="text-gray-700 dark:text-gray-300 mb-4">
+                <p className="text-gray-700 dark:text-gray-300 mb-4 flex-grow">
                   {featuredArticle.excerpt}
                 </p>
                 {featuredArticle.slug && (
                   <Link
                     href={`/articles/${featuredArticle.slug}`}
-                    className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                    className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium mt-auto"
                   >
                     Read on
                   </Link>
@@ -371,7 +373,7 @@ export default function FanArticles() {
           {rightColumnArticles.map((article) => (
             <div
               key={article.id}
-              className="bg-white dark:bg-gray-800 overflow-hidden"
+              className="bg-white dark:bg-gray-800 overflow-hidden flex flex-col"
             >
               <div className="relative">
                 <Link
@@ -400,21 +402,23 @@ export default function FanArticles() {
                   </span>
                 </div>
               </div>
-              <h3 className="text-lg font-bold mb-2 leading-tight uppercase px-2">
-                <Link
-                  href={article.slug ? `/articles/${article.slug}` : "#"}
-                  className={`text-gray-900 dark:text-gray-100 ${
-                    article.slug
-                      ? "hover:text-red-600 dark:hover:text-red-400"
-                      : "cursor-default"
-                  }`}
-                >
-                  {article.title}
-                </Link>
-              </h3>
-              <p className="text-gray-700 dark:text-gray-300 text-sm px-2 pb-2">
-                {article.excerpt}
-              </p>
+              <div className="flex flex-col flex-grow">
+                <h3 className="text-lg font-bold mb-2 leading-tight uppercase px-2">
+                  <Link
+                    href={article.slug ? `/articles/${article.slug}` : "#"}
+                    className={`text-gray-900 dark:text-gray-100 ${
+                      article.slug
+                        ? "hover:text-red-600 dark:hover:text-red-400"
+                        : "cursor-default"
+                    }`}
+                  >
+                    {article.title}
+                  </Link>
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 text-sm px-2 pb-2 flex-grow">
+                  {article.excerpt}
+                </p>
+              </div>
             </div>
           ))}
         </div>
