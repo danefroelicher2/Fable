@@ -251,19 +251,24 @@ export default function FanArticles() {
               className="bg-white dark:bg-gray-800 overflow-hidden"
             >
               <div className="relative">
-                <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700 mb-3">
-                  {article.image_url ? (
-                    <img
-                      src={article.image_url}
-                      alt={article.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-                      [Featured Image]
-                    </div>
-                  )}
-                </div>
+                <Link
+                  href={article.slug ? `/articles/${article.slug}` : "#"}
+                  className={article.slug ? "cursor-pointer" : "cursor-default"}
+                >
+                  <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700 mb-3">
+                    {article.image_url ? (
+                      <img
+                        src={article.image_url}
+                        alt={article.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
+                        [Featured Image]
+                      </div>
+                    )}
+                  </div>
+                </Link>
                 <div className="absolute bottom-3 right-0">
                   <span
                     className={`bg-red-600 text-white px-3 py-1 text-sm font-medium`}
@@ -296,19 +301,30 @@ export default function FanArticles() {
           <div className="md:col-span-6">
             <div className="bg-white dark:bg-gray-800 overflow-hidden h-full">
               <div className="relative">
-                <div className="aspect-[16/9] bg-gray-200 dark:bg-gray-700 mb-3">
-                  {featuredArticle.image_url ? (
-                    <img
-                      src={featuredArticle.image_url}
-                      alt={featuredArticle.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-                      [Featured Image]
-                    </div>
-                  )}
-                </div>
+                <Link
+                  href={
+                    featuredArticle.slug
+                      ? `/articles/${featuredArticle.slug}`
+                      : "#"
+                  }
+                  className={
+                    featuredArticle.slug ? "cursor-pointer" : "cursor-default"
+                  }
+                >
+                  <div className="aspect-[16/9] bg-gray-200 dark:bg-gray-700 mb-3">
+                    {featuredArticle.image_url ? (
+                      <img
+                        src={featuredArticle.image_url}
+                        alt={featuredArticle.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
+                        [Featured Image]
+                      </div>
+                    )}
+                  </div>
+                </Link>
                 <div className="absolute bottom-3 right-0">
                   <span
                     className={`bg-red-600 text-white px-4 py-1 text-sm font-medium`}
@@ -358,19 +374,24 @@ export default function FanArticles() {
               className="bg-white dark:bg-gray-800 overflow-hidden"
             >
               <div className="relative">
-                <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700 mb-3">
-                  {article.image_url ? (
-                    <img
-                      src={article.image_url}
-                      alt={article.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-                      [Featured Image]
-                    </div>
-                  )}
-                </div>
+                <Link
+                  href={article.slug ? `/articles/${article.slug}` : "#"}
+                  className={article.slug ? "cursor-pointer" : "cursor-default"}
+                >
+                  <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700 mb-3">
+                    {article.image_url ? (
+                      <img
+                        src={article.image_url}
+                        alt={article.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
+                        [Featured Image]
+                      </div>
+                    )}
+                  </div>
+                </Link>
                 <div className="absolute bottom-3 right-0">
                   <span
                     className={`bg-red-600 text-white px-3 py-1 text-sm font-medium`}

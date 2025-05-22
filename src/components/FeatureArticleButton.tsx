@@ -124,7 +124,7 @@ export default function FeatureArticleButton({
       // Force a refresh of the page after a delay
       setTimeout(() => {
         window.location.href = window.location.origin;
-      }, 2000);
+      }, 500);
     } catch (error: any) {
       console.error("Error featuring article:", error);
       setMessage(
