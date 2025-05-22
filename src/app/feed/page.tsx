@@ -440,9 +440,6 @@ export default function PublicFeed() {
       <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
         <div>
           <h1 className="text-3xl font-bold mb-2">Community Feed</h1>
-          <p className="text-gray-600">
-            Discover articles from the community and people you follow
-          </p>
         </div>
 
         <div className="mt-4 md:mt-0 flex space-x-4">

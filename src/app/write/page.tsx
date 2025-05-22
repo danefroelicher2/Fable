@@ -19,6 +19,7 @@ export default function WritePage() {
   const [coverImage, setCoverImage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [category, setCategory] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -106,9 +107,13 @@ export default function WritePage() {
     }
   };
 
+  // Update the handlePublish function validation
+
   const handlePublish = async () => {
-    if (!title.trim() || !content.trim()) {
-      setError("Please fill in title and content before publishing");
+    if (!title.trim() || !content.trim() || !category.trim()) {
+      setError(
+        "Please fill in title, content, and select a category before publishing"
+      );
       return;
     }
 
@@ -127,7 +132,7 @@ export default function WritePage() {
         title,
         content,
         excerpt: autoExcerpt,
-        category: "general", // Default category
+        category: category, // Use the selected category instead of "general"
         image_url: coverImage,
         slug: draftSlug,
       };
@@ -198,23 +203,23 @@ export default function WritePage() {
         <form className="bg-white p-6 rounded-lg shadow-md">
           <div className="mb-6">
             <label
-              htmlFor="title"
+              htmlFor="category"
               className="block text-gray-700 font-medium mb-2"
             >
-              Title
+              Category *
             </label>
-            <input
-              type="text"
-              id="title"
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-              }}
+            <select
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
               className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
-              placeholder="Enter a compelling title for your article"
               required
               disabled={isRedirecting}
-            />
+            >
+              <option value="">Select a category</option>
+              <option value="fiction">Fiction</option>
+              <option value="non-fiction">Non-Fiction</option>
+            </select>
           </div>
 
           <div className="mb-6">
