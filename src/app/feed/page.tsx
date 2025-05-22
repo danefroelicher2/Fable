@@ -401,14 +401,17 @@ export default function PublicFeed() {
         );
       } else {
         return (
-          <div className="text-center py-8 bg-white rounded-lg shadow-md">
-            <p className="text-lg text-gray-600">
-              No articles found in this category.
-            </p>
+          <div className="mt-4 md:mt-0 flex space-x-4 items-center">
+            <Link
+              href="/search-users"
+              className="text-blue-600 hover:text-blue-800"
+            >
+              Find Users
+            </Link>
             {user && (
               <Link
                 href="/write"
-                className="mt-4 inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+                className="mt-4 inline-block text-blue-600 hover:text-blue-800 font-bold"
               >
                 Write the First Article
               </Link>
@@ -428,7 +431,7 @@ export default function PublicFeed() {
   };
 
   return (
-    <div className="container mx-auto py-10 px-4">
+    <div className="container mx-auto py-8 px-4">
       <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
         <div>
           <h1 className="text-3xl font-bold mb-2">Community Feed</h1>
@@ -441,25 +444,23 @@ export default function PublicFeed() {
           >
             Find Users
           </Link>
-          {user && (
-            <Link
-              href="/write"
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Write Article
-            </Link>
-          )}
+          <Link
+            href="/write"
+            className="bg-blue-600 text-white font-bold py-2 w- rounded hover:bg-blue-700 flex items-center justify-center"
+          >
+            Post
+          </Link>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="mb-8 border-b">
+      <div className="mb-6 border-b">
         <div className="flex">
           <button
             onClick={() => setActiveTab("forYou")}
             className={`px-6 py-3 text-lg font-medium border-b-2 ${
               activeTab === "forYou"
-                ? "border-blue-600 text-blue-600"
+                ? "border-blue-600 text-blue-600 font-bold"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
@@ -469,7 +470,7 @@ export default function PublicFeed() {
             onClick={() => setActiveTab("following")}
             className={`px-6 py-3 text-lg font-medium border-b-2 ${
               activeTab === "following"
-                ? "border-blue-600 text-blue-600"
+                ? "border-blue-600 text-blue-600 font-bold"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
@@ -483,16 +484,23 @@ export default function PublicFeed() {
         <div>
           {/* Category Filter - only shown for "For You" tab */}
           <div className="mb-8">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Filter by Category
             </label>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full md:w-64 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full md:w-64 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 text-black dark:text-white border-gray-300 dark:border-gray-600"
+              style={{
+                colorScheme: "light dark",
+              }}
             >
               {categories.map((category) => (
-                <option key={category.value} value={category.value}>
+                <option
+                  key={category.value}
+                  value={category.value}
+                  className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                >
                   {category.label}
                 </option>
               ))}
