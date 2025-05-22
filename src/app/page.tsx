@@ -107,69 +107,6 @@ export default function Home() {
       {/* Fan Articles */}
       <FanArticles />
 
-      {/* Featured Posts */}
-      <section className="mb-16 bg-[#f8f7f2] p-8 rounded-lg border border-[#eae9e4]">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Featured Articles
-          </h2>
-          <Link href="/blog" className="text-red-800 hover:text-red-600">
-            View All Articles
-          </Link>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {featuredPosts.map((post) => (
-            <div
-              key={post.id}
-              className="bg-white rounded-lg shadow-md overflow-hidden p-4 article-card border border-[#eae9e4]"
-            >
-              <div className="h-48 bg-slate-200 mb-4 rounded overflow-hidden">
-                <div className="w-full h-full flex items-center justify-center text-slate-500">
-                  [Featured Image: {post.title}]
-                </div>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold mb-2">
-                  <Link
-                    href={`/blog/${post.slug}`}
-                    className="text-gray-800 hover:text-red-800"
-                  >
-                    {post.title}
-                  </Link>
-                </h3>
-                <p className="text-gray-600 text-sm mb-2">{post.date}</p>
-                <p className="text-gray-700">{post.excerpt}</p>
-                <Link
-                  href={`/blog/${post.slug}`}
-                  className="inline-block mt-4 text-red-800 hover:text-red-600"
-                >
-                  Read More →
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Historical Eras */}
-      <section className="mb-16 bg-[#f8f7f2] p-8 rounded-lg border border-[#eae9e4]">
-        <h2 className="text-3xl font-bold mb-8 text-gray-900">
-          Explore Historical Eras
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {historicalEras.map((era) => (
-            <Link
-              key={era.name}
-              href={era.url}
-              className="bg-white p-4 rounded-lg shadow-sm text-center hover:bg-[#f5f4ef] transition-all border border-[#eae9e4]"
-            >
-              {era.name}
-            </Link>
-          ))}
-        </div>
-      </section>
-
       {/* Newsletter Signup */}
       <section className="bg-[#f8f7f2] p-8 rounded-lg mb-12 border border-[#eae9e4]">
         <div className="max-w-2xl mx-auto text-center">
