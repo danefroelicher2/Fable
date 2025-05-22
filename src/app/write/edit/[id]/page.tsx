@@ -185,9 +185,6 @@ export default function EditDraftPage() {
     }
   };
 
-  // For your handlePublish function in write/edit/[id]/page.tsx
-  // Uses type casting to avoid TypeScript errors
-
   const handlePublish = async () => {
     if (!title.trim() || !content.trim() || !category) {
       setSaveMessage(
@@ -353,15 +350,8 @@ export default function EditDraftPage() {
               required
             >
               <option value="">Select a category</option>
-              <option value="ancient-history">Ancient History</option>
-              <option value="medieval-period">Medieval Period</option>
-              <option value="renaissance">Renaissance</option>
-              <option value="early-modern-period">Early Modern Period</option>
-              <option value="industrial-age">Industrial Age</option>
-              <option value="20th-century">20th Century</option>
-              <option value="world-wars">World Wars</option>
-              <option value="cold-war-era">Cold War Era</option>
-              <option value="modern-history">Modern History</option>
+              <option value="fiction">Fiction</option>
+              <option value="non-fiction">Non-Fiction</option>
             </select>
           </div>
 

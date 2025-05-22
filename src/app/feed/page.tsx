@@ -238,18 +238,10 @@ export default function PublicFeed() {
     });
   };
 
-  // Categories list
   const categories = [
     { value: "all", label: "All Categories" },
-    { value: "ancient-history", label: "Ancient History" },
-    { value: "medieval-period", label: "Medieval Period" },
-    { value: "renaissance", label: "Renaissance" },
-    { value: "early-modern-period", label: "Early Modern Period" },
-    { value: "industrial-age", label: "Industrial Age" },
-    { value: "20th-century", label: "20th Century" },
-    { value: "world-wars", label: "World Wars" },
-    { value: "cold-war-era", label: "Cold War Era" },
-    { value: "modern-history", label: "Modern History" },
+    { value: "fiction", label: "Fiction" },
+    { value: "non-fiction", label: "Non-Fiction" },
   ];
 
   // Article Card Component
