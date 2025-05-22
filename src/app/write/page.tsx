@@ -17,9 +17,9 @@ export default function WritePage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [coverImage, setCoverImage] = useState("");
+  const [category, setCategory] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [category, setCategory] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -179,7 +179,6 @@ export default function WritePage() {
     <div className="container mx-auto py-10 px-4">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Write a New Article</h1>
-
         <div ref={messageRef}>
           {message && (
             <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
@@ -201,27 +200,27 @@ export default function WritePage() {
         </div>
 
         <form className="bg-white p-6 rounded-lg shadow-md">
+          {/* 1. Title - At the top */}
           <div className="mb-6">
             <label
-              htmlFor="category"
+              htmlFor="title"
               className="block text-gray-700 font-medium mb-2"
             >
-              Category *
+              Title
             </label>
-            <select
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+            <input
+              type="text"
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
+              placeholder="Enter a compelling title for your article"
               required
               disabled={isRedirecting}
-            >
-              <option value="">Select a category</option>
-              <option value="fiction">Fiction</option>
-              <option value="non-fiction">Non-Fiction</option>
-            </select>
+            />
           </div>
 
+          {/* 2. Cover Image - Second */}
           <div className="mb-6">
             <label className="block text-gray-700 font-medium mb-2">
               Cover Image
@@ -264,6 +263,29 @@ export default function WritePage() {
             </div>
           </div>
 
+          {/* 3. Category - Third (above content) */}
+          <div className="mb-6">
+            <label
+              htmlFor="category"
+              className="block text-gray-700 font-medium mb-2"
+            >
+              Category *
+            </label>
+            <select
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
+              required
+              disabled={isRedirecting}
+            >
+              <option value="">Select a category</option>
+              <option value="fiction">Fiction</option>
+              <option value="non-fiction">Non-Fiction</option>
+            </select>
+          </div>
+
+          {/* 4. Content - Last */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
               <label
@@ -274,7 +296,6 @@ export default function WritePage() {
               </label>
             </div>
 
-            {/* Text color changed to black for better visibility */}
             <textarea
               id="content"
               ref={editorRef}
@@ -288,6 +309,7 @@ export default function WritePage() {
             />
           </div>
 
+          {/* Action buttons remain at the bottom */}
           <div className="flex justify-end space-x-4">
             <button
               type="button"
