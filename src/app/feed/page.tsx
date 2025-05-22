@@ -263,11 +263,20 @@ export default function PublicFeed() {
         </div>
         <div className="p-4">
           <div className="flex justify-between items-start">
-            <Link href={`/articles/${article.slug}`}>
-              <h2 className="text-xl font-bold mb-2 hover:text-blue-600">
-                {article.title}
-              </h2>
-            </Link>
+            <div className="flex-1">
+              <Link href={`/articles/${article.slug}`}>
+                <h2 className="text-xl font-bold mb-2 hover:text-blue-600">
+                  {article.title}
+                </h2>
+              </Link>
+
+              {/* Category moved directly under title */}
+              <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded inline-block mb-3">
+                {categories.find((c) => c.value === article.category)?.label ||
+                  article.category ||
+                  "Uncategorized"}
+              </span>
+            </div>
 
             {/* Bookmark Button */}
             <BookmarkButton
@@ -305,23 +314,13 @@ export default function PublicFeed() {
             </span>
           </Link>
 
-          <p className="text-gray-600 text-sm mb-2">
-            {formatDate(article.published_at)}
-          </p>
-
-          <p className="text-gray-700 mb-3 line-clamp-3">
-            {article.excerpt || "No excerpt available"}
-          </p>
-
-          <div className="flex justify-between items-center mt-4">
-            <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-              {categories.find((c) => c.value === article.category)?.label ||
-                article.category ||
-                "Uncategorized"}
-            </span>
+          <div className="flex justify-between items-center">
+            <p className="text-gray-600 text-sm">
+              {formatDate(article.published_at)}
+            </p>
 
             <div className="flex items-center text-sm text-gray-500">
-              <span className="flex items-center mr-3">
+              <span className="flex items-center">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-4 w-4 mr-1"
