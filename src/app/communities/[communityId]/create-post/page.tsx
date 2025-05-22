@@ -72,7 +72,9 @@ export default function CreateCommunityPostPage() {
     }
   }
 
-  // New function that creates both a community post and a public article
+  // Fixed createPostAndPublicArticle function with correct redirect
+  // In src/app/communities/[communityId]/create-post/page.tsx
+
   async function createPostAndPublicArticle() {
     if (!title.trim() || !content.trim()) {
       setError("Title and content are required");
@@ -111,7 +113,6 @@ export default function CreateCommunityPostPage() {
       if (postError) throw postError;
 
       // Now create a corresponding public article
-      // Use the community name as the category with a prefix
       const slug =
         title
           .toLowerCase()
@@ -130,18 +131,15 @@ export default function CreateCommunityPostPage() {
           title,
           content,
           excerpt,
-          category: `community:${community.name}`, // Store community name with prefix
+          category: `community:${community.name}`,
           slug,
           is_published: true,
           published_at: new Date().toISOString(),
           view_count: 0,
-          community_post_id: postData.id, // Link back to community post
         });
 
       if (articleError) throw articleError;
-
-      // Redirect to the community post
-      router.push(`/communities/${communityId}/posts/${postData.id}`);
+      router.push(`/communities/${communityId}`);
     } catch (err: any) {
       console.error("Error creating post:", err);
       setError(err.message || "Failed to create post");
