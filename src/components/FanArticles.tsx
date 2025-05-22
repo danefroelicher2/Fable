@@ -1,16 +1,18 @@
 // src/components/FanArticles.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
-// Mock data for fan articles
-const fanArticles = [
+// Original mock data as fallback
+const mockArticles = [
   // Left column top
   {
     id: "f1",
-    title: "IMAGETEST",
-    slug: "t-059683",
+    title:
+      "KILLER INSTINCT: HOW ONE MAN TAUGHT U.S. RANGERS TO FIGHT DIRTY IN WWII",
+    slug: "killer-instinct-rangers-wwii",
     category: "STORIES",
     categoryColor: "bg-red-600",
     excerpt:
@@ -64,18 +66,173 @@ const fanArticles = [
 ];
 
 export default function FanArticles() {
-  const featuredArticle = fanArticles.find((article) => article.featured);
-  const sideArticles = fanArticles.filter((article) => !article.featured);
+  const [loading, setLoading] = useState(true);
+  const [featuredArticles, setFeaturedArticles] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchFeaturedArticles = async () => {
+    try {
+      setLoading(true);
+
+      // Get featured articles from the database
+      // Using type assertion to bypass TypeScript checking for featured_articles table
+      const { data: featuredData, error: featuredError } = await (
+        supabase as any
+      )
+        .from("featured_articles")
+        .select(
+          `
+          position,
+          article_id,
+          article:public_articles(
+            id,
+            title,
+            slug,
+            excerpt,
+            category,
+            view_count,
+            image_url,
+            user_id
+          )
+        `
+        )
+        .order("position");
+
+      if (featuredError) {
+        console.error("Error fetching featured data:", featuredError);
+        // Fallback to mock data if there's an error
+        setFeaturedArticles(mockArticles);
+        return;
+      }
+
+      // If no featured articles or empty result, use mock data
+      if (!featuredData || featuredData.length === 0) {
+        console.log("No featured articles found, using mock data");
+        setFeaturedArticles(mockArticles);
+        return;
+      }
+
+      // Transform data to match the expected format
+      const transformedData = featuredData
+        .filter((item: any) => item.article) // Filter out any null articles
+        .map((item: any) => {
+          const article = item.article;
+          return {
+            id: `f${item.position}`,
+            title: article.title.toUpperCase(),
+            slug: article.slug,
+            excerpt: article.excerpt || "No excerpt available",
+            category: article.category?.toUpperCase() || "FEATURE",
+            categoryColor: "bg-red-600",
+            image_url: article.image_url,
+            featured: item.position === 3, // Middle position is featured
+            articleId: article.id, // Store the original article ID
+          };
+        });
+
+      // If we have less than 5 featured articles, fill with mock data
+      const result = [...transformedData];
+
+      if (result.length < 5) {
+        // Determine which positions are missing
+        const existingPositions = transformedData.map((item: any) =>
+          parseInt(item.id.replace("f", ""))
+        );
+
+        for (let i = 1; i <= 5; i++) {
+          if (!existingPositions.includes(i)) {
+            // Add mock data for missing position
+            const mockArticle = mockArticles.find((a) => a.id === `f${i}`);
+            if (mockArticle) {
+              result.push({
+                ...mockArticle,
+                title: `FEATURED SLOT ${i} AVAILABLE`,
+                excerpt: `This featured slot is currently available.`,
+              });
+            }
+          }
+        }
+      }
+
+      // Sort by position
+      result.sort((a, b) => {
+        const posA = parseInt(a.id.replace("f", ""));
+        const posB = parseInt(b.id.replace("f", ""));
+        return posA - posB;
+      });
+
+      setFeaturedArticles(result);
+    } catch (err) {
+      console.error("Error processing featured articles:", err);
+      // Fallback to mock data
+      setFeaturedArticles(mockArticles);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeaturedArticles();
+
+    // Set up realtime subscription for updates
+    // Using type assertion for the channel subscription as well
+    const channel = (supabase as any)
+      .channel("featured-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "featured_articles",
+        },
+        () => {
+          console.log("Featured articles changed, refreshing...");
+          fetchFeaturedArticles();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const featuredArticle = featuredArticles.find((article) => article.featured);
+  const sideArticles = featuredArticles.filter((article) => !article.featured);
 
   // Split side articles for left and right columns
   const leftColumnArticles = sideArticles.slice(0, 2);
   const rightColumnArticles = sideArticles.slice(2);
 
+  if (loading) {
+    return (
+      <section className="mb-16">
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
+            Fan Articles
+          </h2>
+          <Link
+            href="/contribute"
+            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-semibold"
+          >
+            Submit Your Story
+          </Link>
+        </div>
+        <div className="bg-gray-100 dark:bg-gray-800 p-8 rounded text-center">
+          <div className="animate-pulse">
+            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded mb-4 w-1/2 mx-auto"></div>
+            <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="mb-16">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
-          Featured
+          Fan Articles
         </h2>
         <Link
           href="/contribute"
@@ -95,9 +252,17 @@ export default function FanArticles() {
             >
               <div className="relative">
                 <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700 mb-3">
-                  <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-                    [Featured Image]
-                  </div>
+                  {article.image_url ? (
+                    <img
+                      src={article.image_url}
+                      alt={article.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
+                      [Featured Image]
+                    </div>
+                  )}
                 </div>
                 <div className="absolute bottom-3 right-0">
                   <span
@@ -109,8 +274,12 @@ export default function FanArticles() {
               </div>
               <h3 className="text-lg font-bold mb-2 leading-tight uppercase px-2">
                 <Link
-                  href={`/fan-articles/${article.slug}`}
-                  className="text-gray-900 dark:text-gray-100 hover:text-red-600 dark:hover:text-red-400"
+                  href={article.slug ? `/articles/${article.slug}` : "#"}
+                  className={`text-gray-900 dark:text-gray-100 ${
+                    article.slug
+                      ? "hover:text-red-600 dark:hover:text-red-400"
+                      : "cursor-default"
+                  }`}
                 >
                   {article.title}
                 </Link>
@@ -128,9 +297,17 @@ export default function FanArticles() {
             <div className="bg-white dark:bg-gray-800 overflow-hidden h-full">
               <div className="relative">
                 <div className="aspect-[16/9] bg-gray-200 dark:bg-gray-700 mb-3">
-                  <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-                    [Featured Image]
-                  </div>
+                  {featuredArticle.image_url ? (
+                    <img
+                      src={featuredArticle.image_url}
+                      alt={featuredArticle.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
+                      [Featured Image]
+                    </div>
+                  )}
                 </div>
                 <div className="absolute bottom-3 right-0">
                   <span
@@ -143,8 +320,16 @@ export default function FanArticles() {
               <div className="px-3 pb-3">
                 <h3 className="text-2xl font-bold mb-3 leading-tight uppercase">
                   <Link
-                    href={`/fan-articles/${featuredArticle.slug}`}
-                    className="text-gray-900 dark:text-gray-100 hover:text-red-600 dark:hover:text-red-400"
+                    href={
+                      featuredArticle.slug
+                        ? `/articles/${featuredArticle.slug}`
+                        : "#"
+                    }
+                    className={`text-gray-900 dark:text-gray-100 ${
+                      featuredArticle.slug
+                        ? "hover:text-red-600 dark:hover:text-red-400"
+                        : "cursor-default"
+                    }`}
                   >
                     {featuredArticle.title}
                   </Link>
@@ -152,12 +337,14 @@ export default function FanArticles() {
                 <p className="text-gray-700 dark:text-gray-300 mb-4">
                   {featuredArticle.excerpt}
                 </p>
-                <Link
-                  href={`/fan-articles/${featuredArticle.slug}`}
-                  className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium"
-                >
-                  Read on
-                </Link>
+                {featuredArticle.slug && (
+                  <Link
+                    href={`/articles/${featuredArticle.slug}`}
+                    className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                  >
+                    Read on
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -172,9 +359,17 @@ export default function FanArticles() {
             >
               <div className="relative">
                 <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700 mb-3">
-                  <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-                    [Featured Image]
-                  </div>
+                  {article.image_url ? (
+                    <img
+                      src={article.image_url}
+                      alt={article.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
+                      [Featured Image]
+                    </div>
+                  )}
                 </div>
                 <div className="absolute bottom-3 right-0">
                   <span
@@ -186,8 +381,12 @@ export default function FanArticles() {
               </div>
               <h3 className="text-lg font-bold mb-2 leading-tight uppercase px-2">
                 <Link
-                  href={`/fan-articles/${article.slug}`}
-                  className="text-gray-900 dark:text-gray-100 hover:text-red-600 dark:hover:text-red-400"
+                  href={article.slug ? `/articles/${article.slug}` : "#"}
+                  className={`text-gray-900 dark:text-gray-100 ${
+                    article.slug
+                      ? "hover:text-red-600 dark:hover:text-red-400"
+                      : "cursor-default"
+                  }`}
                 >
                   {article.title}
                 </Link>
