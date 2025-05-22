@@ -10,9 +10,9 @@ import AutoScrollingCommunityFeed from "@/components/AutoScrollingCommunityFeed"
 const featuredPosts = [
   {
     id: "1",
-    title: "The Fall of Rome: Myths and Realities",
-    slug: "fall-of-rome-myths-realities",
-    date: "March 15, 2024",
+    title: "imagetest",
+    slug: "t-059683",
+    date: "April 10, 2025",
     excerpt:
       "Exploring the complex factors that led to the decline of the Roman Empire and separating historical fact from fiction.",
   },

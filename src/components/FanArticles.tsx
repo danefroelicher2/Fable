@@ -9,9 +9,8 @@ const fanArticles = [
   // Left column top
   {
     id: "f1",
-    title:
-      "KILLER INSTINCT: HOW ONE MAN TAUGHT U.S. RANGERS TO FIGHT DIRTY IN WWII",
-    slug: "killer-instinct-rangers-wwii",
+    title: "IMAGETEST",
+    slug: "t-059683",
     category: "STORIES",
     categoryColor: "bg-red-600",
     excerpt:
