@@ -114,10 +114,41 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Explore Button - Bottom Center */}
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20">
+          <button
+            onClick={() => {
+              const nextSection = document.querySelector("#next-section");
+              if (nextSection) {
+                nextSection.scrollIntoView({ behavior: "smooth" });
+              }
+            }}
+            className="flex flex-col items-center group cursor-pointer bg-white/80 backdrop-blur-sm px-6 py-4 rounded-full border border-gray-200 hover:bg-white hover:shadow-lg transition-all duration-300"
+          >
+            <span className="font-bold text-gray-900 mb-2">Explore</span>
+            <svg
+              className="w-6 h-6 text-gray-900 animate-bounce"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 14l-7 7m0 0l-7-7m7 7V3"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* This Day in History Widget */}
-      <ThisDayInHistory />
+      <div id="next-section">
+        <ThisDayInHistory />
+      </div>
 
       {/* NEW: Community Articles Section */}
       <section className="mb-16">
