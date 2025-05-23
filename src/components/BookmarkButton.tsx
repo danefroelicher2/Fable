@@ -13,6 +13,8 @@ interface BookmarkButtonProps {
   color?: "light" | "dark";
   size?: "sm" | "md" | "lg";
   showText?: boolean;
+  // Add this prop to prevent navigation when needed
+  preventNavigation?: boolean;
 }
 
 export default function BookmarkButton({
@@ -22,6 +24,7 @@ export default function BookmarkButton({
   color = "light",
   size = "md",
   showText = false,
+  preventNavigation = false,
 }: BookmarkButtonProps) {
   const { user } = useAuth();
   const router = useRouter();
@@ -47,6 +50,12 @@ export default function BookmarkButton({
           setChecking(true);
         }
 
+        console.log("Checking bookmark status for:", {
+          postId,
+          articleId,
+          userId: user.id,
+        });
+
         let query = (supabase as any).from("bookmarks").select("id");
 
         if (postId) {
@@ -65,6 +74,11 @@ export default function BookmarkButton({
           console.error("Error checking bookmark status:", error);
           throw error;
         }
+
+        console.log("Bookmark check result:", {
+          data,
+          hasBookmarks: data && data.length > 0,
+        });
 
         // Check if any bookmarks were found
         if (isMounted) {
@@ -88,19 +102,36 @@ export default function BookmarkButton({
     };
   }, [user, postId, articleId]);
 
-  async function handleToggleBookmark() {
+  async function handleToggleBookmark(event: React.MouseEvent) {
+    // CRITICAL: Stop event propagation to prevent any parent click handlers
+    event.preventDefault();
+    event.stopPropagation();
+
+    console.log("Bookmark button clicked:", {
+      postId,
+      articleId,
+      isBookmarked,
+    });
+
     if (!user) {
-      router.push(
-        `/signin?redirect=${encodeURIComponent(window.location.pathname)}`
-      );
+      // Only navigate if preventNavigation is false
+      if (!preventNavigation) {
+        router.push(
+          `/signin?redirect=${encodeURIComponent(window.location.pathname)}`
+        );
+      }
       return;
     }
 
-    if (loading || checking) return;
+    if (loading || checking) {
+      console.log("Bookmark operation already in progress, skipping");
+      return;
+    }
 
     setLoading(true);
     try {
       if (isBookmarked) {
+        console.log("Removing bookmark...");
         // Remove bookmark
         let query = (supabase as any).from("bookmarks").delete();
 
@@ -112,24 +143,43 @@ export default function BookmarkButton({
 
         const { error } = await query.eq("user_id", user.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error removing bookmark:", error);
+          throw error;
+        }
 
+        console.log("Bookmark removed successfully");
         setIsBookmarked(false);
       } else {
+        console.log("Adding bookmark...");
         // Add bookmark
-        const { error } = await (supabase as any).from("bookmarks").insert({
+        const bookmarkData = {
           user_id: user.id,
           post_id: postId || null,
           article_id: articleId || null,
           created_at: new Date().toISOString(),
-        });
+        };
 
-        if (error) throw error;
+        console.log("Inserting bookmark data:", bookmarkData);
 
+        const { error } = await (supabase as any)
+          .from("bookmarks")
+          .insert(bookmarkData);
+
+        if (error) {
+          console.error("Error adding bookmark:", error);
+          throw error;
+        }
+
+        console.log("Bookmark added successfully");
         setIsBookmarked(true);
       }
     } catch (error) {
       console.error("Error toggling bookmark:", error);
+      // You might want to show a toast notification here instead of alert
+      if (typeof window !== "undefined") {
+        alert("Failed to update bookmark. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -156,6 +206,7 @@ export default function BookmarkButton({
         loading || checking ? "opacity-50 cursor-not-allowed" : ""
       } ${className}`}
       aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
+      type="button" // Explicitly set button type to prevent form submission
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -172,7 +223,9 @@ export default function BookmarkButton({
       </svg>
 
       {showText && (
-        <span className="ml-2 text-sm">{isBookmarked ? "Saved" : "Save"}</span>
+        <span className="ml-2 text-sm">
+          {loading ? "..." : isBookmarked ? "Saved" : "Save"}
+        </span>
       )}
     </button>
   );

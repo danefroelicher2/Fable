@@ -1,4 +1,4 @@
-// src/app/communities/[communityId]/posts/[postId]/page.tsx
+// src/app/communities/posts/[postId]/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import BookmarkButton from "@/components/BookmarkButton";
 
 interface Post {
   id: string;
@@ -65,6 +66,7 @@ export default function CommunityPostPage() {
       fetchPostData();
     }
   }, [communityId, postId, user]);
+
   async function handleDeletePost() {
     if (!user || !post || user.id !== post.user_id) {
       return; // Only post authors can delete posts
@@ -111,6 +113,7 @@ export default function CommunityPostPage() {
       setLoading(false);
     }
   }
+
   async function fetchPostData() {
     try {
       setLoading(true);
@@ -347,6 +350,8 @@ export default function CommunityPostPage() {
                 </div>
               </Link>
             </div>
+
+            {/* FIXED: Delete button section - only show for post author */}
             {user && post.user_id === user.id && (
               <div className="mt-4 mb-6 flex justify-end">
                 <button
@@ -359,16 +364,30 @@ export default function CommunityPostPage() {
               </div>
             )}
 
-            {/* Post content follows here */}
+            {/* Post content */}
             <div className="prose max-w-none mb-6 dark:prose-invert">
               <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
                 {post.content}
               </p>
             </div>
-            <div className="prose max-w-none mb-6 dark:prose-invert">
-              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
-                {post.content}
-              </p>
+
+            {/* FIXED: Post actions with bookmark button */}
+            <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center space-x-4">
+                {/* Bookmark Button - CRITICAL FIX: Added preventNavigation prop */}
+                <BookmarkButton
+                  postId={post.id}
+                  size="md"
+                  showText={true}
+                  preventNavigation={true}
+                  className="hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-md transition-colors"
+                />
+              </div>
+
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                {comments.length}{" "}
+                {comments.length === 1 ? "comment" : "comments"}
+              </div>
             </div>
           </div>
         </div>
