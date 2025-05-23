@@ -280,7 +280,9 @@ export default function NotificationsPage() {
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-black">Notifications</h1>
+          <h1 className="text-3xl font-bold text-black dark:text-white">
+            Notifications
+          </h1>
           {notifications.some((n) => !n.is_read) && (
             <button
               onClick={markAllAsRead}
