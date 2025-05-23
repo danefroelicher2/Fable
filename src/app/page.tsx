@@ -1,10 +1,13 @@
 // src/app/page.tsx
+"use client";
+
 import Link from "next/link";
 import ThisDayInHistory from "@/components/ThisDayInHistory";
 import FanArticles from "@/components/FanArticles";
 import Image from "next/image";
 import CommunityFeedHeading from "@/components/CommunityFeedHeading";
 import AutoScrollingCommunityFeed from "@/components/AutoScrollingCommunityFeed";
+import { useAuth } from "@/context/AuthContext";
 
 // Mock data for testing - featured posts
 const featuredPosts = [
@@ -48,10 +51,30 @@ const historicalEras = [
 ];
 
 export default function Home() {
+  const { user } = useAuth();
+
   return (
     <div className="container mx-auto px-4">
       {/* Hero Section - Using exact specified color #FAE3C6 */}
       <div className="relative overflow-hidden bg-[#FAF0D7] rounded-lg mb-12 border border-[#e8d2b5]">
+        {/* Sign In/Sign Up buttons - Only show when user is NOT logged in */}
+        {!user && (
+          <div className="absolute top-4 right-4 z-20 flex space-x-3">
+            <Link
+              href="/signin"
+              className="bg-white text-gray-900 px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
+            >
+              <span className="font-bold text-black">Sign In</span>
+            </Link>
+            <Link
+              href="/signin"
+              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors shadow-sm"
+            >
+              <span className="font-bold text-white">Sign Up</span>
+            </Link>
+          </div>
+        )}
+
         {/* Very subtle texture */}
         <div
           className="absolute inset-0 opacity-5 bg-repeat"
@@ -134,5 +157,5 @@ export default function Home() {
         </div>
       </section>
     </div>
-  ); // src/app/page.tsx
+  );
 }
