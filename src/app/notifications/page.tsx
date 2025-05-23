@@ -176,10 +176,10 @@ export default function NotificationsPage() {
     switch (action_type) {
       case "follow":
         return (
-          <span>
+          <span className="text-black">
             <Link
               href={`/user/${notification.action_user_id}`}
-              className="font-medium hover:text-blue-600"
+              className="font-medium text-black hover:text-blue-600"
             >
               {action_user?.full_name || action_user?.username || "Someone"}
             </Link>{" "}
@@ -188,10 +188,10 @@ export default function NotificationsPage() {
         );
       case "like":
         return (
-          <span>
+          <span className="text-black">
             <Link
               href={`/user/${notification.action_user_id}`}
-              className="font-medium hover:text-blue-600"
+              className="font-medium text-black hover:text-blue-600"
             >
               {action_user?.full_name || action_user?.username || "Someone"}
             </Link>{" "}
@@ -199,19 +199,19 @@ export default function NotificationsPage() {
             {article && (
               <Link
                 href={`/articles/${article.slug}`}
-                className="text-blue-600 hover:underline"
+                className="text-black hover:underline font-medium"
               >
-                {article.title}
+                "{article.title}"
               </Link>
             )}
           </span>
         );
       case "comment":
         return (
-          <span>
+          <span className="text-black">
             <Link
               href={`/user/${notification.action_user_id}`}
-              className="font-medium hover:text-blue-600"
+              className="font-medium text-black hover:text-blue-600"
             >
               {action_user?.full_name || action_user?.username || "Someone"}
             </Link>{" "}
@@ -219,15 +219,15 @@ export default function NotificationsPage() {
             {article && (
               <Link
                 href={`/articles/${article.slug}`}
-                className="text-blue-600 hover:underline"
+                className="text-black hover:underline font-medium"
               >
-                {article.title}
+                "{article.title}"
               </Link>
             )}
           </span>
         );
       default:
-        return <span>You have a new notification</span>;
+        return <span className="text-black">You have a new notification</span>;
     }
   }
 
@@ -271,7 +271,7 @@ export default function NotificationsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-        <p className="mt-4">Loading...</p>
+        <p className="mt-4 text-black">Loading...</p>
       </div>
     );
   }
@@ -280,7 +280,7 @@ export default function NotificationsPage() {
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Notifications</h1>
+          <h1 className="text-3xl font-bold text-black">Notifications</h1>
           {notifications.some((n) => !n.is_read) && (
             <button
               onClick={markAllAsRead}
@@ -301,9 +301,7 @@ export default function NotificationsPage() {
           </div>
         ) : notifications.length === 0 ? (
           <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <p className="text-gray-600">
-              You don't have any notifications yet.
-            </p>
+            <p className="text-black">You don't have any notifications yet.</p>
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -318,7 +316,7 @@ export default function NotificationsPage() {
                       href={`/user/${notification.action_user_id}`}
                       className="mr-3"
                     >
-                      <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 overflow-hidden">
+                      <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-black overflow-hidden">
                         {notification.action_user?.avatar_url ? (
                           <img
                             src={notification.action_user.avatar_url}
