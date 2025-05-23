@@ -209,14 +209,8 @@ export default function FanArticles() {
       <section className="mb-16">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
-            Fan Articles
+            Featured
           </h2>
-          <Link
-            href="/contribute"
-            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-semibold"
-          >
-            Submit Your Story
-          </Link>
         </div>
         <div className="bg-gray-100 dark:bg-gray-800 p-8 rounded text-center">
           <div className="animate-pulse">
@@ -232,14 +226,8 @@ export default function FanArticles() {
     <section className="mb-16">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
-          Fan Articles
+          Featured
         </h2>
-        <Link
-          href="/contribute"
-          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-semibold"
-        >
-          Submit Your Story
-        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">

@@ -8,6 +8,8 @@ import Image from "next/image";
 import CommunityFeedHeading from "@/components/CommunityFeedHeading";
 import AutoScrollingCommunityFeed from "@/components/AutoScrollingCommunityFeed";
 import { useAuth } from "@/context/AuthContext";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 // Mock data for testing - featured posts
 const featuredPosts = [
@@ -52,6 +54,95 @@ const historicalEras = [
 
 export default function Home() {
   const { user } = useAuth();
+  const [stats, setStats] = useState({
+    activeWriters: 0,
+    storiesShared: 0,
+    totalReaders: 0,
+    loading: true,
+  });
+
+  // Fetch real-time stats from database
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        // Get total number of users (readers)
+        const { count: totalUsers, error: usersError } = await supabase
+          .from("profiles")
+          .select("id", { count: "exact", head: true });
+
+        if (usersError) throw usersError;
+
+        // Get number of active writers (users who have published at least 1 article)
+        const { data: activeWritersData, error: writersError } = await (
+          supabase as any
+        )
+          .from("public_articles")
+          .select("user_id")
+          .eq("is_published", true);
+
+        if (writersError) throw writersError;
+
+        // Get unique writer count using Array.from() instead of spread operator
+        const uniqueWriterIds = new Set(
+          activeWritersData?.map((article: any) => article.user_id) || []
+        );
+        const uniqueWriters = Array.from(uniqueWriterIds);
+
+        // Get total published stories
+        const { count: totalStories, error: storiesError } = await (
+          supabase as any
+        )
+          .from("public_articles")
+          .select("id", { count: "exact", head: true })
+          .eq("is_published", true);
+
+        if (storiesError) throw storiesError;
+
+        setStats({
+          activeWriters: uniqueWriters.length,
+          storiesShared: totalStories || 0,
+          totalReaders: totalUsers || 0,
+          loading: false,
+        });
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+        setStats((prev) => ({ ...prev, loading: false }));
+      }
+    }
+
+    fetchStats();
+
+    // Set up real-time subscription for updates
+    const subscription = supabase
+      .channel("stats-updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "public_articles",
+        },
+        () => {
+          fetchStats(); // Refetch stats when articles change
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "profiles",
+        },
+        () => {
+          fetchStats(); // Refetch stats when profiles change
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
     <div className="container mx-auto px-4">
@@ -158,7 +249,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Fan Articles */}
+      {/* Featured Articles */}
       <FanArticles />
 
       {/* About Section */}
@@ -227,9 +318,9 @@ export default function Home() {
                 </h3>
               </div>
               <p className="text-gray-700">
-                A platform for all writers willing to share their work, connect
-                with readers, discover new stories, and be part of a supportive
-                creative community.
+                A platform for both fiction and non-fiction writers to share
+                their work, connect with readers, discover new stories, and be
+                part of a supportive creative community.
               </p>
             </div>
           </div>
@@ -239,30 +330,24 @@ export default function Home() {
             <h3 className="text-2xl font-semibold mb-6 text-gray-900">
               Join Our Growing Community
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-3 gap-8 mb-8 max-w-2xl mx-auto">
               <div className="text-center">
                 <div className="text-3xl font-bold text-red-600 mb-2">
-                  1000+
+                  {stats.loading ? "..." : stats.activeWriters}
                 </div>
                 <div className="text-gray-600">Active Writers</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600 mb-2">
-                  5000+
+                  {stats.loading ? "..." : stats.storiesShared}
                 </div>
                 <div className="text-gray-600">Stories Shared</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-green-600 mb-2">
-                  10k+
+                  {stats.loading ? "..." : stats.totalReaders}
                 </div>
                 <div className="text-gray-600">Readers</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600 mb-2">
-                  24/7
-                </div>
-                <div className="text-gray-600">Community Support</div>
               </div>
             </div>
 
@@ -271,13 +356,15 @@ export default function Home() {
                 href="/write"
                 className="bg-red-600 text-white px-6 py-3 rounded-md hover:bg-red-700 transition-colors font-medium"
               >
-                Start Writing Today
+                <span className="text-white font-bold">
+                  Start Writing Today
+                </span>
               </Link>
               <Link
                 href="/feed"
                 className="bg-white text-gray-900 px-6 py-3 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors font-medium"
               >
-                Explore Stories
+                <span className="text-black font-bold">Explore Stories</span>
               </Link>
             </div>
           </div>
