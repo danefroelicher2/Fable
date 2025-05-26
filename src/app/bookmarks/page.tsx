@@ -1,7 +1,7 @@
-// src/app/bookmarks/page.tsx
+// src/app/bookmarks/page.tsx - FIXED VERSION
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -37,43 +37,8 @@ export default function BookmarksPage() {
     "all" | "articles" | "community"
   >("all");
 
-  useEffect(() => {
-    if (!user) {
-      router.push(`/signin?redirect=${encodeURIComponent("/bookmarks")}`);
-    }
-  }, [user, router]);
-
-  // Show auth required message if not logged in
-  if (!user) {
-    return (
-      <div className="container mx-auto py-8 px-4">
-        <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md text-center">
-          <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
-          <p className="mb-6">Please sign in to view your bookmarks.</p>
-          <Link
-            href={`/signin?redirect=${encodeURIComponent("/bookmarks")}`}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Sign In
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  useEffect(() => {
-    // Redirect if not authenticated
-    if (!user && !loading) {
-      router.push("/signin?redirect=" + encodeURIComponent("/bookmarks"));
-      return;
-    }
-
-    if (user) {
-      loadBookmarks();
-    }
-  }, [user, router, activeFilter]);
-
-  async function loadBookmarks() {
+  // FIXED: Use useCallback to prevent function recreation on every render
+  const loadBookmarks = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -215,6 +180,38 @@ export default function BookmarksPage() {
     } finally {
       setLoading(false);
     }
+  }, [user, activeFilter]); // FIXED: Added proper dependencies
+
+  // FIXED: Separate useEffect for auth check
+  useEffect(() => {
+    if (!user) {
+      router.push(`/signin?redirect=${encodeURIComponent("/bookmarks")}`);
+    }
+  }, [user, router]);
+
+  // FIXED: Separate useEffect for loading bookmarks
+  useEffect(() => {
+    if (user) {
+      loadBookmarks();
+    }
+  }, [user, loadBookmarks]); // FIXED: Proper dependency array
+
+  // Show auth required message if not logged in
+  if (!user) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md text-center">
+          <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
+          <p className="mb-6">Please sign in to view your bookmarks.</p>
+          <Link
+            href={`/signin?redirect=${encodeURIComponent("/bookmarks")}`}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Sign In
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   // Format date
@@ -247,30 +244,30 @@ export default function BookmarksPage() {
     }
   };
 
-  // FIXED: Improved type badge styling
+  // FIXED: Improved type badge styling to match your design
   const getTypeBadge = (item: BookmarkedItem) => {
     if (item.type === "article") {
       return (
-        <span className="inline-flex items-center justify-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+        <span className="inline-flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
           Article
         </span>
       );
     } else {
       return (
-        <span className="inline-flex items-center justify-center bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-medium">
-          Community Post
+        <span className="inline-flex items-center bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+          Community
         </span>
       );
     }
   };
 
-  // FIXED: Improved community badge styling
+  // FIXED: Improved community badge styling to match your "Community" button design
   const getCommunityBadge = (item: BookmarkedItem) => {
     if (item.type === "post" && item.community) {
       return (
         <Link
           href={`/communities/${item.community_id}`}
-          className="inline-flex items-center justify-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium hover:bg-green-200 transition-colors"
+          className="inline-flex items-center bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-medium hover:bg-purple-200 transition-colors"
           onClick={(e) => e.stopPropagation()} // Prevent parent link from firing
         >
           {item.community.name}
@@ -314,7 +311,7 @@ export default function BookmarksPage() {
           <div className="flex space-x-2">
             <button
               onClick={() => setActiveFilter("all")}
-              className={`px-3 py-1 rounded-md text-sm ${
+              className={`px-3 py-1 rounded-md text-sm transition-colors ${
                 activeFilter === "all"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
@@ -324,7 +321,7 @@ export default function BookmarksPage() {
             </button>
             <button
               onClick={() => setActiveFilter("articles")}
-              className={`px-3 py-1 rounded-md text-sm ${
+              className={`px-3 py-1 rounded-md text-sm transition-colors ${
                 activeFilter === "articles"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
@@ -334,7 +331,7 @@ export default function BookmarksPage() {
             </button>
             <button
               onClick={() => setActiveFilter("community")}
-              className={`px-3 py-1 rounded-md text-sm ${
+              className={`px-3 py-1 rounded-md text-sm transition-colors ${
                 activeFilter === "community"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
@@ -385,16 +382,17 @@ export default function BookmarksPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {bookmarks.map((item) => {
               const { preview, isTruncated } = formatPreview(item.content);
 
               return (
                 <div
                   key={`${item.type}-${item.id}`}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700"
                 >
                   <div className="p-6">
+                    {/* FIXED: Header with badges and bookmark button */}
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex flex-wrap gap-2">
                         {getTypeBadge(item)}
@@ -406,11 +404,12 @@ export default function BookmarksPage() {
                         articleId={
                           item.type === "article" ? item.id : undefined
                         }
-                        size="md"
-                        showText
+                        size="sm"
+                        showText={false}
                       />
                     </div>
 
+                    {/* Title */}
                     <h3 className="text-xl font-bold mb-3 text-gray-800 dark:text-white">
                       <Link
                         href={getItemPath(item)}
@@ -420,6 +419,7 @@ export default function BookmarksPage() {
                       </Link>
                     </h3>
 
+                    {/* Content preview */}
                     <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
                       {preview}
                     </p>
@@ -430,17 +430,17 @@ export default function BookmarksPage() {
                         href={getItemPath(item)}
                         className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium inline-block mb-4"
                       >
-                        Read more
+                        Read more →
                       </Link>
                     )}
 
-                    {/* FIXED: Author info moved to bottom */}
+                    {/* FIXED: Author info moved to bottom with horizontal layout */}
                     <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-100 dark:border-gray-700">
                       <Link
                         href={`/user/${item.user_id}`}
-                        className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors mr-4"
                       >
-                        <div className="h-6 w-6 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 mr-2 overflow-hidden">
+                        <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 mr-2 overflow-hidden">
                           {item.user_info?.avatar_url ? (
                             <img
                               src={item.user_info.avatar_url}
@@ -448,7 +448,7 @@ export default function BookmarksPage() {
                               className="h-full w-full object-cover"
                             />
                           ) : (
-                            <span className="text-xs">
+                            <span className="text-sm">
                               {(
                                 item.user_info?.username ||
                                 item.user_info?.full_name ||
@@ -465,8 +465,9 @@ export default function BookmarksPage() {
                             "Anonymous"}
                         </span>
                       </Link>
-                      <span className="mx-2">•</span>
-                      <span>
+
+                      {/* FIXED: Date now appears horizontally next to the user */}
+                      <span className="text-gray-400 dark:text-gray-500">
                         {formatDate(
                           item.type === "article"
                             ? (item as any).published_at || item.created_at
