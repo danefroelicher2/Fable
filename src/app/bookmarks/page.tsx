@@ -60,6 +60,7 @@ export default function BookmarksPage() {
       </div>
     );
   }
+
   useEffect(() => {
     // Redirect if not authenticated
     if (!user && !loading) {
@@ -79,6 +80,8 @@ export default function BookmarksPage() {
       setLoading(true);
       setError(null);
 
+      console.log("Loading bookmarks for user:", user.id);
+
       // Fetch bookmarks with article and post information
       const { data: bookmarkData, error: bookmarkError } = await (
         supabase as any
@@ -89,6 +92,8 @@ export default function BookmarksPage() {
         .order("created_at", { ascending: false });
 
       if (bookmarkError) throw bookmarkError;
+
+      console.log("Raw bookmark data:", bookmarkData);
 
       // Initialize an array to hold processed bookmarks
       const processedBookmarks: BookmarkedItem[] = [];
@@ -106,6 +111,8 @@ export default function BookmarksPage() {
         if (bookmark.post_id) {
           // For community posts
           try {
+            console.log("Processing community post:", bookmark.post_id);
+
             // Fetch post details
             const { data: postData, error: postError } = await (supabase as any)
               .from("community_posts")
@@ -123,6 +130,8 @@ export default function BookmarksPage() {
             }
 
             if (postData) {
+              console.log("Post data found:", postData);
+
               // Fetch user profile
               const { data: userData } = await supabase
                 .from("profiles")
@@ -150,6 +159,8 @@ export default function BookmarksPage() {
         } else if (bookmark.article_id) {
           // For published articles
           try {
+            console.log("Processing article:", bookmark.article_id);
+
             // Fetch article details - using updated_at instead of created_at
             const { data: articleData, error: articleError } = await (
               supabase as any
@@ -169,6 +180,8 @@ export default function BookmarksPage() {
             }
 
             if (articleData) {
+              console.log("Article data found:", articleData);
+
               // Map updated_at to created_at for consistent UI rendering
               const processedArticleData = {
                 ...articleData,
@@ -194,6 +207,7 @@ export default function BookmarksPage() {
         }
       }
 
+      console.log("Processed bookmarks:", processedBookmarks);
       setBookmarks(processedBookmarks);
     } catch (err: any) {
       console.error("Error fetching bookmarks:", err);
@@ -212,36 +226,58 @@ export default function BookmarksPage() {
     });
   };
 
-  // Format content preview
+  // Format content preview - FIXED: Only show "Read more" if content is actually truncated
   const formatPreview = (content: string, maxLength: number = 150) => {
-    if (content.length <= maxLength) return content;
-    return content.substring(0, maxLength) + "...";
+    if (content.length <= maxLength) {
+      return { preview: content, isTruncated: false };
+    }
+    return {
+      preview: content.substring(0, maxLength) + "...",
+      isTruncated: true,
+    };
   };
 
-  // Get the path for a bookmarked item
+  // FIXED: Get the correct path for a bookmarked item
   const getItemPath = (item: BookmarkedItem) => {
     if (item.type === "article") {
       return `/articles/${item.slug || item.id}`;
     } else {
+      // FIXED: Proper community post URL structure
       return `/communities/${item.community_id}/posts/${item.id}`;
     }
   };
 
-  // Get the type badge for an item
+  // FIXED: Improved type badge styling
   const getTypeBadge = (item: BookmarkedItem) => {
     if (item.type === "article") {
       return (
-        <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+        <span className="inline-flex items-center justify-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
           Article
         </span>
       );
     } else {
       return (
-        <span className="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
+        <span className="inline-flex items-center justify-center bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-medium">
           Community Post
         </span>
       );
     }
+  };
+
+  // FIXED: Improved community badge styling
+  const getCommunityBadge = (item: BookmarkedItem) => {
+    if (item.type === "post" && item.community) {
+      return (
+        <Link
+          href={`/communities/${item.community_id}`}
+          className="inline-flex items-center justify-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium hover:bg-green-200 transition-colors"
+          onClick={(e) => e.stopPropagation()} // Prevent parent link from firing
+        >
+          {item.community.name}
+        </Link>
+      );
+    }
+    return null;
   };
 
   // If still loading
@@ -350,94 +386,98 @@ export default function BookmarksPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {bookmarks.map((item) => (
-              <div
-                key={`${item.type}-${item.id}`}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
-              >
-                <div className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="flex space-x-2 mb-2">
+            {bookmarks.map((item) => {
+              const { preview, isTruncated } = formatPreview(item.content);
+
+              return (
+                <div
+                  key={`${item.type}-${item.id}`}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
+                >
+                  <div className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex flex-wrap gap-2">
                         {getTypeBadge(item)}
-                        {item.type === "post" && item.community && (
-                          <Link
-                            href={`/communities/${item.community_id}`}
-                            className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs hover:bg-green-200"
-                          >
-                            {item.community.name}
-                          </Link>
-                        )}
+                        {getCommunityBadge(item)}
                       </div>
-                      <h3 className="text-xl font-bold mb-2 text-gray-800 dark:text-white">
-                        <Link
-                          href={getItemPath(item)}
-                          className="hover:text-blue-600 dark:hover:text-blue-400"
-                        >
-                          {item.title}
-                        </Link>
-                      </h3>
+
+                      <BookmarkButton
+                        postId={item.type === "post" ? item.id : undefined}
+                        articleId={
+                          item.type === "article" ? item.id : undefined
+                        }
+                        size="md"
+                        showText
+                      />
                     </div>
 
-                    <BookmarkButton
-                      postId={item.type === "post" ? item.id : undefined}
-                      articleId={item.type === "article" ? item.id : undefined}
-                      size="md"
-                      showText
-                    />
-                  </div>
+                    <h3 className="text-xl font-bold mb-3 text-gray-800 dark:text-white">
+                      <Link
+                        href={getItemPath(item)}
+                        className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      >
+                        {item.title}
+                      </Link>
+                    </h3>
 
-                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
-                    <Link
-                      href={`/user/${item.user_id}`}
-                      className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 mr-3"
-                    >
-                      <div className="h-6 w-6 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 mr-2 overflow-hidden">
-                        {item.user_info?.avatar_url ? (
-                          <img
-                            src={item.user_info.avatar_url}
-                            alt={item.user_info?.username || "User"}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span>
-                            {(
-                              item.user_info?.username ||
-                              item.user_info?.full_name ||
-                              "U"
-                            )
-                              .charAt(0)
-                              .toUpperCase()}
-                          </span>
+                    <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+                      {preview}
+                    </p>
+
+                    {/* FIXED: Only show "Read more" if content is actually truncated */}
+                    {isTruncated && (
+                      <Link
+                        href={getItemPath(item)}
+                        className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium inline-block mb-4"
+                      >
+                        Read more
+                      </Link>
+                    )}
+
+                    {/* FIXED: Author info moved to bottom */}
+                    <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-100 dark:border-gray-700">
+                      <Link
+                        href={`/user/${item.user_id}`}
+                        className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      >
+                        <div className="h-6 w-6 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 mr-2 overflow-hidden">
+                          {item.user_info?.avatar_url ? (
+                            <img
+                              src={item.user_info.avatar_url}
+                              alt={item.user_info?.username || "User"}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-xs">
+                              {(
+                                item.user_info?.username ||
+                                item.user_info?.full_name ||
+                                "U"
+                              )
+                                .charAt(0)
+                                .toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-medium">
+                          {item.user_info?.full_name ||
+                            item.user_info?.username ||
+                            "Anonymous"}
+                        </span>
+                      </Link>
+                      <span className="mx-2">•</span>
+                      <span>
+                        {formatDate(
+                          item.type === "article"
+                            ? (item as any).published_at || item.created_at
+                            : item.created_at
                         )}
-                      </div>
-                      {item.user_info?.full_name ||
-                        item.user_info?.username ||
-                        "Anonymous"}
-                    </Link>
-                    <span className="mx-2">•</span>
-                    <span>
-                      {formatDate(
-                        item.type === "article"
-                          ? (item as any).published_at || item.created_at
-                          : item.created_at
-                      )}
-                    </span>
+                      </span>
+                    </div>
                   </div>
-
-                  <p className="text-gray-700 dark:text-gray-300 mb-3">
-                    {formatPreview(item.content)}
-                  </p>
-
-                  <Link
-                    href={getItemPath(item)}
-                    className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
-                  >
-                    Read more
-                  </Link>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
