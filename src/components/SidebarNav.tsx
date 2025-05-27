@@ -27,6 +27,17 @@ export default function SidebarNav() {
     router.push("/write");
   };
 
+  // FIXED: Handle authentication-required navigation
+  const handleAuthRequiredNavigation = (path: string) => {
+    if (!user) {
+      // Directly navigate to signin with redirect parameter
+      router.push(`/signin?redirect=${encodeURIComponent(path)}`);
+      return;
+    }
+    // User is authenticated, navigate normally
+    router.push(path);
+  };
+
   // Detect zoom level using window width to determine if we should show the More button
   useEffect(() => {
     const checkZoomLevel = () => {
@@ -217,7 +228,7 @@ export default function SidebarNav() {
             <span>Feed</span>
           </Link>
 
-          {/* Notifications link */}
+          {/* FIXED: Notifications link - Handle auth requirement client-side */}
           {user ? (
             <Link
               href="/notifications"
@@ -249,11 +260,7 @@ export default function SidebarNav() {
             </Link>
           ) : (
             <button
-              onClick={() =>
-                router.push(
-                  `/signin?redirect=${encodeURIComponent("/notifications")}`
-                )
-              }
+              onClick={() => handleAuthRequiredNavigation("/notifications")}
               className="flex items-center px-4 py-3 hover:bg-gray-800 w-full text-left"
             >
               <svg
@@ -274,7 +281,7 @@ export default function SidebarNav() {
             </button>
           )}
 
-          {/* Messages link */}
+          {/* FIXED: Messages link - Handle auth requirement client-side */}
           {user ? (
             <Link
               href="/messages"
@@ -304,11 +311,7 @@ export default function SidebarNav() {
             </Link>
           ) : (
             <button
-              onClick={() =>
-                router.push(
-                  `/signin?redirect=${encodeURIComponent("/messages")}`
-                )
-              }
+              onClick={() => handleAuthRequiredNavigation("/messages")}
               className="flex items-center px-4 py-3 hover:bg-gray-800 w-full text-left"
             >
               <svg
@@ -352,7 +355,7 @@ export default function SidebarNav() {
             <span>Communities</span>
           </Link>
 
-          {/* More Button - Moved here right after Bookmarks */}
+          {/* More Button - Moved here right after Communities */}
           {showMoreButton && (
             <div className="relative" ref={moreMenuRef}>
               <button
@@ -380,30 +383,58 @@ export default function SidebarNav() {
               {isMoreMenuOpen && (
                 <div className="absolute bottom-full left-0 mb-2 w-full rounded-md shadow-lg bg-gray-800 z-50">
                   <div className="py-1">
-                    <Link
-                      href="/bookmarks"
-                      className={`flex items-center px-4 py-3 ${
-                        pathname === "/bookmarks"
-                          ? "bg-gray-800"
-                          : "hover:bg-gray-800"
-                      }`}
-                    >
-                      <svg
-                        className="w-6 h-6 mr-3"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
+                    {/* FIXED: Bookmarks - Handle auth requirement client-side */}
+                    {user ? (
+                      <Link
+                        href="/bookmarks"
+                        className={`flex items-center px-4 py-3 ${
+                          pathname === "/bookmarks"
+                            ? "bg-gray-800"
+                            : "hover:bg-gray-800"
+                        }`}
+                        onClick={() => setIsMoreMenuOpen(false)}
                       >
-                        <path
-                          d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      <span>Bookmarks</span>
-                    </Link>
+                        <svg
+                          className="w-6 h-6 mr-3"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <span>Bookmarks</span>
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setIsMoreMenuOpen(false);
+                          handleAuthRequiredNavigation("/bookmarks");
+                        }}
+                        className="flex items-center px-4 py-3 hover:bg-gray-700 text-white w-full text-left"
+                      >
+                        <svg
+                          className="w-6 h-6 mr-3"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <span>Bookmarks</span>
+                      </button>
+                    )}
 
                     <Link
                       href="/premium"
@@ -427,6 +458,7 @@ export default function SidebarNav() {
                       <span>Premium</span>
                     </Link>
 
+                    {/* FIXED: Saved Drafts - Handle auth requirement client-side */}
                     {user ? (
                       <Link
                         href="/profile/drafts"
@@ -453,7 +485,7 @@ export default function SidebarNav() {
                       <button
                         onClick={() => {
                           setIsMoreMenuOpen(false); // Close menu first
-                          router.push("/signin?redirect=/profile/drafts");
+                          handleAuthRequiredNavigation("/profile/drafts");
                         }}
                         className="flex items-center px-4 py-3 hover:bg-gray-700 text-white w-full text-left"
                       >
@@ -535,32 +567,56 @@ export default function SidebarNav() {
                 <span>Premium</span>
               </Link>
 
-              <Link
-                href="/bookmarks"
-                className={`flex items-center px-4 py-3 ${
-                  pathname === "/bookmarks"
-                    ? "bg-gray-800"
-                    : "hover:bg-gray-800"
-                }`}
-              >
-                <svg
-                  className="w-6 h-6 mr-3"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+              {/* FIXED: Bookmarks - Handle auth requirement client-side */}
+              {user ? (
+                <Link
+                  href="/bookmarks"
+                  className={`flex items-center px-4 py-3 ${
+                    pathname === "/bookmarks"
+                      ? "bg-gray-800"
+                      : "hover:bg-gray-800"
+                  }`}
                 >
-                  <path
-                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <span>Bookmarks</span>
-              </Link>
+                  <svg
+                    className="w-6 h-6 mr-3"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <span>Bookmarks</span>
+                </Link>
+              ) : (
+                <button
+                  onClick={() => handleAuthRequiredNavigation("/bookmarks")}
+                  className="flex items-center px-4 py-3 hover:bg-gray-800 w-full text-left"
+                >
+                  <svg
+                    className="w-6 h-6 mr-3"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <span>Bookmarks</span>
+                </button>
+              )}
 
-              {/* Saved Drafts link */}
+              {/* FIXED: Saved Drafts link - Handle auth requirement client-side */}
               {user ? (
                 <Link
                   href="/profile/drafts"
@@ -589,11 +645,7 @@ export default function SidebarNav() {
               ) : (
                 <button
                   onClick={() =>
-                    router.push(
-                      `/signin?redirect=${encodeURIComponent(
-                        "/profile/drafts"
-                      )}`
-                    )
+                    handleAuthRequiredNavigation("/profile/drafts")
                   }
                   className="flex items-center px-4 py-3 hover:bg-gray-800 w-full text-left"
                 >
