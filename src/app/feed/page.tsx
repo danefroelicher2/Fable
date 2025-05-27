@@ -244,16 +244,16 @@ export default function PublicFeed() {
     { value: "non-fiction", label: "Non-Fiction" },
   ];
 
-  // Article Card Component
+  // Article Card Component - FIXED VERSION
   const ArticleCard = ({ article }: { article: Article }) => {
     return (
       <div className="bg-white rounded-lg shadow-md overflow-hidden article-card">
-        <div className="h-48 bg-slate-200 overflow-hidden">
+        <div className="aspect-square bg-slate-200 relative overflow-hidden flex items-center justify-center">
           {article.image_url ? (
             <img
               src={article.image_url}
               alt={article.title}
-              className="w-full h-full object-cover"
+              className="max-w-full max-h-full object-contain"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-500">
@@ -349,7 +349,7 @@ export default function PublicFeed() {
   ) => {
     if (isLoadingState) {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {[...Array(6)].map((_, index) => (
             <div
               key={index}
@@ -418,7 +418,7 @@ export default function PublicFeed() {
     }
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {articlesToShow.map((article: Article) => (
           <ArticleCard key={article.id} article={article} />
         ))}
