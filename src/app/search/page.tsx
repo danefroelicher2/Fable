@@ -130,7 +130,7 @@ export default function SearchPage() {
           <h2 className="text-2xl font-bold mb-6">Explore Recent Articles</h2>
 
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[...Array(6)].map((_, index) => (
                 <div
                   key={index}
@@ -151,22 +151,23 @@ export default function SearchPage() {
               <p className="text-gray-600">No articles found.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {recentArticles.map((article) => (
                 <div
                   key={article.id}
                   className="bg-gray-50 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
                   <Link href={`/articles/${article.slug}`}>
-                    <div className="h-48 bg-gray-200 relative overflow-hidden">
+                    <div className="bg-gray-200 relative overflow-hidden">
                       {article.image_url ? (
                         <img
                           src={article.image_url}
                           alt={article.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-auto"
+                          style={{ maxHeight: "12rem", minHeight: "8rem" }}
                         />
                       ) : (
-                        <div className="flex items-center justify-center h-full text-gray-500">
+                        <div className="flex items-center justify-center h-48 text-gray-500">
                           No image
                         </div>
                       )}
