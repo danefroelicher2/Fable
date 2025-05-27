@@ -267,7 +267,7 @@ export default function BookmarksPage() {
       return (
         <Link
           href={`/communities/${item.community_id}`}
-          className="inline-flex items-center bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium hover:bg-purple-200 transition-colors"
+          className="inline-flex items-center bg-green-100 text-green-800 px-2 py-1 rounded font-medium hover:bg-green-200 transition-colors"
           style={{ fontSize: "10px" }}
           onClick={(e) => e.stopPropagation()} // Prevent parent link from firing
         >
