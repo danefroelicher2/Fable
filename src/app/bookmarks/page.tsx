@@ -248,13 +248,13 @@ export default function BookmarksPage() {
   const getTypeBadge = (item: BookmarkedItem) => {
     if (item.type === "article") {
       return (
-        <span className="inline-flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
+        <span className="inline-flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded text-[10px] font-medium">
           Article
         </span>
       );
     } else {
       return (
-        <span className="inline-flex items-center bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+        <span className="inline-flex items-center bg-green-100 text-green-800 px-2 py-1 rounded text-[10px] font-medium">
           Community
         </span>
       );
@@ -267,7 +267,8 @@ export default function BookmarksPage() {
       return (
         <Link
           href={`/communities/${item.community_id}`}
-          className="inline-flex items-center bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-medium hover:bg-purple-200 transition-colors"
+          className="inline-flex items-center bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium hover:bg-purple-200 transition-colors"
+          style={{ fontSize: "10px" }}
           onClick={(e) => e.stopPropagation()} // Prevent parent link from firing
         >
           {item.community.name}
@@ -459,15 +460,15 @@ export default function BookmarksPage() {
                             </span>
                           )}
                         </div>
-                        <span className="font-medium">
+                        <span className="font-medium leading-none">
                           {item.user_info?.full_name ||
                             item.user_info?.username ||
                             "Anonymous"}
                         </span>
                       </Link>
 
-                      {/* FIXED: Date now appears horizontally next to the user */}
-                      <span className="text-gray-400 dark:text-gray-500">
+                      {/* FIXED: Date now appears horizontally next to the user with proper alignment */}
+                      <span className="text-gray-400 dark:text-gray-500 leading-none">
                         {formatDate(
                           item.type === "article"
                             ? (item as any).published_at || item.created_at
