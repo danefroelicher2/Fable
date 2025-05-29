@@ -163,16 +163,30 @@ export default function CreateCommunityPage() {
             >
               Community Name*
             </label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              placeholder="Enter community name"
-              required
-              disabled={loading}
-            />
+            <div className="relative">
+              <input
+                type="text"
+                id="name"
+                value={name}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value.length <= 40) {
+                    setName(value);
+                  }
+                }}
+                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="Enter community name"
+                maxLength={40}
+                required
+                disabled={loading}
+              />
+              <div className="absolute right-2 top-2 text-xs text-gray-500 dark:text-gray-400">
+                {name.length}/40
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Community name must be 40 characters or less
+            </p>
           </div>
 
           <div className="mb-4">

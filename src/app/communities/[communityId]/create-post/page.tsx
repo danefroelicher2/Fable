@@ -16,6 +16,8 @@ export default function CreateCommunityPostPage() {
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [titleCharCount, setTitleCharCount] = useState(0); // Add character counter
+  const TITLE_MAX_LENGTH = 40; // Add character limit constant
   const [loading, setLoading] = useState(false);
   const [posting, setPosting] = useState(false);
   const [community, setCommunity] = useState<any>(null);
@@ -264,11 +266,31 @@ export default function CreateCommunityPostPage() {
                 type="text"
                 id="title"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  if (newValue.length <= TITLE_MAX_LENGTH) {
+                    setTitle(newValue);
+                    setTitleCharCount(newValue.length);
+                  }
+                }}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 placeholder="Give your post a title"
+                maxLength={TITLE_MAX_LENGTH}
                 required
               />
+              <div className="flex justify-between items-center mt-1">
+                <div
+                  className={`text-sm ${
+                    titleCharCount >= TITLE_MAX_LENGTH - 5
+                      ? titleCharCount >= TITLE_MAX_LENGTH
+                        ? "text-red-600 dark:text-red-400"
+                        : "text-yellow-600 dark:text-yellow-400"
+                      : "text-gray-500 dark:text-gray-400"
+                  }`}
+                >
+                  {titleCharCount}/{TITLE_MAX_LENGTH} characters
+                </div>
+              </div>
             </div>
 
             <div className="mb-6">
