@@ -77,6 +77,12 @@ export default function CreatePostForm({
       return;
     }
 
+    // Add character limit validation
+    if (title.length > 40) {
+      setError("Title must be 40 characters or fewer");
+      return;
+    }
+
     if (!content.trim()) {
       setError("Content cannot be empty");
       return;
@@ -125,15 +131,38 @@ export default function CreatePostForm({
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-gray-700 mb-2">Title</label>
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-gray-700">Title</label>
+            <div
+              className={`text-sm ${
+                title.length > 40
+                  ? "text-red-600 font-bold"
+                  : title.length > 35
+                  ? "text-orange-500"
+                  : "text-gray-500"
+              }`}
+            >
+              {title.length}/40
+            </div>
+          </div>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-2 border rounded"
+            className={`w-full p-2 border rounded ${
+              title.length > 40
+                ? "border-red-500 focus:ring-red-400"
+                : "border-gray-300 focus:ring-blue-400"
+            } focus:outline-none focus:ring-2`}
             placeholder="Add a title to your post"
             required
+            maxLength={50}
           />
+          {title.length > 40 && (
+            <p className="text-red-600 text-sm mt-1">
+              Title must be 40 characters or fewer
+            </p>
+          )}
         </div>
 
         <div>

@@ -110,10 +110,24 @@ export default function WritePage() {
   // Update the handlePublish function validation
 
   const handlePublish = async () => {
-    if (!title.trim() || !content.trim() || !category.trim()) {
-      setError(
-        "Please fill in title, content, and select a category before publishing"
-      );
+    // Updated validation with character limit
+    if (!title.trim()) {
+      setError("Please enter a title before publishing");
+      return;
+    }
+
+    if (title.length > 40) {
+      setError("Title must be 40 characters or fewer");
+      return;
+    }
+
+    if (!content.trim()) {
+      setError("Please enter content before publishing");
+      return;
+    }
+
+    if (!category.trim()) {
+      setError("Please select a category before publishing");
       return;
     }
 
@@ -202,24 +216,46 @@ export default function WritePage() {
         <form className="bg-white p-6 rounded-lg shadow-md">
           {/* 1. Title - At the top */}
           <div className="mb-6">
-            <label
-              htmlFor="title"
-              className="block text-gray-700 font-medium mb-2"
-            >
-              Title
-            </label>
+            <div className="flex justify-between items-center mb-2">
+              <label
+                htmlFor="title"
+                className="block text-gray-700 font-medium"
+              >
+                Title
+              </label>
+              <div
+                className={`text-sm ${
+                  title.length > 40
+                    ? "text-red-600 font-bold"
+                    : title.length > 35
+                    ? "text-orange-500"
+                    : "text-gray-500"
+                }`}
+              >
+                {title.length}/40
+              </div>
+            </div>
             <input
               type="text"
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
+              className={`w-full p-2 border rounded focus:outline-none focus:ring-2 text-black ${
+                title.length > 40
+                  ? "border-red-500 focus:ring-red-400"
+                  : "border-gray-300 focus:ring-blue-400"
+              }`}
               placeholder="Enter a compelling title for your article"
               required
               disabled={isRedirecting}
+              maxLength={50} // Allow typing but we'll validate at 40
             />
+            {title.length > 40 && (
+              <p className="text-red-600 text-sm mt-1">
+                Title must be 40 characters or fewer
+              </p>
+            )}
           </div>
-
           {/* 2. Cover Image - Second */}
           <div className="mb-6">
             <label className="block text-gray-700 font-medium mb-2">
