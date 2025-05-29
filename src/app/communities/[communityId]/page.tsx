@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import BookmarkButton from "@/components/BookmarkButton";
+import ShareButton from "@/components/ShareButton";
 
 interface Community {
   id: string;
@@ -1121,17 +1122,28 @@ export default function CommunityDetailPage() {
                           {formatPreview(post.content)}
                         </p>
 
-                        {/* Post Actions with Delete Button */}
-                        <div className="flex justify-between items-center mt-2">
-                          <Link
-                            href={`/communities/${communityId}/posts/${post.id}`}
-                            className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Read more
-                          </Link>
+                        {/* Post Actions with Share and Delete Buttons - UPDATED */}
+                        <div className="flex justify-between items-center mt-4">
+                          <div className="flex items-center space-x-2">
+                            <Link
+                              href={`/communities/${communityId}/posts/${post.id}`}
+                              className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              Read more
+                            </Link>
+                          </div>
 
-                          <div className="flex items-center">
+                          <div className="flex items-center space-x-2">
+                            {/* NEW: Share Button */}
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <ShareButton
+                                postId={post.id}
+                                title={post.title}
+                                size="sm"
+                              />
+                            </div>
+
                             <BookmarkButton postId={post.id} className="mr-2" />
 
                             {/* Delete Button (Only visible to post author) */}

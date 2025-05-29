@@ -1,5 +1,5 @@
-// Modified src/components/UserPublishedArticles.tsx
-// Removing the category label bubble from article displays
+// src/components/UserPublishedArticles.tsx
+// Updated to include ShareButton functionality
 
 "use client";
 
@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { getUserPinnedPosts } from "@/lib/pinnedPostUtils";
 import { useAuth } from "@/context/AuthContext";
 import DeleteButton from "./DeleteButton";
+import ShareButton from "./ShareButton"; // NEW IMPORT
 
 interface Article {
   id: string;
@@ -60,7 +61,6 @@ export default function UserPublishedArticles({
       // Get pinned post IDs to exclude from regular articles
       let pinnedPostIds: string[] = [];
       try {
-        // Safely get pinned post IDs
         pinnedPostIds =
           typeof getUserPinnedPosts === "function"
             ? getUserPinnedPosts(userId)
@@ -68,10 +68,10 @@ export default function UserPublishedArticles({
         console.log("Excluding pinned posts:", pinnedPostIds);
       } catch (pinError) {
         console.warn("Error getting pinned posts:", pinError);
-        pinnedPostIds = []; // Fallback to empty array
+        pinnedPostIds = [];
       }
 
-      // Fetch total count first (including pinned posts for correct count)
+      // Fetch total count first
       try {
         const { count, error: countError } = await (supabase as any)
           .from("public_articles")
@@ -85,13 +85,11 @@ export default function UserPublishedArticles({
         }
 
         setTotalArticles(count || 0);
-        console.log("Total articles found:", count);
       } catch (countErr) {
         console.error("Error fetching article count:", countErr);
-        // Continue even if count fails
       }
 
-      // Now fetch articles
+      // Fetch articles
       let query = (supabase as any)
         .from("public_articles")
         .select(
@@ -110,20 +108,17 @@ export default function UserPublishedArticles({
         .eq("user_id", userId)
         .eq("is_published", true);
 
-      // Filter out pinned posts if there are any - FIXED VERSION
+      // Filter out pinned posts
       if (pinnedPostIds && pinnedPostIds.length > 0) {
         try {
-          // For each pinned post ID, add a filter to exclude it
           for (const pinnedId of pinnedPostIds) {
             query = query.neq("id", pinnedId);
           }
         } catch (filterErr) {
           console.warn("Error applying pinned post filter:", filterErr);
-          // Continue without filtering if this fails
         }
       }
 
-      // Apply ordering and limit
       const { data, error } = await query
         .order("published_at", { ascending: false })
         .limit(limit);
@@ -135,17 +130,15 @@ export default function UserPublishedArticles({
 
       console.log(`Successfully fetched ${data?.length || 0} articles`);
 
-      // Process articles to add like counts if possible
+      // Process articles to add like counts
       let processedArticles = data || [];
 
       try {
-        // Add placeholder like counts to avoid errors
         processedArticles = processedArticles.map((article: Article) => ({
           ...article,
           like_count: 0,
         }));
 
-        // Only try to get like counts if we have articles
         if (processedArticles.length > 0) {
           processedArticles = await Promise.all(
             processedArticles.map(async (article: Article) => {
@@ -181,12 +174,10 @@ export default function UserPublishedArticles({
         }
       } catch (err) {
         console.warn("Error getting like counts:", err);
-        // Continue with articles even if like counts fail
       }
 
       setArticles(processedArticles);
     } catch (err) {
-      // Improved error logging with more context
       console.error("Error fetching user articles:", err);
       setError("Failed to load articles");
     } finally {
@@ -194,13 +185,23 @@ export default function UserPublishedArticles({
     }
   }
 
-  // Handle article deletion
   const handleArticleDeleted = (articleId: string) => {
-    // Remove the deleted article from the state
     setArticles(articles.filter((article) => article.id !== articleId));
-
-    // Update the total count
     setTotalArticles((prev) => Math.max(0, prev - 1));
+  };
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch (err) {
+      console.warn("Date formatting error:", err);
+      return "Unknown date";
+    }
   };
 
   if (loading) {
@@ -245,30 +246,12 @@ export default function UserPublishedArticles({
     );
   }
 
-  // Format date (e.g., "Mar 15, 2024")
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-    } catch (err) {
-      console.warn("Date formatting error:", err);
-      return "Unknown date";
-    }
-  };
-
   return (
     <div>
       {displayType === "grid" ? (
-        // Updated grid display with 4 columns - REMOVED CATEGORY LABEL BUBBLE
+        // Grid display with share buttons
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {articles.map((article) => (
-            // In src/components/UserPublishedArticles.tsx
-            // Add view count display to the grid layout
-
-            // Find the grid display section and update it:
             <div key={article.id} className="relative group">
               <Link
                 href={`/articles/${article.slug}`}
@@ -291,7 +274,7 @@ export default function UserPublishedArticles({
                   )}
                 </div>
 
-                {/* Title and date below image */}
+                {/* Title and metadata below image */}
                 <div className="p-3">
                   <h3 className="text-gray-800 font-medium text-sm line-clamp-2">
                     {article.title}
@@ -320,20 +303,30 @@ export default function UserPublishedArticles({
                 </div>
               </Link>
 
-              {/* Delete button overlay - only for the current user */}
-              {isCurrentUser && (
-                <div className="absolute bottom-0 left-0 right-0 bg-white bg-opacity-90 py-1 opacity-0 group-hover:opacity-100 transition-opacity flex justify-center">
+              {/* Action buttons overlay - UPDATED WITH SHARE BUTTON */}
+              <div className="absolute bottom-0 left-0 right-0 bg-white bg-opacity-95 py-2 opacity-0 group-hover:opacity-100 transition-opacity flex justify-center space-x-2">
+                {/* Share Button - NEW */}
+                <ShareButton
+                  articleId={article.id}
+                  articleSlug={article.slug}
+                  title={article.title}
+                  size="sm"
+                  className="flex-shrink-0"
+                />
+
+                {/* Delete button - only for current user */}
+                {isCurrentUser && (
                   <DeleteButton
                     articleId={article.id}
                     onDelete={() => handleArticleDeleted(article.id)}
                   />
-                </div>
-              )}
+                )}
+              </div>
             </div>
           ))}
         </div>
       ) : (
-        // List display - MODIFIED TO REMOVE CATEGORY BUBBLE
+        // List display with share buttons
         <div className="space-y-6">
           {articles.map((article) => (
             <div
@@ -356,7 +349,7 @@ export default function UserPublishedArticles({
                   className={`p-6 ${article.image_url ? "md:w-2/3" : "w-full"}`}
                 >
                   <div className="flex justify-between items-start">
-                    <h3 className="text-xl font-bold mb-2">
+                    <h3 className="text-xl font-bold mb-2 flex-1">
                       <Link
                         href={`/articles/${article.slug}`}
                         className="text-gray-800 hover:text-blue-600"
@@ -364,13 +357,24 @@ export default function UserPublishedArticles({
                         {article.title}
                       </Link>
                     </h3>
-                    {isCurrentUser && (
-                      <DeleteButton
+
+                    {/* Action buttons - UPDATED WITH SHARE */}
+                    <div className="flex items-center space-x-2 ml-4">
+                      <ShareButton
                         articleId={article.id}
-                        onDelete={() => handleArticleDeleted(article.id)}
+                        articleSlug={article.slug}
+                        title={article.title}
+                        size="md"
                       />
-                    )}
+                      {isCurrentUser && (
+                        <DeleteButton
+                          articleId={article.id}
+                          onDelete={() => handleArticleDeleted(article.id)}
+                        />
+                      )}
+                    </div>
                   </div>
+
                   <div className="flex justify-between text-sm text-gray-600 mb-3">
                     <span>{formatDate(article.published_at)}</span>
                     <div className="flex space-x-3">
@@ -410,8 +414,6 @@ export default function UserPublishedArticles({
                   {article.excerpt && (
                     <p className="text-gray-700">{article.excerpt}</p>
                   )}
-
-                  {/* Category tag removed from bottom of card */}
                 </div>
               </div>
             </div>
