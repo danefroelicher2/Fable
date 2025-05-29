@@ -93,68 +93,24 @@ export default function ShareViaMessage({
       setSending(true);
       setError(null);
 
-      // Check if a conversation exists between the two users
-      const { data: existingConversation, error: conversationError } = await (
-        supabase as any
-      )
-        .from("conversations")
-        .select("id")
-        .or(
-          `and(user1_id.eq.${user.id},user2_id.eq.${selectedUser.id}),and(user1_id.eq.${selectedUser.id},user2_id.eq.${user.id})`
-        )
-        .maybeSingle();
+      // Import the utility functions
+      const { getOrCreateConversation, createSharedContentMessage } =
+        await import("@/lib/SharedContentUtils");
 
-      if (conversationError) throw conversationError;
+      // Get or create conversation
+      const conversationId = await getOrCreateConversation(
+        user.id,
+        selectedUser.id
+      );
 
-      let conversationId;
-
-      if (existingConversation) {
-        conversationId = existingConversation.id;
-      } else {
-        // Create a new conversation
-        const { data: newConversation, error: newConversationError } = await (
-          supabase as any
-        )
-          .from("conversations")
-          .insert({
-            user1_id: user.id,
-            user2_id: selectedUser.id,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .select("id")
-          .single();
-
-        if (newConversationError) throw newConversationError;
-        conversationId = newConversation.id;
-      }
-
-      // Send the message with shared content metadata
-      const messageData = {
-        conversation_id: conversationId,
-        sender_id: user.id,
-        content: message,
-        created_at: new Date().toISOString(),
-        message_type: "shared_content",
-        shared_content: {
-          type: articleId ? "article" : "post",
-          id: articleId || postId,
-          title: title,
-          url: shareUrl,
-        },
-      };
-
-      const { error: messageError } = await (supabase as any)
-        .from("messages")
-        .insert(messageData);
-
-      if (messageError) throw messageError;
-
-      // Update conversation's updated_at timestamp
-      await (supabase as any)
-        .from("conversations")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", conversationId);
+      // Create shared content message with full details
+      await createSharedContentMessage(
+        conversationId,
+        user.id,
+        articleId ? "article" : "post",
+        (articleId || postId) as string,
+        message
+      );
 
       setSuccess(true);
 
