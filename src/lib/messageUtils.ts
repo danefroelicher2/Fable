@@ -1,4 +1,4 @@
-// src/lib/messageUtils.ts
+// src/lib/messageUtils.ts - UPDATED to include recipient_id
 import { supabase } from "./supabase";
 
 export interface Message {
@@ -6,14 +6,8 @@ export interface Message {
   sender_id: string;
   recipient_id: string;
   content: string;
-  is_read: boolean;
   created_at: string;
   sender_profile?: {
-    username: string | null;
-    full_name: string | null;
-    avatar_url: string | null;
-  };
-  recipient_profile?: {
     username: string | null;
     full_name: string | null;
     avatar_url: string | null;
@@ -38,27 +32,24 @@ export async function sendMessage(
   content: string
 ): Promise<boolean> {
   try {
-    if (!content.trim()) {
-      throw new Error("Message content cannot be empty");
-    }
-
-    // Get the current user
     const { data: userData, error: userError } = await supabase.auth.getUser();
 
     if (userError || !userData.user) {
       throw new Error("You must be logged in to send messages");
     }
 
-    // Send the message
+    // Insert message with both sender_id and recipient_id
     const { error } = await (supabase as any).from("messages").insert({
       sender_id: userData.user.id,
       recipient_id: recipientId,
       content: content.trim(),
-      is_read: false,
       created_at: new Date().toISOString(),
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error inserting message:", error);
+      throw error;
+    }
 
     return true;
   } catch (error: any) {
@@ -68,87 +59,10 @@ export async function sendMessage(
 }
 
 /**
- * Get all messages between current user and another user
- */
-export async function getConversation(otherUserId: string): Promise<Message[]> {
-  try {
-    // Get the current user
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !userData.user) {
-      throw new Error("You must be logged in to view messages");
-    }
-
-    const currentUserId = userData.user.id;
-
-    // First, get all messages between the two users
-    const { data: messagesData, error: messagesError } = await (supabase as any)
-      .from("messages")
-      .select("*")
-      .or(
-        `and(sender_id.eq.${currentUserId},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${currentUserId})`
-      )
-      .order("created_at", { ascending: true });
-
-    if (messagesError) throw messagesError;
-
-    // No messages found
-    if (!messagesData || messagesData.length === 0) {
-      return [];
-    }
-
-    // Get profile data for sender and recipient separately
-    // First, get other user's profile
-    const { data: otherUserProfile, error: otherUserError } = await supabase
-      .from("profiles")
-      .select("username, full_name, avatar_url")
-      .eq("id", otherUserId)
-      .single();
-
-    if (otherUserError && otherUserError.code !== "PGRST116") {
-      console.error("Error fetching other user profile:", otherUserError);
-    }
-
-    // Then get current user's profile
-    const { data: currentUserProfile, error: currentUserError } = await supabase
-      .from("profiles")
-      .select("username, full_name, avatar_url")
-      .eq("id", currentUserId)
-      .single();
-
-    if (currentUserError && currentUserError.code !== "PGRST116") {
-      console.error("Error fetching current user profile:", currentUserError);
-    }
-
-    // Add profile data to messages
-    const messagesWithProfiles = messagesData.map((message: any) => {
-      const enrichedMessage: Message = {
-        ...message,
-        sender_profile:
-          message.sender_id === currentUserId
-            ? currentUserProfile || null
-            : otherUserProfile || null,
-        recipient_profile:
-          message.recipient_id === currentUserId
-            ? currentUserProfile || null
-            : otherUserProfile || null,
-      };
-      return enrichedMessage;
-    });
-
-    return messagesWithProfiles;
-  } catch (error: any) {
-    console.error("Error getting conversation:", error);
-    return [];
-  }
-}
-
-/**
- * Get a list of unique users the current user has conversations with
+ * Get all conversations for the current user
  */
 export async function getConversations(): Promise<ConversationSummary[]> {
   try {
-    // Get the current user
     const { data: userData, error: userError } = await supabase.auth.getUser();
 
     if (userError || !userData.user) {
@@ -157,22 +71,33 @@ export async function getConversations(): Promise<ConversationSummary[]> {
 
     const currentUserId = userData.user.id;
 
-    // Get all messages involving the current user
-    const { data: messagesData, error: messagesError } = await (supabase as any)
+    // Get all messages involving the current user (as sender or recipient)
+    const { data: messages, error: messagesError } = await (supabase as any)
       .from("messages")
-      .select("*")
+      .select(
+        `
+        id,
+        sender_id,
+        recipient_id,
+        content,
+        created_at
+      `
+      )
       .or(`sender_id.eq.${currentUserId},recipient_id.eq.${currentUserId}`)
       .order("created_at", { ascending: false });
 
-    if (messagesError) throw messagesError;
+    if (messagesError) {
+      console.error("Error fetching messages:", messagesError);
+      throw messagesError;
+    }
 
-    if (!messagesData || messagesData.length === 0) {
+    if (!messages || messages.length === 0) {
       return [];
     }
 
-    // Get unique user IDs from conversations
+    // Get unique user IDs from conversations (excluding current user)
     const uniqueUserIds = new Set<string>();
-    messagesData.forEach((message: any) => {
+    messages.forEach((message: any) => {
       if (message.sender_id !== currentUserId) {
         uniqueUserIds.add(message.sender_id);
       }
@@ -181,156 +106,145 @@ export async function getConversations(): Promise<ConversationSummary[]> {
       }
     });
 
-    // Fetch profiles for all unique users
-    const userProfiles: Record<string, any> = {};
+    const userIds = Array.from(uniqueUserIds);
 
-    // Only fetch if there are users to fetch
-    if (uniqueUserIds.size > 0) {
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, username, full_name, avatar_url")
-        .in("id", Array.from(uniqueUserIds));
-
-      if (profilesError) {
-        console.error("Error fetching profiles:", profilesError);
-      } else if (profilesData) {
-        // Index profiles by ID for easy lookup
-        profilesData.forEach((profile: any) => {
-          userProfiles[profile.id] = profile;
-        });
-      }
+    if (userIds.length === 0) {
+      return [];
     }
 
-    // Process the messages to get unique conversations
+    // Fetch profiles for all conversation partners
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, username, full_name, avatar_url")
+      .in("id", userIds);
+
+    if (profilesError) {
+      console.error("Error fetching profiles:", profilesError);
+    }
+
+    // Create conversation summaries
     const conversations: Record<string, ConversationSummary> = {};
 
-    messagesData.forEach((message: any) => {
+    messages.forEach((message: any) => {
       // Determine the other user in the conversation
       const otherUserId =
         message.sender_id === currentUserId
           ? message.recipient_id
           : message.sender_id;
 
-      // Skip if we've already processed this user
+      // Skip if we've already processed this conversation
       if (conversations[otherUserId]) {
-        // Just count unread messages
-        if (message.recipient_id === currentUserId && !message.is_read) {
-          conversations[otherUserId].unread_count++;
-        }
         return;
       }
 
-      // Get the profile of the other user
-      const otherUserProfile = userProfiles[otherUserId] || {
-        username: null,
-        full_name: null,
-        avatar_url: null,
-      };
+      // Find the profile of the other user
+      const otherUserProfile = profiles?.find((p) => p.id === otherUserId);
 
-      // Add to conversations
       conversations[otherUserId] = {
         user_id: otherUserId,
-        username: otherUserProfile.username || null,
-        full_name: otherUserProfile.full_name || null,
-        avatar_url: otherUserProfile.avatar_url || null,
+        username: otherUserProfile?.username || null,
+        full_name: otherUserProfile?.full_name || null,
+        avatar_url: otherUserProfile?.avatar_url || null,
         last_message: message.content,
         last_message_date: message.created_at,
-        unread_count:
-          message.recipient_id === currentUserId && !message.is_read ? 1 : 0,
+        unread_count: 0, // We'll implement this later when we add is_read column
       };
     });
 
     return Object.values(conversations);
-  } catch (error: any) {
-    console.error("Error getting conversations:", error);
+  } catch (error) {
+    console.error("Error fetching conversations:", error);
     return [];
   }
 }
 
 /**
- * Mark messages as read
+ * Get messages for a conversation between current user and another user
  */
-export async function markMessagesAsRead(
-  otherUserId: string
-): Promise<boolean> {
+export async function getConversation(otherUserId: string): Promise<Message[]> {
   try {
-    // Get the current user
     const { data: userData, error: userError } = await supabase.auth.getUser();
 
     if (userError || !userData.user) {
-      throw new Error("You must be logged in to update messages");
+      throw new Error("You must be logged in to view messages");
     }
 
-    // Mark messages as read
-    const { error } = await (supabase as any)
+    const currentUserId = userData.user.id;
+
+    // Get all messages between current user and other user
+    const { data: messages, error: messagesError } = await (supabase as any)
       .from("messages")
-      .update({ is_read: true })
-      .eq("sender_id", otherUserId)
-      .eq("recipient_id", userData.user.id)
-      .eq("is_read", false);
+      .select(
+        `
+        id,
+        sender_id,
+        recipient_id,
+        content,
+        created_at
+      `
+      )
+      .or(
+        `and(sender_id.eq.${currentUserId},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${currentUserId})`
+      )
+      .order("created_at", { ascending: true });
 
-    if (error) throw error;
+    if (messagesError) {
+      console.error("Error fetching messages:", messagesError);
+      throw messagesError;
+    }
 
-    return true;
-  } catch (error: any) {
-    console.error("Error marking messages as read:", error);
-    return false;
+    if (!messages || messages.length === 0) {
+      return [];
+    }
+
+    // Get profiles for both users
+    const userIds = [currentUserId, otherUserId];
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, username, full_name, avatar_url")
+      .in("id", userIds);
+
+    if (profilesError) {
+      console.error("Error fetching profiles:", profilesError);
+    }
+
+    // Add sender profile to each message
+    const messagesWithProfiles = messages.map((message: any) => ({
+      ...message,
+      sender_profile: profiles?.find((p) => p.id === message.sender_id) || null,
+    }));
+
+    return messagesWithProfiles;
+  } catch (error) {
+    console.error("Error fetching conversation:", error);
+    return [];
   }
 }
 
 /**
- * Mark all messages as read for the current user
- * This is used when a user visits the messages page
+ * Mark messages as read - NO-OP for now (until we add is_read column)
  */
-export async function markAllMessagesAsRead(): Promise<boolean> {
-  try {
-    // Get the current user
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !userData.user) {
-      throw new Error("You must be logged in to update messages");
-    }
-
-    // Mark all messages as read where the current user is the recipient
-    const { error } = await (supabase as any)
-      .from("messages")
-      .update({ is_read: true })
-      .eq("recipient_id", userData.user.id)
-      .eq("is_read", false);
-
-    if (error) throw error;
-
-    return true;
-  } catch (error: any) {
-    console.error("Error marking all messages as read:", error);
-    return false;
-  }
+export async function markMessagesAsRead(otherUserId: string): Promise<void> {
+  // Do nothing for now - we'll implement this when we add is_read column
+  console.log(
+    `markMessagesAsRead called for user ${otherUserId} - no action taken`
+  );
+  return Promise.resolve();
 }
 
 /**
- * Get unread message count
+ * Mark all messages as read - NO-OP for now (until we add is_read column)
+ */
+export async function markAllMessagesAsRead(): Promise<void> {
+  // Do nothing for now - we'll implement this when we add is_read column
+  console.log("markAllMessagesAsRead called - no action taken");
+  return Promise.resolve();
+}
+
+/**
+ * Get unread message count - Always returns 0 for now (until we add is_read column)
  */
 export async function getUnreadCount(): Promise<number> {
-  try {
-    // Get the current user
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !userData.user) {
-      return 0;
-    }
-
-    // Count unread messages
-    const { count, error } = await (supabase as any)
-      .from("messages")
-      .select("id", { count: "exact", head: true })
-      .eq("recipient_id", userData.user.id)
-      .eq("is_read", false);
-
-    if (error) throw error;
-
-    return count || 0;
-  } catch (error: any) {
-    console.error("Error getting unread message count:", error);
-    return 0;
-  }
+  // Always return 0 for now - we'll implement this when we add is_read column
+  return 0;
 }

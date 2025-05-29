@@ -1,7 +1,7 @@
-// src/app/messages/page.tsx
+// src/app/messages/page.tsx - FIXED VERSION
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
@@ -20,7 +20,9 @@ export default function MessagesPage() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedUserId = searchParams?.get("user") || null;
+
+  // Fix: Safely handle searchParams
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -30,28 +32,152 @@ export default function MessagesPage() {
   const [messageLoading, setMessageLoading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  // Fetch conversations when component mounts
+  // Fix: Handle searchParams safely after component mounts
   useEffect(() => {
+    setMounted(true);
+    if (searchParams) {
+      const userParam = searchParams.get("user");
+      setSelectedUserId(userParam);
+    }
+  }, [searchParams]);
+
+  // Fix: Memoize scroll function to prevent unnecessary re-renders
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, []);
+
+  // Scroll to bottom of messages when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Use timeout to ensure DOM is updated
+      setTimeout(scrollToBottom, 100);
+    }
+  }, [messages, scrollToBottom]);
+
+  // Fix: Separate function for fetching conversations with proper error handling
+  const fetchConversations = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      const conversationsList = await getConversations();
+      setConversations(conversationsList);
+
+      // Handle selected user from URL params
+      if (selectedUserId && conversationsList.length > 0) {
+        const selectedConvo = conversationsList.find(
+          (c) => c.user_id === selectedUserId
+        );
+
+        if (selectedConvo) {
+          setSelectedConversation(selectedConvo);
+        } else {
+          // Try to fetch user profile for new conversation
+          try {
+            const { data: profileData, error } = await supabase
+              .from("profiles")
+              .select("id, username, full_name, avatar_url")
+              .eq("id", selectedUserId)
+              .single();
+
+            if (!error && profileData) {
+              const newConvo: ConversationSummary = {
+                user_id: profileData.id,
+                username: profileData.username,
+                full_name: profileData.full_name,
+                avatar_url: profileData.avatar_url,
+                last_message: "",
+                last_message_date: new Date().toISOString(),
+                unread_count: 0,
+              };
+              setSelectedConversation(newConvo);
+            }
+          } catch (profileError) {
+            console.error("Error fetching user profile:", profileError);
+          }
+        }
+      }
+
+      setInitialLoadComplete(true);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, selectedUserId]);
+
+  // Fix: Separate function for fetching messages with proper cleanup
+  const fetchMessages = useCallback(
+    async (userId: string) => {
+      if (!user || !userId) return;
+
+      try {
+        setMessageLoading(true);
+        const conversation = await getConversation(userId);
+        setMessages(conversation);
+
+        // Mark messages as read
+        await markMessagesAsRead(userId);
+
+        // Update unread count in conversations list
+        setConversations((prevConversations) => {
+          return prevConversations.map((conv) => {
+            if (conv.user_id === userId) {
+              return {
+                ...conv,
+                unread_count: 0,
+              };
+            }
+            return conv;
+          });
+        });
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      } finally {
+        setMessageLoading(false);
+      }
+    },
+    [user]
+  );
+
+  // Main effect for authentication and initial setup
+  useEffect(() => {
+    if (!mounted) return;
+
     if (!user) {
-      // Redirect to login if not authenticated
       router.push(`/signin?redirect=${encodeURIComponent("/messages")}`);
       return;
     }
-
-    fetchConversations();
 
     // Mark all messages as read when visiting this page
     markAllMessagesAsRead().catch((err) => {
       console.error("Error marking all messages as read:", err);
     });
 
-    // Set up real-time updates for new messages
+    fetchConversations();
+  }, [user, router, mounted, fetchConversations]);
+
+  // Load specific conversation when selectedUserId changes
+  useEffect(() => {
+    if (selectedUserId && user && initialLoadComplete && mounted) {
+      fetchMessages(selectedUserId);
+    }
+  }, [selectedUserId, user, initialLoadComplete, mounted, fetchMessages]);
+
+  // Fix: Set up real-time subscriptions with proper cleanup
+  useEffect(() => {
+    if (!user || !mounted) return;
+
     const messagesSubscription = supabase
-      .channel("messages-channel")
+      .channel(`messages-channel-${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -72,108 +198,11 @@ export default function MessagesPage() {
     return () => {
       messagesSubscription.unsubscribe();
     };
-  }, [user, router]);
+  }, [user, selectedUserId, mounted, fetchConversations, fetchMessages]);
 
-  // Load specific conversation if user param is present
-  useEffect(() => {
-    if (selectedUserId && user && initialLoadComplete) {
-      fetchMessages(selectedUserId);
-    }
-  }, [selectedUserId, user, initialLoadComplete]);
-
-  // Scroll to bottom of messages when new messages arrive
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
-
-  // Function to fetch all conversations
-  const fetchConversations = async () => {
-    setLoading(true);
-    try {
-      const conversationsList = await getConversations();
-      setConversations(conversationsList);
-
-      // If a user is selected in URL params, find that conversation
-      if (selectedUserId) {
-        const selectedConvo = conversationsList.find(
-          (c) => c.user_id === selectedUserId
-        );
-        if (selectedConvo) {
-          setSelectedConversation(selectedConvo);
-          // Fetch messages for this conversation
-          await fetchMessages(selectedUserId);
-        } else {
-          // If we don't have a conversation with this user yet,
-          // try to fetch the user's profile to create a placeholder
-          try {
-            const { data: profileData } = await supabase
-              .from("profiles")
-              .select("id, username, full_name, avatar_url")
-              .eq("id", selectedUserId)
-              .single();
-
-            if (profileData) {
-              const newConvo: ConversationSummary = {
-                user_id: profileData.id,
-                username: profileData.username,
-                full_name: profileData.full_name,
-                avatar_url: profileData.avatar_url,
-                last_message: "",
-                last_message_date: new Date().toISOString(),
-                unread_count: 0,
-              };
-              setSelectedConversation(newConvo);
-              await fetchMessages(selectedUserId);
-            }
-          } catch (error) {
-            console.error("Error fetching user profile:", error);
-          }
-        }
-      }
-      setInitialLoadComplete(true);
-    } catch (error) {
-      console.error("Error fetching conversations:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Function to fetch messages for a specific conversation
-  const fetchMessages = async (userId: string) => {
-    if (!user) return;
-
-    setMessageLoading(true);
-    try {
-      const conversation = await getConversation(userId);
-      setMessages(conversation);
-
-      // Mark messages as read
-      await markMessagesAsRead(userId);
-
-      // Update unread count in conversations list
-      setConversations((prevConversations) => {
-        return prevConversations.map((conv) => {
-          if (conv.user_id === userId) {
-            return {
-              ...conv,
-              unread_count: 0,
-            };
-          }
-          return conv;
-        });
-      });
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-    } finally {
-      setMessageLoading(false);
-    }
-  };
-
-  // Function to handle sending a new message
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || !user) return;
+  // Fix: Improve message sending with better error handling
+  const handleSendMessage = useCallback(async () => {
+    if (!newMessage.trim() || !selectedConversation || !user || sending) return;
 
     setSending(true);
     try {
@@ -184,53 +213,69 @@ export default function MessagesPage() {
 
       if (success) {
         setNewMessage("");
-        // Refresh messages
-        fetchMessages(selectedConversation.user_id);
+        // Refresh messages and conversations
+        await Promise.all([
+          fetchMessages(selectedConversation.user_id),
+          fetchConversations(),
+        ]);
+      } else {
+        console.error("Failed to send message");
       }
     } catch (error) {
       console.error("Error sending message:", error);
     } finally {
       setSending(false);
     }
-  };
+  }, [
+    newMessage,
+    selectedConversation,
+    user,
+    sending,
+    fetchMessages,
+    fetchConversations,
+  ]);
 
-  // Function to select a conversation
-  const selectConversation = (conversation: ConversationSummary) => {
-    setSelectedConversation(conversation);
-    router.push(`/messages?user=${conversation.user_id}`);
-    fetchMessages(conversation.user_id);
-  };
+  // Fix: Improve conversation selection
+  const selectConversation = useCallback(
+    (conversation: ConversationSummary) => {
+      setSelectedConversation(conversation);
+      setSelectedUserId(conversation.user_id);
+      router.push(`/messages?user=${conversation.user_id}`, { scroll: false });
+      fetchMessages(conversation.user_id);
+    },
+    [router, fetchMessages]
+  );
 
-  // Format date to a readable string
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+  // Fix: Memoize date formatting to prevent unnecessary calculations
+  const formatDate = useCallback((dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
 
-    // If today, just show time
-    if (date >= today) {
-      return date.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      if (date >= today) {
+        return date.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      } else if (date >= yesterday) {
+        return `Yesterday, ${date.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`;
+      } else {
+        return date.toLocaleDateString([], { month: "short", day: "numeric" });
+      }
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid date";
     }
-    // If yesterday, show "Yesterday" and time
-    else if (date >= yesterday) {
-      return `Yesterday, ${date.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}`;
-    }
-    // Otherwise show date
-    else {
-      return date.toLocaleDateString([], { month: "short", day: "numeric" });
-    }
-  };
+  }, []);
 
-  // If not authenticated, show loading and redirect happens in useEffect
-  if (!user) {
+  // Fix: Show loading state while mounting to prevent hydration mismatch
+  if (!mounted || !user) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -492,7 +537,7 @@ export default function MessagesPage() {
                           handleSendMessage();
                         }
                       }}
-                    ></textarea>
+                    />
                     <button
                       onClick={handleSendMessage}
                       disabled={!newMessage.trim() || sending}
