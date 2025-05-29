@@ -389,9 +389,9 @@ export default function SidebarNav() {
                         href="/bookmarks"
                         className={`flex items-center px-4 py-3 ${
                           pathname === "/bookmarks"
-                            ? "bg-gray-800"
-                            : "hover:bg-gray-800"
-                        }`}
+                            ? "bg-gray-700"
+                            : "hover:bg-gray-700"
+                        } text-white`}
                         onClick={() => setIsMoreMenuOpen(false)}
                       >
                         <svg
@@ -672,7 +672,7 @@ export default function SidebarNav() {
                 className={`flex items-center px-4 py-3 ${
                   pathname === "/profile/account-settings"
                     ? "bg-gray-800"
-                    : "hover:bg-gray-800"
+                    : "hover:bg-gray- 800"
                 }`}
               >
                 <svg
