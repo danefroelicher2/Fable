@@ -2,13 +2,12 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
-import Link from "next/link";
-import { ReactNode } from "react";
+import { useRouter } from "next/navigation";
 
 interface ProfileNavLinkProps {
-  children: ReactNode;
+  children: React.ReactNode;
   className?: string;
-  icon?: ReactNode;
+  icon?: React.ReactNode;
 }
 
 export default function ProfileNavLink({
@@ -17,15 +16,23 @@ export default function ProfileNavLink({
   icon,
 }: ProfileNavLinkProps) {
   const { user } = useAuth();
+  const router = useRouter();
 
-  // Create the target URL - if user is logged in, go to public profile
-  // Otherwise go to signin page
-  const href = user ? `/user/${user.id}` : "/signin?redirect=/profile";
+  const handleClick = () => {
+    if (!user) {
+      // Redirect to sign in if not logged in
+      router.push(`/signin?redirect=${encodeURIComponent("/profile")}`);
+      return;
+    }
+
+    // Navigate to user's public profile
+    router.push(`/user/${user.id}`);
+  };
 
   return (
-    <Link href={href} className={className}>
+    <button onClick={handleClick} className={className}>
       {icon && <span className="mr-4">{icon}</span>}
       {children}
-    </Link>
+    </button>
   );
 }

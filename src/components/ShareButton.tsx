@@ -9,8 +9,9 @@ interface ShareButtonProps {
   postId?: string;
   articleSlug?: string;
   title: string;
-  size?: "sm" | "md" | "lg";
   className?: string;
+  showLabel?: boolean;
+  size?: "sm" | "md" | "lg";
 }
 
 export default function ShareButton({
@@ -18,24 +19,27 @@ export default function ShareButton({
   postId,
   articleSlug,
   title,
-  size = "md",
   className = "",
+  showLabel = true,
+  size = "md",
 }: ShareButtonProps) {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const shareMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  const shareUrl = articleSlug
+    ? `${window.location.origin}/articles/${articleSlug}`
+    : `${window.location.origin}/posts/${postId}`;
+
+  // Close menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target as Node)
+        shareMenuRef.current &&
+        !shareMenuRef.current.contains(event.target as Node)
       ) {
-        setIsDropdownOpen(false);
+        setShowShareMenu(false);
       }
     }
 
@@ -45,189 +49,141 @@ export default function ShareButton({
     };
   }, []);
 
-  // Generate share URL
-  const getShareUrl = () => {
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-    if (articleSlug) {
-      return `${baseUrl}/articles/${articleSlug}`;
-    } else if (postId) {
-      return `${baseUrl}/posts/${postId}`;
-    }
-    return baseUrl;
-  };
-
-  // Button size classes
-  const sizeClasses = {
-    sm: "p-1",
-    md: "p-2",
-    lg: "p-3",
-  };
-
-  const iconSizeClasses = {
-    sm: "h-4 w-4",
-    md: "h-5 w-5",
-    lg: "h-6 w-6",
-  };
-
-  // Handle sharing actions
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(getShareUrl());
-      // You could show a toast notification here
-      setIsDropdownOpen(false);
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => {
+        setCopied(false);
+        setShowShareMenu(false);
+      }, 2000);
     } catch (err) {
       console.error("Failed to copy link:", err);
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => {
+        setCopied(false);
+        setShowShareMenu(false);
+      }, 2000);
     }
   };
 
-  const handleShare = (platform: string) => {
-    const url = getShareUrl();
-    const text = `Check out this article: ${title}`;
-
-    let shareUrl = "";
-
-    switch (platform) {
-      case "twitter":
-        shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
-          url
-        )}&text=${encodeURIComponent(text)}`;
-        break;
-      case "facebook":
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-          url
-        )}`;
-        break;
-      case "linkedin":
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-          url
-        )}`;
-        break;
-      case "reddit":
-        shareUrl = `https://reddit.com/submit?url=${encodeURIComponent(
-          url
-        )}&title=${encodeURIComponent(title)}`;
-        break;
-      default:
-        return;
-    }
-
-    window.open(shareUrl, "_blank", "width=600,height=400");
-    setIsDropdownOpen(false);
+  const handleShareViaMessage = () => {
+    setShowShareMenu(false);
+    setShowMessageModal(true);
   };
 
-  // Position dropdown to stay within viewport
-  const getDropdownPosition = () => {
-    if (!buttonRef.current) return {};
-
-    const buttonRect = buttonRef.current.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-
-    // If button is too close to the left edge, align dropdown to the right
-    if (buttonRect.left < 200) {
-      return {
-        left: 0,
-        right: "auto",
-      };
-    }
-    // If button is too close to the right edge, align dropdown to the left
-    else if (buttonRect.right > viewportWidth - 200) {
-      return {
-        right: 0,
-        left: "auto",
-      };
-    }
-    // Default center alignment
-    else {
-      return {
-        left: "50%",
-        transform: "translateX(-50%)",
-      };
-    }
-  };
+  const iconSize =
+    size === "sm" ? "h-4 w-4" : size === "lg" ? "h-6 w-6" : "h-5 w-5";
+  const textSize =
+    size === "sm" ? "text-xs" : size === "lg" ? "text-base" : "text-sm";
 
   return (
-    <div className={`relative ${className}`}>
-      {/* Share Button */}
+    <div className="relative" ref={shareMenuRef}>
       <button
-        ref={buttonRef}
-        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-        className={`${sizeClasses[size]} text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors`}
-        aria-label="Share"
+        onClick={() => setShowShareMenu(!showShareMenu)}
+        className={`flex items-center text-gray-600 hover:text-blue-600 transition-colors ${className}`}
+        title="Share this article"
       >
         <svg
-          className={iconSizeClasses[size]}
+          xmlns="http://www.w3.org/2000/svg"
+          className={`${iconSize} ${showLabel ? "mr-1" : ""}`}
           fill="none"
-          stroke="currentColor"
           viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
         >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth={2}
             d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
           />
         </svg>
+        {showLabel && <span className={textSize}>Share</span>}
       </button>
 
-      {/* Dropdown Menu - CLEANED UP */}
-      {isDropdownOpen && (
-        <div
-          ref={dropdownRef}
-          className="absolute bottom-full mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 min-w-48"
-          style={getDropdownPosition()}
-        >
-          {/* Copy Link */}
-          <button
-            onClick={handleCopyLink}
-            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-          >
-            <svg
-              className="h-4 w-4 mr-3"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+      {/* Share Menu */}
+      {showShareMenu && (
+        <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-[200px] z-50">
+          <div className="space-y-1">
+            <button
+              onClick={handleCopyLink}
+              className="w-full flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-              />
-            </svg>
-            Copy Link
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 mr-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
+              </svg>
+              {copied ? "Copied!" : "Copy Link"}
+            </button>
 
-          {/* Send via Direct Message - ONE LINE */}
-          <button
-            onClick={() => {
-              setIsMessageModalOpen(true);
-              setIsDropdownOpen(false);
-            }}
-            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-          >
-            <svg
-              className="h-4 w-4 mr-3"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+            <button
+              onClick={handleShareViaMessage}
+              className="w-full flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-              />
-            </svg>
-            <span className="whitespace-nowrap">Send via Direct Message</span>
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 mr-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                />
+              </svg>
+              Send Message
+            </button>
+
+            <button
+              onClick={() => {
+                const text = `Check out this article: ${title} ${shareUrl}`;
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+                  text
+                )}`;
+                window.open(twitterUrl, "_blank");
+                setShowShareMenu(false);
+              }}
+              className="w-full flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 mr-3"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              Share on X
+            </button>
+          </div>
         </div>
       )}
 
       {/* Share via Message Modal */}
       <ShareViaMessage
-        isOpen={isMessageModalOpen}
-        onClose={() => setIsMessageModalOpen(false)}
-        shareUrl={getShareUrl()}
+        isOpen={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+        shareUrl={shareUrl}
         title={title}
         articleId={articleId}
         postId={postId}
