@@ -1,9 +1,10 @@
-// src/app/articles/[slug]/page.tsx - UPDATED WITH PIN AND SHARE FUNCTIONALITY
+// src/app/articles/[slug]/page.tsx - UPDATED WITH TWITTER CARD METADATA
 "use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Head from "next/head";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import FeatureArticleButton from "@/components/FeatureArticleButton";
@@ -34,7 +35,6 @@ export default function ArticlePage() {
     try {
       console.log("Fetching article with slug:", slug);
 
-      // Use type assertion to bypass TypeScript checking
       const { data, error } = await (supabase as any)
         .from("public_articles")
         .select("*")
@@ -87,6 +87,65 @@ export default function ArticlePage() {
 
   // Check if current user is the author
   const isAuthor = user && article && user.id === article.user_id;
+
+  // Generate metadata for Twitter Cards
+  const generateMetaTags = () => {
+    if (!article) return null;
+
+    const articleUrl = `${window.location.origin}/articles/${article.slug}`;
+    const authorName = authorProfile
+      ? authorProfile.full_name || authorProfile.username || "Anonymous"
+      : "Anonymous";
+
+    // Clean and truncate description
+    const description = article.excerpt
+      ? article.excerpt.length > 200
+        ? article.excerpt.substring(0, 197) + "..."
+        : article.excerpt
+      : article.content
+      ? article.content.length > 200
+        ? article.content.substring(0, 197) + "..."
+        : article.content
+      : "Read this article on LOSTLIBRARY";
+
+    return (
+      <Head>
+        {/* Basic Meta Tags */}
+        <title>{article.title} | LOSTLIBRARY</title>
+        <meta name="description" content={description} />
+
+        {/* Open Graph Meta Tags */}
+        <meta property="og:title" content={article.title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:url" content={articleUrl} />
+        <meta property="og:type" content="article" />
+        <meta property="og:site_name" content="LOSTLIBRARY" />
+        {article.image_url && (
+          <meta property="og:image" content={article.image_url} />
+        )}
+
+        {/* Twitter Card Meta Tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@lostxlibrary" />
+        <meta name="twitter:creator" content="@lostxlibrary" />
+        <meta name="twitter:title" content={article.title} />
+        <meta name="twitter:description" content={description} />
+        {article.image_url && (
+          <meta name="twitter:image" content={article.image_url} />
+        )}
+
+        {/* Article specific meta tags */}
+        <meta property="article:author" content={authorName} />
+        <meta
+          property="article:published_time"
+          content={article.published_at}
+        />
+        {article.category && (
+          <meta property="article:section" content={article.category} />
+        )}
+      </Head>
+    );
+  };
 
   // Loading state
   if (loading) {
@@ -148,147 +207,158 @@ export default function ArticlePage() {
   }
 
   return (
-    <div className="container mx-auto py-10 px-4">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-4xl font-bold mb-4 dark:text-white">
-          {article.title}
-        </h1>
+    <>
+      {/* Generate meta tags for Twitter Cards */}
+      {generateMetaTags()}
 
-        {/* Author and Date Section */}
-        <div className="flex items-center mb-6">
-          {/* Author Avatar and Info */}
-          {authorProfile && (
-            <Link
-              href={`/user/${authorProfile.id}`}
-              className="flex items-center hover:opacity-80 mr-4"
-            >
-              <div className="h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden mr-3">
-                {authorProfile.avatar_url ? (
-                  <img
-                    src={authorProfile.avatar_url}
-                    alt={authorProfile.username || "Author"}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="text-sm font-semibold">
-                    {(authorProfile.full_name || authorProfile.username || "U")
-                      .charAt(0)
-                      .toUpperCase()}
-                  </span>
-                )}
-              </div>
-              <div>
-                <div className="font-medium text-gray-900 dark:text-white">
-                  {authorProfile.full_name ||
-                    authorProfile.username ||
-                    "Anonymous"}
-                </div>
-                {authorProfile.username && (
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    @{authorProfile.username}
-                  </div>
-                )}
-              </div>
-            </Link>
-          )}
+      <div className="container mx-auto py-10 px-4">
+        <div className="max-w-3xl mx-auto">
+          <h1 className="text-4xl font-bold mb-4 dark:text-white">
+            {article.title}
+          </h1>
 
-          {/* Date */}
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            {new Date(article.published_at).toLocaleDateString(undefined, {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </div>
-        </div>
-
-        {/* Cover Image */}
-        {article.image_url && (
-          <div className="mb-8">
-            <img
-              src={article.image_url}
-              alt={article.title}
-              className="w-full rounded-lg"
-            />
-          </div>
-        )}
-
-        {/* Category Badge */}
-        {article.category && (
-          <div className="mb-4">
-            <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-2 py-1 rounded text-sm">
-              {article.category}
-            </span>
-          </div>
-        )}
-
-        {/* Article content - with whitespace preserved */}
-        <div className="prose dark:prose-invert max-w-none mb-10">
-          <div className="whitespace-pre-line dark:text-gray-300">
-            {article.content}
-          </div>
-        </div>
-
-        {/* UPDATED: Bottom Action Bar with Views, Pin, and Share */}
-        <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
-          {/* Left side - Views, Pin (if author), Share */}
-          <div className="flex items-center space-x-6">
-            {/* View count */}
-            <div className="flex items-center text-gray-600 dark:text-gray-400">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                />
-              </svg>
-              <span className="text-sm">
-                {article.view_count || 0}{" "}
-                {article.view_count === 1 ? "View" : "Views"}
-              </span>
-            </div>
-
-            {/* Pin Button - Only show for article author */}
-            {isAuthor && <PinButton articleId={article.id} showLabel={true} />}
-
-            {/* Share Button - Show for everyone */}
-            <ShareButton
-              articleId={article.id}
-              articleSlug={article.slug}
-              title={article.title}
-              showLabel={true}
-            />
-          </div>
-
-          {/* Right side - Author Actions */}
-          <div className="flex items-center space-x-4">
-            {/* Edit link for author */}
-            {isAuthor && (
+          {/* Author and Date Section */}
+          <div className="flex items-center mb-6">
+            {/* Author Avatar and Info */}
+            {authorProfile && (
               <Link
-                href={`/articles/${article.slug}/edit`}
-                className="text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 text-sm"
+                href={`/user/${authorProfile.id}`}
+                className="flex items-center hover:opacity-80 mr-4"
               >
-                Edit
+                <div className="h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden mr-3">
+                  {authorProfile.avatar_url ? (
+                    <img
+                      src={authorProfile.avatar_url}
+                      alt={authorProfile.username || "Author"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-sm font-semibold">
+                      {(
+                        authorProfile.full_name ||
+                        authorProfile.username ||
+                        "U"
+                      )
+                        .charAt(0)
+                        .toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-white">
+                    {authorProfile.full_name ||
+                      authorProfile.username ||
+                      "Anonymous"}
+                  </div>
+                  {authorProfile.username && (
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      @{authorProfile.username}
+                    </div>
+                  )}
+                </div>
               </Link>
             )}
-          </div>
-        </div>
 
-        {/* Feature Article Button - Admin only */}
-        {article.id && <FeatureArticleButton articleId={article.id} />}
+            {/* Date */}
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {new Date(article.published_at).toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </div>
+          </div>
+
+          {/* Cover Image */}
+          {article.image_url && (
+            <div className="mb-8">
+              <img
+                src={article.image_url}
+                alt={article.title}
+                className="w-full rounded-lg"
+              />
+            </div>
+          )}
+
+          {/* Category Badge */}
+          {article.category && (
+            <div className="mb-4">
+              <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-2 py-1 rounded text-sm">
+                {article.category}
+              </span>
+            </div>
+          )}
+
+          {/* Article content - with whitespace preserved */}
+          <div className="prose dark:prose-invert max-w-none mb-10">
+            <div className="whitespace-pre-line dark:text-gray-300">
+              {article.content}
+            </div>
+          </div>
+
+          {/* Bottom Action Bar with Views, Pin, and Share */}
+          <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
+            {/* Left side - Views, Pin (if author), Share */}
+            <div className="flex items-center space-x-6">
+              {/* View count */}
+              <div className="flex items-center text-gray-600 dark:text-gray-400">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  />
+                </svg>
+                <span className="text-sm">
+                  {article.view_count || 0}{" "}
+                  {article.view_count === 1 ? "View" : "Views"}
+                </span>
+              </div>
+
+              {/* Pin Button - Only show for article author */}
+              {isAuthor && (
+                <PinButton articleId={article.id} showLabel={true} />
+              )}
+
+              {/* Share Button - Show for everyone */}
+              <ShareButton
+                articleId={article.id}
+                articleSlug={article.slug}
+                title={article.title}
+                showLabel={true}
+              />
+            </div>
+
+            {/* Right side - Author Actions */}
+            <div className="flex items-center space-x-4">
+              {/* Edit link for author */}
+              {isAuthor && (
+                <Link
+                  href={`/articles/${article.slug}/edit`}
+                  className="text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 text-sm"
+                >
+                  Edit
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {/* Feature Article Button - Admin only */}
+          {article.id && <FeatureArticleButton articleId={article.id} />}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

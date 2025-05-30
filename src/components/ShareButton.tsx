@@ -156,10 +156,10 @@ export default function ShareButton({
 
             <button
               onClick={() => {
-                const text = `Check out this article: ${title} ${shareUrl}`;
-                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-                  text
-                )}`;
+                // Updated Twitter sharing format - just the URL for better card display
+                const twitterUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+                  shareUrl
+                )}&text=${encodeURIComponent(title)}`;
                 window.open(twitterUrl, "_blank");
                 setShowShareMenu(false);
               }}
