@@ -449,10 +449,10 @@ export default function MessagesPage() {
                   </Link>
                 </div>
 
-                {/* FIXED: Chat messages with proper scrolling capability */}
+                {/* FIXED: Chat messages with proper scrolling capability - HIDDEN SCROLLBAR */}
                 <div
                   ref={messagesContainerRef}
-                  className="flex-grow p-4 overflow-y-auto"
+                  className="flex-grow p-4 overflow-y-auto scrollbar-hide"
                 >
                   {messageLoading ? (
                     <div className="flex items-center justify-center h-full">
