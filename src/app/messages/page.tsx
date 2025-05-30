@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
+import SharedContentMessage from "@/components/SharedContentMessage";
 import {
   getConversations,
   getConversation,
@@ -435,11 +436,17 @@ export default function MessagesPage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
+                      // REPLACE with this enhanced message rendering:
                       {messages.map((message, index) => {
                         const isCurrentUser = message.sender_id === user.id;
                         const showAvatar =
                           index === 0 ||
                           messages[index - 1].sender_id !== message.sender_id;
+
+                        // Check if this is a shared content message
+                        const isSharedContent =
+                          message.message_type === "shared_content" &&
+                          message.shared_content;
 
                         return (
                           <div
@@ -471,24 +478,53 @@ export default function MessagesPage() {
                                 )}
                               </div>
                             )}
-                            <div
-                              className={`px-4 py-2 rounded-lg max-w-[70%] ${
-                                isCurrentUser
-                                  ? "bg-blue-600 text-white ml-auto"
-                                  : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white"
-                              }`}
-                            >
-                              <p>{message.content}</p>
-                              <p
-                                className={`text-xs mt-1 ${
-                                  isCurrentUser
-                                    ? "text-blue-100"
-                                    : "text-gray-500 dark:text-gray-400"
+
+                            {/* Message content - different rendering for shared content */}
+                            {isSharedContent ? (
+                              // Shared content message
+                              <div
+                                className={`rounded-lg max-w-[70%] ${
+                                  isCurrentUser ? "ml-auto" : ""
                                 }`}
                               >
-                                {formatDate(message.created_at)}
-                              </p>
-                            </div>
+                                {/* Import SharedContentMessage component at the top of the file */}
+                                <SharedContentMessage
+                                  sharedContent={message.shared_content}
+                                  personalMessage={message.content}
+                                  className={isCurrentUser ? "ml-auto" : ""}
+                                />
+                                <p
+                                  className={`text-xs mt-2 px-2 ${
+                                    isCurrentUser
+                                      ? "text-blue-100 text-right"
+                                      : "text-gray-500 dark:text-gray-400"
+                                  }`}
+                                >
+                                  {formatDate(message.created_at)}
+                                </p>
+                              </div>
+                            ) : (
+                              // Regular text message
+                              <div
+                                className={`px-4 py-2 rounded-lg max-w-[70%] ${
+                                  isCurrentUser
+                                    ? "bg-blue-600 text-white ml-auto"
+                                    : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white"
+                                }`}
+                              >
+                                <p>{message.content}</p>
+                                <p
+                                  className={`text-xs mt-1 ${
+                                    isCurrentUser
+                                      ? "text-blue-100"
+                                      : "text-gray-500 dark:text-gray-400"
+                                  }`}
+                                >
+                                  {formatDate(message.created_at)}
+                                </p>
+                              </div>
+                            )}
+
                             {isCurrentUser && showAvatar && (
                               <div className="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 overflow-hidden ml-2 flex-shrink-0">
                                 {message.sender_profile?.avatar_url ? (
