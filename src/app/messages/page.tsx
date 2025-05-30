@@ -478,8 +478,8 @@ export default function MessagesPage() {
                                 )}
                               </div>
                             )}
-
                             {/* Message content - different rendering for shared content */}
+
                             {isSharedContent ? (
                               // Shared content message
                               <div
@@ -487,10 +487,13 @@ export default function MessagesPage() {
                                   isCurrentUser ? "ml-auto" : ""
                                 }`}
                               >
-                                {/* Import SharedContentMessage component at the top of the file */}
                                 <SharedContentMessage
                                   sharedContent={message.shared_content}
-                                  personalMessage={message.content}
+                                  personalMessage={
+                                    message.content && message.content.trim()
+                                      ? message.content
+                                      : undefined
+                                  }
                                   className={isCurrentUser ? "ml-auto" : ""}
                                 />
                                 <p
@@ -524,7 +527,6 @@ export default function MessagesPage() {
                                 </p>
                               </div>
                             )}
-
                             {isCurrentUser && showAvatar && (
                               <div className="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 overflow-hidden ml-2 flex-shrink-0">
                                 {message.sender_profile?.avatar_url ? (

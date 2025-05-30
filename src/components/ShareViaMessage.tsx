@@ -39,14 +39,12 @@ export default function ShareViaMessage({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Initialize message with shared content
   useEffect(() => {
     if (isOpen) {
-      setMessage(
-        `Hey! I wanted to share this article with you: "${title}"\n\nCheck it out: ${shareUrl}`
-      );
+      // Start with empty message - user can add their own if they want
+      setMessage("");
     }
-  }, [isOpen, title, shareUrl]);
+  }, [isOpen]);
 
   // Search for users
   useEffect(() => {
@@ -82,11 +80,10 @@ export default function ShareViaMessage({
       setLoading(false);
     }
   };
-
-  // NEW SIMPLIFIED VERSION:
+  // UPDATED: Allow empty messages for shared content
   const handleSendMessage = async () => {
-    if (!user || !selectedUser || !message.trim()) {
-      setError("Please select a user and enter a message");
+    if (!user || !selectedUser) {
+      setError("Please select a user");
       return;
     }
 
@@ -314,6 +311,7 @@ export default function ShareViaMessage({
         </div>
 
         {/* Footer */}
+        {/* Footer */}
         <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex justify-end space-x-2 dark:bg-gray-700 dark:border-gray-600">
           <button
             onClick={handleClose}
@@ -323,7 +321,7 @@ export default function ShareViaMessage({
           </button>
           <button
             onClick={handleSendMessage}
-            disabled={!selectedUser || !message.trim() || sending}
+            disabled={!selectedUser || sending}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {sending ? "Sending..." : "Send Message"}

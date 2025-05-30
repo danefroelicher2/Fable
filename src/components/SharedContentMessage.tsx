@@ -26,10 +26,9 @@ export default function SharedContentMessage({
   return (
     <div className={`max-w-sm ${className}`}>
       {/* Personal message if provided and different from default */}
-      {personalMessage &&
-        personalMessage !== `Shared: ${sharedContent.title}` && (
-          <div className="text-white mb-2 text-sm">{personalMessage}</div>
-        )}
+      {personalMessage && personalMessage.trim() && (
+        <div className="text-white mb-2 text-sm">{personalMessage}</div>
+      )}
 
       {/* Shared content card */}
       <Link

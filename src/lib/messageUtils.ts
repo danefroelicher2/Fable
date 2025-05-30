@@ -162,7 +162,7 @@ export async function sendMessage(
   sharedContent?: any
 ): Promise<boolean> {
   try {
-    if (!content.trim()) {
+    if (!content.trim() && messageType !== "shared_content") {
       throw new Error("Message content cannot be empty");
     }
 

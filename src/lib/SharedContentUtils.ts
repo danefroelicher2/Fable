@@ -177,7 +177,9 @@ export async function sendSharedContentMessage(
       published_at: contentDetails.published_at,
     };
 
-    const messageContent = personalMessage || `Shared: ${contentDetails.title}`;
+    // UPDATED: Send empty message when no personal message
+    const messageContent =
+      personalMessage && personalMessage.trim() ? personalMessage : ""; // Empty string instead of title
 
     return await sendMessage(
       recipientId,
