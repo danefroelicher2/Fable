@@ -508,17 +508,30 @@ export default function CommunitiesPage() {
                     {community.name}
                   </h3>
 
+                  {/* Member count directly below title */}
+                  <div className="mb-3">
+                    <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                      {community.member_count || 0}{" "}
+                      {community.member_count === 1 ? "member" : "members"}
+                    </span>
+                  </div>
+
                   {community.description && (
                     <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2 text-sm">
                       {community.description}
                     </p>
                   )}
 
+                  {/* Bottom row with topic badge on left and action button on right */}
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                      {community.member_count || 0}{" "}
-                      {community.member_count === 1 ? "member" : "members"}
-                    </span>
+                    {/* Topic Badge - Only show when viewing "all" categories */}
+                    {activeTab === "discover" && activeCategory === "all" ? (
+                      <span className="inline-block bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full text-xs font-medium border border-blue-200 dark:border-blue-800">
+                        {community.category || "general"}
+                      </span>
+                    ) : (
+                      <div></div> /* Empty div to maintain spacing when no badge */
+                    )}
 
                     {community.is_member ? (
                       <button
