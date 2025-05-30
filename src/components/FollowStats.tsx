@@ -1,8 +1,9 @@
-// src/components/FollowStats.tsx (simplified version)
+// src/components/FollowStats.tsx - ENHANCED WITH CLICKABLE FUNCTIONALITY
 "use client";
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 interface FollowStatsProps {
   userId: string;
@@ -21,9 +22,10 @@ interface ProfileData {
 export default function FollowStats({
   userId,
   className = "",
-  displayFormat = "stacked", // 'raw' just gives numbers, 'inline' horizontal layout, 'stacked' vertical layout
+  displayFormat = "stacked",
   onStatsLoaded,
 }: FollowStatsProps) {
+  const { user } = useAuth(); // Get current user for comparison
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -33,6 +35,9 @@ export default function FollowStats({
   >(null);
   const [followList, setFollowList] = useState<ProfileData[]>([]);
   const [loadingList, setLoadingList] = useState(false);
+
+  // NEW: Check if this is the current user's profile
+  const isCurrentUser = user?.id === userId;
 
   useEffect(() => {
     if (userId) {
@@ -80,6 +85,12 @@ export default function FollowStats({
   }
 
   async function fetchFollowList(type: "followers" | "following") {
+    // SECURITY: Only allow current user to view their lists
+    if (!isCurrentUser) {
+      console.log("Access denied: Not current user");
+      return;
+    }
+
     try {
       setLoadingList(true);
       setFollowList([]);
@@ -128,7 +139,14 @@ export default function FollowStats({
     }
   }
 
+  // ENHANCED: Only open modal if current user
   const openModal = async (type: "followers" | "following") => {
+    if (!isCurrentUser) {
+      // Silent return - no action for other users
+      console.log("Cannot view followers/following of other users");
+      return;
+    }
+
     setShowFollowModal(type);
     await fetchFollowList(type);
   };
@@ -140,23 +158,23 @@ export default function FollowStats({
 
   // Raw display just for callbacks
   if (displayFormat === "raw") {
-    return null; // We're just using the onStatsLoaded callback
+    return null;
   }
 
-  // Modal component for displaying followers/following
+  // ENHANCED: Modal component for displaying followers/following
   const FollowModal = () => {
-    if (!showFollowModal) return null;
+    if (!showFollowModal || !isCurrentUser) return null;
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg w-full max-w-md max-h-[80vh] overflow-hidden">
-          <div className="p-4 border-b flex justify-between items-center">
-            <h3 className="text-lg font-semibold">
-              {showFollowModal === "followers" ? "Followers" : "Following"}
+        <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md max-h-[80vh] overflow-hidden">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 className="text-lg font-semibold dark:text-white">
+              {showFollowModal === "followers" ? "Your Followers" : "Following"}
             </h3>
             <button
               onClick={closeModal}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
             >
               <svg
                 className="w-6 h-6"
@@ -178,23 +196,27 @@ export default function FollowStats({
             {loadingList ? (
               <div className="p-4 text-center">
                 <div className="inline-block animate-spin h-6 w-6 border-2 border-gray-300 border-t-blue-600 rounded-full"></div>
-                <p className="mt-2">Loading...</p>
+                <p className="mt-2 dark:text-white">Loading...</p>
               </div>
             ) : followList.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
+              <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                 {showFollowModal === "followers"
                   ? "No followers yet"
                   : "Not following anyone yet"}
               </div>
             ) : (
-              <ul className="divide-y">
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                 {followList.map((profile) => (
-                  <li key={profile.id} className="p-4 hover:bg-gray-50">
+                  <li
+                    key={profile.id}
+                    className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
                     <a
                       href={`/user/${profile.id}`}
                       className="flex items-center"
+                      onClick={closeModal} // Close modal when clicking on user
                     >
-                      <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden mr-3">
+                      <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center overflow-hidden mr-3">
                         {profile.avatar_url ? (
                           <img
                             src={profile.avatar_url}
@@ -202,7 +224,7 @@ export default function FollowStats({
                             className="h-10 w-10 object-cover"
                           />
                         ) : (
-                          <span className="text-gray-600">
+                          <span className="text-gray-600 dark:text-gray-300">
                             {(profile.username || profile.full_name || "U")
                               .charAt(0)
                               .toUpperCase()}
@@ -210,13 +232,13 @@ export default function FollowStats({
                         )}
                       </div>
                       <div>
-                        <div className="font-medium">
+                        <div className="font-medium text-gray-900 dark:text-white">
                           {profile.full_name ||
                             profile.username ||
                             "Anonymous User"}
                         </div>
                         {profile.username && (
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
                             @{profile.username}
                           </div>
                         )}
@@ -232,13 +254,16 @@ export default function FollowStats({
     );
   };
 
-  // Choose layout based on displayFormat
+  // ENHANCED: Choose layout based on displayFormat
   if (displayFormat === "inline") {
     return (
       <div className={`flex space-x-6 ${className}`}>
         <button
           onClick={() => openModal("followers")}
-          className="flex flex-col items-center hover:opacity-80 transition-opacity"
+          className={`flex flex-col items-center transition-opacity ${
+            isCurrentUser ? "hover:opacity-80 cursor-pointer" : "cursor-default"
+          }`}
+          disabled={!isCurrentUser}
         >
           <span className="font-bold text-lg">
             {loading ? "-" : followerCount}
@@ -248,7 +273,10 @@ export default function FollowStats({
 
         <button
           onClick={() => openModal("following")}
-          className="flex flex-col items-center hover:opacity-80 transition-opacity"
+          className={`flex flex-col items-center transition-opacity ${
+            isCurrentUser ? "hover:opacity-80 cursor-pointer" : "cursor-default"
+          }`}
+          disabled={!isCurrentUser}
         >
           <span className="font-bold text-lg">
             {loading ? "-" : followingCount}
@@ -256,8 +284,8 @@ export default function FollowStats({
           <span className="text-gray-600 text-sm">Following</span>
         </button>
 
-        {/* Modal for showing followers/following lists */}
-        <FollowModal />
+        {/* Modal for showing followers/following lists - Only for current user */}
+        {isCurrentUser && <FollowModal />}
       </div>
     );
   }
@@ -267,7 +295,11 @@ export default function FollowStats({
     <div className={`flex space-x-6 ${className}`}>
       <button
         onClick={() => openModal("followers")}
-        className="flex flex-col items-center hover:opacity-80 transition-opacity"
+        className={`flex flex-col items-center transition-opacity ${
+          isCurrentUser ? "hover:opacity-80 cursor-pointer" : "cursor-default"
+        }`}
+        disabled={!isCurrentUser}
+        title={isCurrentUser ? "Click to view followers" : ""}
       >
         <span className="font-bold text-lg">
           {loading ? "-" : followerCount}
@@ -277,7 +309,11 @@ export default function FollowStats({
 
       <button
         onClick={() => openModal("following")}
-        className="flex flex-col items-center hover:opacity-80 transition-opacity"
+        className={`flex flex-col items-center transition-opacity ${
+          isCurrentUser ? "hover:opacity-80 cursor-pointer" : "cursor-default"
+        }`}
+        disabled={!isCurrentUser}
+        title={isCurrentUser ? "Click to view following" : ""}
       >
         <span className="font-bold text-lg">
           {loading ? "-" : followingCount}
@@ -285,8 +321,8 @@ export default function FollowStats({
         <span className="text-gray-600 text-sm">Following</span>
       </button>
 
-      {/* Modal for showing followers/following lists */}
-      <FollowModal />
+      {/* Modal for showing followers/following lists - Only for current user */}
+      {isCurrentUser && <FollowModal />}
     </div>
   );
 }
