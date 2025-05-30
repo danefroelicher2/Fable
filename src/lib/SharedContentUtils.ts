@@ -1,5 +1,6 @@
-// src/lib/sharedContentUtils.ts
+// src/lib/SharedContentUtils.ts - UPDATED WITH PROPER CONVERSATION CREATION
 import { supabase } from "@/lib/supabase";
+import { sendMessage } from "./messageUtils";
 
 export interface SharedContent {
   type: "article" | "post";
@@ -18,6 +19,29 @@ export interface SharedContent {
 }
 
 /**
+ * Generate the same deterministic UUID as in messageUtils
+ */
+function generateConversationId(userId1: string, userId2: string): string {
+  const sortedIds = [userId1, userId2].sort();
+  const combined = sortedIds.join("|");
+
+  let hash = 0;
+  for (let i = 0; i < combined.length; i++) {
+    const char = combined.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash;
+  }
+
+  const hashHex = Math.abs(hash).toString(16).padStart(8, "0");
+  const uuid = `${hashHex.slice(0, 8)}-${hashHex.slice(0, 4)}-4${hashHex.slice(
+    1,
+    4
+  )}-a${hashHex.slice(2, 5)}-${hashHex}${hashHex.slice(0, 4)}`;
+
+  return uuid;
+}
+
+/**
  * Fetch full details for shared content
  */
 export async function getSharedContentDetails(
@@ -26,7 +50,6 @@ export async function getSharedContentDetails(
 ): Promise<SharedContent | null> {
   try {
     if (contentType === "article") {
-      // Fetch article details
       const { data: article, error: articleError } = await (supabase as any)
         .from("public_articles")
         .select(
@@ -49,7 +72,6 @@ export async function getSharedContentDetails(
         return null;
       }
 
-      // Fetch author details
       const { data: author, error: authorError } = await supabase
         .from("profiles")
         .select("id, username, full_name, avatar_url")
@@ -71,7 +93,6 @@ export async function getSharedContentDetails(
         published_at: article.published_at,
       };
     } else if (contentType === "post") {
-      // Fetch community post details
       const { data: post, error: postError } = await (supabase as any)
         .from("community_posts")
         .select(
@@ -93,7 +114,6 @@ export async function getSharedContentDetails(
         return null;
       }
 
-      // Fetch author details
       const { data: author, error: authorError } = await supabase
         .from("profiles")
         .select("id, username, full_name, avatar_url")
@@ -104,7 +124,6 @@ export async function getSharedContentDetails(
         console.warn("Error fetching post author:", authorError);
       }
 
-      // Create excerpt from content (first 150 chars)
       const excerpt =
         post.content.length > 150
           ? post.content.substring(0, 150) + "..."
@@ -129,17 +148,15 @@ export async function getSharedContentDetails(
 }
 
 /**
- * Create a rich shared content message
+ * Send a shared content message
  */
-export async function createSharedContentMessage(
-  conversationId: string,
-  senderId: string,
+export async function sendSharedContentMessage(
+  recipientId: string,
   contentType: "article" | "post",
   contentId: string,
   personalMessage?: string
-) {
+): Promise<boolean> {
   try {
-    // Get full content details
     const contentDetails = await getSharedContentDetails(
       contentType,
       contentId
@@ -149,43 +166,28 @@ export async function createSharedContentMessage(
       throw new Error("Could not fetch content details");
     }
 
-    // Create the message with structured shared content data
-    const messageData = {
-      conversation_id: conversationId,
-      sender_id: senderId,
-      content: personalMessage || `Shared: ${contentDetails.title}`,
-      created_at: new Date().toISOString(),
-      message_type: "shared_content",
-      shared_content: {
-        type: contentDetails.type,
-        id: contentDetails.id,
-        title: contentDetails.title,
-        url: contentDetails.url,
-        excerpt: contentDetails.excerpt,
-        image_url: contentDetails.image_url,
-        author: contentDetails.author,
-        published_at: contentDetails.published_at,
-      },
+    const sharedContentData = {
+      type: contentDetails.type,
+      id: contentDetails.id,
+      title: contentDetails.title,
+      url: contentDetails.url,
+      excerpt: contentDetails.excerpt,
+      image_url: contentDetails.image_url,
+      author: contentDetails.author,
+      published_at: contentDetails.published_at,
     };
 
-    const { data, error } = await (supabase as any)
-      .from("messages")
-      .insert(messageData)
-      .select()
-      .single();
+    const messageContent = personalMessage || `Shared: ${contentDetails.title}`;
 
-    if (error) throw error;
-
-    // Update conversation timestamp
-    await (supabase as any)
-      .from("conversations")
-      .update({ updated_at: new Date().toISOString() })
-      .eq("id", conversationId);
-
-    return data;
+    return await sendMessage(
+      recipientId,
+      messageContent,
+      "shared_content",
+      sharedContentData
+    );
   } catch (error) {
-    console.error("Error creating shared content message:", error);
-    throw error;
+    console.error("Error sending shared content message:", error);
+    return false;
   }
 }
 
@@ -196,43 +198,23 @@ export async function getOrCreateConversation(
   user1Id: string,
   user2Id: string
 ) {
-  try {
-    // Check if conversation already exists
-    const { data: existingConversation, error: conversationError } = await (
-      supabase as any
-    )
-      .from("conversations")
-      .select("id")
-      .or(
-        `and(user1_id.eq.${user1Id},user2_id.eq.${user2Id}),and(user1_id.eq.${user2Id},user2_id.eq.${user1Id})`
-      )
-      .maybeSingle();
+  return generateConversationId(user1Id, user2Id);
+}
 
-    if (conversationError) throw conversationError;
-
-    if (existingConversation) {
-      return existingConversation.id;
-    }
-
-    // Create new conversation
-    const { data: newConversation, error: newConversationError } = await (
-      supabase as any
-    )
-      .from("conversations")
-      .insert({
-        user1_id: user1Id,
-        user2_id: user2Id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .select("id")
-      .single();
-
-    if (newConversationError) throw newConversationError;
-
-    return newConversation.id;
-  } catch (error) {
-    console.error("Error getting or creating conversation:", error);
-    throw error;
-  }
+/**
+ * Legacy function for backward compatibility
+ */
+export async function createSharedContentMessage(
+  conversationId: string,
+  senderId: string,
+  contentType: "article" | "post",
+  contentId: string,
+  personalMessage?: string
+) {
+  console.warn(
+    "createSharedContentMessage is deprecated, use sendSharedContentMessage instead"
+  );
+  throw new Error(
+    "This function needs recipient ID - use sendSharedContentMessage instead"
+  );
 }

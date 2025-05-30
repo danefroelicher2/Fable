@@ -83,6 +83,7 @@ export default function ShareViaMessage({
     }
   };
 
+  // NEW SIMPLIFIED VERSION:
   const handleSendMessage = async () => {
     if (!user || !selectedUser || !message.trim()) {
       setError("Please select a user and enter a message");
@@ -93,32 +94,30 @@ export default function ShareViaMessage({
       setSending(true);
       setError(null);
 
-      // Import the utility functions
-      const { getOrCreateConversation, createSharedContentMessage } =
-        await import("@/lib/SharedContentUtils");
-
-      // Get or create conversation
-      const conversationId = await getOrCreateConversation(
-        user.id,
-        selectedUser.id
+      // Import the new simplified function
+      const { sendSharedContentMessage } = await import(
+        "@/lib/SharedContentUtils"
       );
 
-      // Create shared content message with full details
-      await createSharedContentMessage(
-        conversationId,
-        user.id,
+      // Send shared content message directly
+      const success = await sendSharedContentMessage(
+        selectedUser.id,
         articleId ? "article" : "post",
         (articleId || postId) as string,
         message
       );
 
-      setSuccess(true);
+      if (success) {
+        setSuccess(true);
 
-      // Close modal after success
-      setTimeout(() => {
-        onClose();
-        resetForm();
-      }, 2000);
+        // Close modal after success
+        setTimeout(() => {
+          onClose();
+          resetForm();
+        }, 2000);
+      } else {
+        setError("Failed to send message. Please try again.");
+      }
     } catch (err: any) {
       console.error("Error sending message:", err);
       setError("Failed to send message. Please try again.");
