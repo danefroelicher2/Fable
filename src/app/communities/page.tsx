@@ -33,9 +33,9 @@ export default function CommunitiesPage() {
   const [communities, setCommunities] = useState<Community[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"discover" | "my-communities">(
-    "discover"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "discover" | "my-communities" | "create"
+  >("discover");
   const [activeCategory, setActiveCategory] = useState("all");
   const [isInCategory, setIsInCategory] = useState(false);
 
@@ -290,64 +290,89 @@ export default function CommunitiesPage() {
     router.push(`/communities/${communityId}`);
   };
 
+  // Handle Create Community tab click
+  const handleCreateCommunity = () => {
+    router.push("/communities/create");
+  };
+
   return (
-    <div className="container mx-auto py-4 px-4">
+    <div className="container mx-auto py-6 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-          <div>
-            <h1 className="text-3xl font-bold mb-2 dark:text-white">
-              Communities
-            </h1>
-            <p className="text-gray-600 dark:text-gray-300">
-              Join communities to connect with others and share knowledge
-            </p>
-          </div>
-          <div className="mt-4 md:mt-0">
-            <Link
-              href="/communities/create"
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+        {/* UPDATED: Enhanced Tabs Section - Moved Higher and Improved */}
+        <div className="mb-8">
+          {/* Main Tabs Container with improved styling */}
+          <div className="flex justify-between items-center border-b-2 border-gray-100 dark:border-gray-700 pb-4">
+            {/* Left Side - Main Navigation Tabs */}
+            <div className="flex space-x-8">
+              <button
+                onClick={() => setActiveTab("discover")}
+                className={`relative px-2 py-3 text-lg font-semibold transition-all duration-300 ${
+                  activeTab === "discover"
+                    ? "text-blue-600 dark:text-blue-400"
+                    : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                Discover
+                {/* Active indicator */}
+                {activeTab === "discover" && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
+                )}
+              </button>
+
+              <button
+                onClick={() => setActiveTab("my-communities")}
+                className={`relative px-2 py-3 text-lg font-semibold transition-all duration-300 ${
+                  activeTab === "my-communities"
+                    ? "text-blue-600 dark:text-blue-400"
+                    : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                My Communities
+                {/* Active indicator */}
+                {activeTab === "my-communities" && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
+                )}
+              </button>
+            </div>
+
+            {/* Right Side - Create Community Tab */}
+            <button
+              onClick={handleCreateCommunity}
+              className={`relative px-6 py-3 text-lg font-semibold transition-all duration-300 flex items-center space-x-2 rounded-lg ${
+                activeTab === "create"
+                  ? "bg-blue-600 text-white dark:bg-blue-500"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              }`}
             >
-              Create Community
-            </Link>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
+              </svg>
+              <span>Create Community</span>
+            </button>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex">
-            <button
-              onClick={() => setActiveTab("discover")}
-              className={`px-6 py-3 text-lg font-medium border-b-2 ${
-                activeTab === "discover"
-                  ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500"
-                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              }`}
-            >
-              Discover
-            </button>
-            <button
-              onClick={() => setActiveTab("my-communities")}
-              className={`px-6 py-3 text-lg font-medium border-b-2 ${
-                activeTab === "my-communities"
-                  ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500"
-                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              }`}
-            >
-              My Communities
-            </button>
-          </div>
-        </div>
-
-        {/* Category navigation area */}
+        {/* Category Navigation - Only show for Discover tab */}
         {activeTab === "discover" && (
-          <div className="py-0 px-0 mb-4">
-            <div className="relative overflow-x-auto scrollbar-hide py-1">
+          <div className="mb-6">
+            <div className="relative overflow-x-auto scrollbar-hide py-2">
               <div className="flex whitespace-nowrap space-x-3">
                 {/* Up Arrow (only when in a specific category) */}
                 {isInCategory && (
                   <button
                     onClick={handleBackToMain}
-                    className="flex-shrink-0 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-colors flex items-center justify-center"
+                    className="flex-shrink-0 px-4 py-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-full transition-colors flex items-center justify-center"
                     aria-label="Back to all communities"
                   >
                     <svg
@@ -367,15 +392,15 @@ export default function CommunitiesPage() {
                   </button>
                 )}
 
-                {/* Category tabs - now always displayed */}
+                {/* Category tabs */}
                 {categories.map((category) => (
                   <button
                     key={category.id}
                     onClick={() => handleCategoryChange(category.id)}
                     className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                       activeCategory === category.id
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-800 text-white hover:bg-gray-700"
+                        ? "bg-blue-500 text-white dark:bg-blue-600"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                     }`}
                   >
                     {category.name}
@@ -386,6 +411,7 @@ export default function CommunitiesPage() {
           </div>
         )}
 
+        {/* Content Area */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, index) => (
@@ -395,35 +421,54 @@ export default function CommunitiesPage() {
               >
                 <div className="h-40 bg-gray-300 dark:bg-gray-700 w-full mb-4 rounded"></div>
                 <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-full mb-2"></div>
                 <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded w-full mt-4"></div>
               </div>
             ))}
           </div>
         ) : error ? (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 dark:bg-red-900 dark:border-red-700 dark:text-red-300">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg mb-4 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
             {error}
           </div>
         ) : communities.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
             {activeTab === "discover" ? (
-              <p className="text-gray-600 dark:text-gray-300 mb-6">
-                {activeCategory === "all"
-                  ? "No communities have been created yet. Be the first to create one!"
-                  : `No communities found in the ${activeCategory} category. Be the first to create one!`}
-              </p>
-            ) : (
-              <>
+              <div>
+                <div className="text-6xl mb-4">🏘️</div>
+                <h3 className="text-xl font-semibold mb-2 dark:text-white">
+                  {activeCategory === "all"
+                    ? "No communities found"
+                    : `No communities in ${activeCategory}`}
+                </h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  You haven't joined any communities yet.
+                  {activeCategory === "all"
+                    ? "No communities have been created yet. Be the first to create one!"
+                    : `No communities found in the ${activeCategory} category. Be the first to create one!`}
+                </p>
+                <button
+                  onClick={handleCreateCommunity}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
+                >
+                  Create Community
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div className="text-6xl mb-4">👥</div>
+                <h3 className="text-xl font-semibold mb-2 dark:text-white">
+                  No communities joined yet
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  You haven't joined any communities yet. Discover and join
+                  communities that interest you!
                 </p>
                 <button
                   onClick={() => setActiveTab("discover")}
-                  className="text-blue-600 hover:text-blue-800 dark:text-blue-500 dark:hover:text-blue-400 font-medium"
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
                 >
                   Discover Communities
                 </button>
-              </>
+              </div>
             )}
           </div>
         ) : (
@@ -431,10 +476,10 @@ export default function CommunitiesPage() {
             {communities.map((community) => (
               <div
                 key={community.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                 onClick={() => navigateToCommunity(community.id)}
               >
-                {/* Image section (top half) - prioritizing banner_url */}
+                {/* Image section */}
                 <div className="h-40 bg-gray-200 dark:bg-gray-700 w-full">
                   {community.banner_url ? (
                     <img
@@ -449,33 +494,28 @@ export default function CommunitiesPage() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center bg-blue-50 dark:bg-blue-900">
-                      <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
+                    <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
+                      <span className="text-4xl font-bold text-white">
                         {community.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
                   )}
                 </div>
 
-                {/* Content section (bottom half) */}
+                {/* Content section */}
                 <div className="p-6">
-                  <Link
-                    href={`/communities/${community.id}`}
-                    className="hover:text-blue-600 dark:hover:text-blue-400"
-                  >
-                    <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
-                      {community.name}
-                    </h3>
-                  </Link>
+                  <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2 line-clamp-1">
+                    {community.name}
+                  </h3>
 
                   {community.description && (
-                    <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
+                    <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2 text-sm">
                       {community.description}
                     </p>
                   )}
 
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                    <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
                       {community.member_count || 0}{" "}
                       {community.member_count === 1 ? "member" : "members"}
                     </span>
@@ -483,14 +523,14 @@ export default function CommunitiesPage() {
                     {community.is_member ? (
                       <button
                         onClick={(e) => handleLeaveCommunity(community.id, e)}
-                        className="text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 px-4 py-2 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                        className="text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                       >
                         Leave
                       </button>
                     ) : (
                       <button
                         onClick={(e) => handleJoinCommunity(community.id, e)}
-                        className="text-sm bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                        className="text-sm bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
                       >
                         Join
                       </button>
