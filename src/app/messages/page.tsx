@@ -1,4 +1,4 @@
-// src/app/messages/page.tsx - FIXED VERSION
+// src/app/messages/page.tsx - FIXED VERSION WITH PROPER SCROLLING
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -39,7 +39,7 @@ export default function MessagesPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Fix: Handle searchParams safely after component mounts
+  // FIXED: Handle searchParams safely after component mounts
   useEffect(() => {
     setMounted(true);
     if (searchParams) {
@@ -48,22 +48,36 @@ export default function MessagesPage() {
     }
   }, [searchParams]);
 
-  // Fix: Memoize scroll function to prevent unnecessary re-renders
-  const scrollToBottom = useCallback(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, []);
+  // FIXED: Enhanced scroll function that reliably scrolls to bottom
+  const scrollToBottom = useCallback(
+    (behavior: "auto" | "smooth" = "smooth") => {
+      if (messagesContainerRef.current) {
+        const container = messagesContainerRef.current;
+        // Force scroll to the very bottom
+        if (behavior === "auto") {
+          container.scrollTop = container.scrollHeight;
+        } else {
+          container.scrollTo({
+            top: container.scrollHeight,
+            behavior: "smooth",
+          });
+        }
+      }
+    },
+    []
+  );
 
-  // Scroll to bottom of messages when new messages arrive
+  // FIXED: Auto-scroll to bottom when messages load - with longer delay
   useEffect(() => {
     if (messages.length > 0) {
-      // Use timeout to ensure DOM is updated
-      setTimeout(scrollToBottom, 100);
+      // Always scroll to bottom when messages change with proper delay
+      setTimeout(() => {
+        scrollToBottom("auto");
+      }, 150); // Increased delay to ensure DOM is fully rendered
     }
   }, [messages, scrollToBottom]);
 
-  // Fix: Separate function for fetching conversations with proper error handling
+  // FIXED: Separate function for fetching conversations with proper error handling
   const fetchConversations = useCallback(async () => {
     if (!user) return;
 
@@ -115,7 +129,7 @@ export default function MessagesPage() {
     }
   }, [user, selectedUserId]);
 
-  // Fix: Separate function for fetching messages with proper cleanup
+  // FIXED: Separate function for fetching messages with FORCED scroll to bottom
   const fetchMessages = useCallback(
     async (userId: string) => {
       if (!user || !userId) return;
@@ -124,6 +138,14 @@ export default function MessagesPage() {
         setMessageLoading(true);
         const conversation = await getConversation(userId);
         setMessages(conversation);
+
+        // IMPORTANT: Force scroll to bottom after messages load
+        setTimeout(() => {
+          if (messagesContainerRef.current) {
+            const container = messagesContainerRef.current;
+            container.scrollTop = container.scrollHeight;
+          }
+        }, 200); // Longer delay to ensure messages are rendered
 
         // Mark messages as read
         await markMessagesAsRead(userId);
@@ -173,7 +195,7 @@ export default function MessagesPage() {
     }
   }, [selectedUserId, user, initialLoadComplete, mounted, fetchMessages]);
 
-  // Fix: Set up real-time subscriptions with proper cleanup
+  // FIXED: Set up real-time subscriptions with proper cleanup
   useEffect(() => {
     if (!user || !mounted) return;
 
@@ -201,7 +223,7 @@ export default function MessagesPage() {
     };
   }, [user, selectedUserId, mounted, fetchConversations, fetchMessages]);
 
-  // Fix: Improve message sending with better error handling
+  // FIXED: Improve message sending with auto-scroll
   const handleSendMessage = useCallback(async () => {
     if (!newMessage.trim() || !selectedConversation || !user || sending) return;
 
@@ -219,6 +241,14 @@ export default function MessagesPage() {
           fetchMessages(selectedConversation.user_id),
           fetchConversations(),
         ]);
+
+        // FIXED: Force scroll to bottom after sending with longer delay
+        setTimeout(() => {
+          if (messagesContainerRef.current) {
+            const container = messagesContainerRef.current;
+            container.scrollTop = container.scrollHeight;
+          }
+        }, 200);
       } else {
         console.error("Failed to send message");
       }
@@ -234,9 +264,10 @@ export default function MessagesPage() {
     sending,
     fetchMessages,
     fetchConversations,
+    scrollToBottom,
   ]);
 
-  // Fix: Improve conversation selection
+  // FIXED: Improve conversation selection with immediate scroll
   const selectConversation = useCallback(
     (conversation: ConversationSummary) => {
       setSelectedConversation(conversation);
@@ -247,7 +278,7 @@ export default function MessagesPage() {
     [router, fetchMessages]
   );
 
-  // Fix: Memoize date formatting to prevent unnecessary calculations
+  // FIXED: Memoize date formatting to prevent unnecessary calculations
   const formatDate = useCallback((dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -275,7 +306,7 @@ export default function MessagesPage() {
     }
   }, []);
 
-  // Fix: Show loading state while mounting to prevent hydration mismatch
+  // FIXED: Show loading state while mounting to prevent hydration mismatch
   if (!mounted || !user) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -418,7 +449,7 @@ export default function MessagesPage() {
                   </Link>
                 </div>
 
-                {/* Chat messages */}
+                {/* FIXED: Chat messages with proper scrolling capability */}
                 <div
                   ref={messagesContainerRef}
                   className="flex-grow p-4 overflow-y-auto"
@@ -436,7 +467,6 @@ export default function MessagesPage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      // REPLACE with this enhanced message rendering:
                       {messages.map((message, index) => {
                         const isCurrentUser = message.sender_id === user.id;
                         const showAvatar =
@@ -478,7 +508,6 @@ export default function MessagesPage() {
                                 )}
                               </div>
                             )}
-                            {/* Message content - different rendering for shared content */}
 
                             {isSharedContent ? (
                               // Shared content message
@@ -527,6 +556,7 @@ export default function MessagesPage() {
                                 </p>
                               </div>
                             )}
+
                             {isCurrentUser && showAvatar && (
                               <div className="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 overflow-hidden ml-2 flex-shrink-0">
                                 {message.sender_profile?.avatar_url ? (
@@ -553,6 +583,7 @@ export default function MessagesPage() {
                           </div>
                         );
                       })}
+                      {/* FIXED: This ref ensures we can scroll to the bottom */}
                       <div ref={messagesEndRef} />
                     </div>
                   )}
