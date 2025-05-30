@@ -53,6 +53,7 @@ export default function CommunityDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"posts" | "members">("posts");
   const [members, setMembers] = useState<any[]>([]);
+  const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
   const [communityBanner, setCommunityBanner] = useState<string | null>(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
@@ -1019,30 +1020,68 @@ export default function CommunityDetailPage() {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* UPDATED: Enhanced Tabs Section with Create Post as Right Tab */}
         <div className="bg-white rounded-lg shadow-md mb-6 dark:bg-gray-800">
           <div className="border-b border-gray-200 dark:border-gray-700">
-            <div className="flex">
-              <button
-                onClick={() => setActiveTab("posts")}
-                className={`px-6 py-3 text-sm font-medium border-b-2 ${
-                  activeTab === "posts"
-                    ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500"
-                    : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                }`}
-              >
-                Posts
-              </button>
-              <button
-                onClick={() => setActiveTab("members")}
-                className={`px-6 py-3 text-sm font-medium border-b-2 ${
-                  activeTab === "members"
-                    ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500"
-                    : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                }`}
-              >
-                Members
-              </button>
+            <div className="flex justify-between items-center px-6 py-4">
+              {/* Left Side - Main Navigation Tabs */}
+              <div className="flex space-x-8">
+                <button
+                  onClick={() => setActiveTab("posts")}
+                  className={`relative px-2 py-3 text-lg font-semibold transition-all duration-300 ${
+                    activeTab === "posts"
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                  }`}
+                >
+                  Posts
+                  {/* Active indicator */}
+                  {activeTab === "posts" && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setActiveTab("members")}
+                  className={`relative px-2 py-3 text-lg font-semibold transition-all duration-300 ${
+                    activeTab === "members"
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                  }`}
+                >
+                  Members
+                  {/* Active indicator */}
+                  {activeTab === "members" && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
+                  )}
+                </button>
+              </div>
+
+              {/* Right Side - Post Tab (only show if user is a member) */}
+              {community.is_member && (
+                <button
+                  onClick={() =>
+                    router.push(`/communities/${communityId}/create-post`)
+                  }
+                  className="px-6 py-3 text-lg font-semibold transition-all duration-300 flex items-center space-x-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                  <span>Post</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -1050,17 +1089,6 @@ export default function CommunityDetailPage() {
           <div className="p-6">
             {activeTab === "posts" && (
               <div>
-                {community.is_member && (
-                  <div className="mb-6">
-                    <Link
-                      href={`/communities/${communityId}/create-post`}
-                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-                    >
-                      Create Post
-                    </Link>
-                  </div>
-                )}
-
                 {posts.length === 0 ? (
                   <div className="text-center py-8 bg-gray-50 rounded-lg dark:bg-gray-700">
                     <p className="text-gray-600 dark:text-gray-300">
@@ -1072,93 +1100,256 @@ export default function CommunityDetailPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {posts.map((post) => (
-                      <div
-                        key={post.id}
-                        className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() =>
-                          router.push(
-                            `/communities/${communityId}/posts/${post.id}`
-                          )
-                        }
-                      >
-                        <h3 className="text-lg font-bold mb-2 text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
-                          {post.title}
-                        </h3>
+                    {posts.map((post) => {
+                      const isExpanded = expandedPosts.has(post.id);
+                      const maxLength = 350;
+                      const needsTruncation = post.content.length > maxLength;
+                      const displayContent =
+                        needsTruncation && !isExpanded
+                          ? post.content.substring(0, maxLength) + "..."
+                          : post.content;
 
-                        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
-                          <Link
-                            href={`/user/${post.user_id}`}
-                            className="flex items-center hover:text-blue-600 dark:hover:text-blue-400"
-                            onClick={(e) => e.stopPropagation()}
+                      const toggleExpanded = (
+                        postId: string,
+                        e: React.MouseEvent
+                      ) => {
+                        e.stopPropagation();
+                        setExpandedPosts((prev) => {
+                          const newSet = new Set(prev);
+                          if (newSet.has(postId)) {
+                            newSet.delete(postId);
+                          } else {
+                            newSet.add(postId);
+                          }
+                          return newSet;
+                        });
+                      };
+
+                      return (
+                        <div
+                          key={post.id}
+                          className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+                        >
+                          {/* Title */}
+                          <h3
+                            className="text-lg font-bold mb-3 text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer"
+                            onClick={() =>
+                              router.push(
+                                `/communities/${communityId}/posts/${post.id}`
+                              )
+                            }
                           >
-                            <div className="h-6 w-6 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 mr-2 overflow-hidden">
-                              {post.user?.avatar_url ? (
-                                <img
-                                  src={post.user.avatar_url}
-                                  alt={post.user.username || "User"}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <span>
-                                  {(
-                                    post.user?.username ||
-                                    post.user?.full_name ||
-                                    "U"
-                                  )
-                                    .charAt(0)
-                                    .toUpperCase()}
-                                </span>
-                              )}
-                            </div>
-                            {post.user?.full_name ||
-                              post.user?.username ||
-                              "Anonymous"}
-                          </Link>
-                          <span className="mx-2">•</span>
-                          <span>{formatDate(post.created_at)}</span>
-                        </div>
-                        <p className="text-gray-700 dark:text-gray-300">
-                          {formatPreview(post.content)}
-                        </p>
+                            {post.title}
+                          </h3>
 
-                        {/* Post Actions with Share and Delete Buttons - UPDATED */}
-                        <div className="flex justify-between items-center mt-4">
-                          <div className="flex items-center space-x-2">
-                            <Link
-                              href={`/communities/${communityId}/posts/${post.id}`}
-                              className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              Read more
-                            </Link>
-                          </div>
+                          {/* Content with proper line wrapping */}
+                          <div className="mb-4">
+                            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words leading-relaxed">
+                              {displayContent}
+                            </p>
 
-                          <div className="flex items-center space-x-2">
-                            {/* NEW: Share Button */}
-                            <div onClick={(e) => e.stopPropagation()}>
-                              <ShareButton
-                                postId={post.id}
-                                title={post.title}
-                                size="sm"
-                              />
-                            </div>
-
-                            <BookmarkButton postId={post.id} className="mr-2" />
-
-                            {/* Delete Button (Only visible to post author) */}
-                            {user && user.id === post.user_id && (
+                            {/* Read More/Less Button */}
+                            {needsTruncation && (
                               <button
-                                onClick={(e) =>
-                                  handleDeletePost(post.id, post.user_id, e)
-                                }
-                                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm"
+                                onClick={(e) => toggleExpanded(post.id, e)}
+                                className="text-blue-600 dark:text-blue-400 hover:underline text-sm mt-2 font-medium"
                               >
-                                Delete
+                                {isExpanded ? "Read less" : "Read more"}
                               </button>
                             )}
                           </div>
+
+                          {/* Bottom row with user info on left and actions on right */}
+                          <div className="flex justify-between items-center">
+                            {/* Left: User info with proper alignment */}
+                            <div className="flex items-center text-sm">
+                              <Link
+                                href={`/user/${post.user_id}`}
+                                className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="h-6 w-6 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 mr-3 overflow-hidden">
+                                  {post.user?.avatar_url ? (
+                                    <img
+                                      src={post.user.avatar_url}
+                                      alt={post.user.username || "User"}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <span className="text-xs">
+                                      {(
+                                        post.user?.username ||
+                                        post.user?.full_name ||
+                                        "U"
+                                      )
+                                        .charAt(0)
+                                        .toUpperCase()}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* User name and date grouped together */}
+                                <div className="flex flex-col">
+                                  <span className="text-gray-700 dark:text-gray-300 font-medium">
+                                    {post.user?.full_name ||
+                                      post.user?.username ||
+                                      "Anonymous"}
+                                  </span>
+                                  <span className="text-gray-500 dark:text-gray-400 text-xs">
+                                    {formatDate(post.created_at)}
+                                  </span>
+                                </div>
+                              </Link>
+                            </div>
+
+                            {/* Right: Action buttons with improved visibility */}
+                            <div className="flex items-center space-x-3">
+                              {/* Share Button with better visibility */}
+                              <div onClick={(e) => e.stopPropagation()}>
+                                <div className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                  <ShareButton
+                                    postId={post.id}
+                                    title={post.title}
+                                    size="sm"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Bookmark Button with better visibility */}
+                              <div className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                <BookmarkButton postId={post.id} />
+                              </div>
+
+                              {/* Delete Button (Only visible to post author) */}
+                              {user && user.id === post.user_id && (
+                                <button
+                                  onClick={(e) =>
+                                    handleDeletePost(post.id, post.user_id, e)
+                                  }
+                                  className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium"
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === "members" && (
+              <div>
+                {members.length === 0 ? (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg dark:bg-gray-700">
+                    <p className="text-gray-600 dark:text-gray-300">
+                      No members in this community yet.
+                      {!community.is_member && " Be the first to join!"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {members.map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                      >
+                        <Link
+                          href={`/user/${member.user_id}`}
+                          className="flex items-center hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                          <div className="h-10 w-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 mr-3 overflow-hidden">
+                            {member.user?.avatar_url ? (
+                              <img
+                                src={member.user.avatar_url}
+                                alt={member.user.username || "User"}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-lg">
+                                {(
+                                  member.user?.username ||
+                                  member.user?.full_name ||
+                                  "U"
+                                )
+                                  .charAt(0)
+                                  .toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-800 dark:text-white">
+                              {member.user?.full_name ||
+                                member.user?.username ||
+                                "Anonymous"}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {member.is_admin ? "Admin" : "Member"} • Joined{" "}
+                              {formatDate(member.joined_at)}
+                            </div>
+                          </div>
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === "members" && (
+              <div>
+                {members.length === 0 ? (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg dark:bg-gray-700">
+                    <p className="text-gray-600 dark:text-gray-300">
+                      No members in this community yet.
+                      {!community.is_member && " Be the first to join!"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {members.map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                      >
+                        <Link
+                          href={`/user/${member.user_id}`}
+                          className="flex items-center hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                          <div className="h-10 w-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 mr-3 overflow-hidden">
+                            {member.user?.avatar_url ? (
+                              <img
+                                src={member.user.avatar_url}
+                                alt={member.user.username || "User"}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-lg">
+                                {(
+                                  member.user?.username ||
+                                  member.user?.full_name ||
+                                  "U"
+                                )
+                                  .charAt(0)
+                                  .toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-800 dark:text-white">
+                              {member.user?.full_name ||
+                                member.user?.username ||
+                                "Anonymous"}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {member.is_admin ? "Admin" : "Member"} • Joined{" "}
+                              {formatDate(member.joined_at)}
+                            </div>
+                          </div>
+                        </Link>
                       </div>
                     ))}
                   </div>
