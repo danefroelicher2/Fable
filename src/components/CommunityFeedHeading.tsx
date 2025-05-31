@@ -2,12 +2,18 @@
 "use client";
 
 import Link from "next/link";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function CommunityFeedHeading() {
+  const { theme } = useTheme();
+
   return (
     <div className="flex justify-between items-center mb-4">
       <div>
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h2
+          className="text-3xl font-bold"
+          style={{ color: theme === "dark" ? "white" : "black" }}
+        >
           Trending
         </h2>
       </div>

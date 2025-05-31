@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { useTheme } from "@/context/ThemeContext";
 
 // Original mock data as fallback
 const mockArticles = [
@@ -66,6 +67,7 @@ const mockArticles = [
 ];
 
 export default function FanArticles() {
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [featuredArticles, setFeaturedArticles] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -74,8 +76,6 @@ export default function FanArticles() {
     try {
       setLoading(true);
 
-      // Get featured articles from the database
-      // Using type assertion to bypass TypeScript checking for featured_articles table
       const { data: featuredData, error: featuredError } = await (
         supabase as any
       )
@@ -208,7 +208,10 @@ export default function FanArticles() {
     return (
       <section className="mb-16">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
+          <h2
+            className="text-3xl font-bold"
+            style={{ color: theme === "dark" ? "white" : "black" }}
+          >
             Featured
           </h2>
         </div>
@@ -225,7 +228,10 @@ export default function FanArticles() {
   return (
     <section className="mb-16">
       <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
+        <h2
+          className="text-3xl font-bold"
+          style={{ color: theme === "dark" ? "white" : "black" }}
+        >
           Featured
         </h2>
       </div>
