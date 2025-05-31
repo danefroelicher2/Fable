@@ -422,10 +422,11 @@ export default function UserPublishedArticles({
       )}
 
       {showViewAll && totalArticles > limit && (
-        <div className="text-center mt-6">
+        <div className="text-right mt-6">
           <Link
             href={`/user/${userId}/articles`}
-            className="inline-block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors"
+            className="font-bold"
+            style={{ color: "black" }}
           >
             View All Articles ({totalArticles})
           </Link>

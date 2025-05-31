@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import FollowButton from "@/components/FollowButton";
 import DeleteButton from "@/components/DeleteButton";
+import { useTheme } from "@/context/ThemeContext";
 
 interface Profile {
   id: string;
@@ -34,6 +35,7 @@ export default function UserArticlesPage() {
   const router = useRouter();
   const userId = typeof params?.userId === "string" ? params.userId : null;
   const { user } = useAuth();
+  const { theme: currentTheme } = useTheme();
 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -291,12 +293,12 @@ export default function UserArticlesPage() {
             )}
           </div>
           <div>
-            <h1 className="text-xl font-bold">
+            <h1 className="text-xl font-bold" style={{ color: "black" }}>
               {profile.full_name || profile.username || "Anonymous User"}'s
               Articles
             </h1>
             {profile.username && (
-              <p className="text-gray-600">@{profile.username}</p>
+              <p style={{ color: "black" }}>@{profile.username}</p>
             )}
           </div>
 
@@ -316,7 +318,12 @@ export default function UserArticlesPage() {
       <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold">Published Articles</h2>
+            <h2
+              className="text-2xl font-bold"
+              style={{ color: currentTheme === "dark" ? "black" : "black" }}
+            >
+              Published Articles
+            </h2>
             <p className="text-gray-600">Total: {totalArticles}</p>
           </div>
 
