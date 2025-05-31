@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import UserSearchBar from "@/components/UserSearchBar";
+import { useTheme } from "@/context/ThemeContext";
 
 interface Article {
   id: string;
@@ -26,6 +27,7 @@ export default function SearchPage() {
   const [recentArticles, setRecentArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { theme } = useTheme(); // Add this line
 
   useEffect(() => {
     fetchRecentArticles();
@@ -117,7 +119,12 @@ export default function SearchPage() {
       <div className="max-w-5xl mx-auto">
         {/* Main Search Section */}
         <div className="bg-white p-8 rounded-lg shadow-md mb-8">
-          <h1 className="text-3xl font-bold mb-6">Search</h1>
+          <h1
+            className="text-3xl font-bold mb-6"
+            style={{ color: theme === "dark" ? "black" : "inherit" }}
+          >
+            Search
+          </h1>
 
           {/* User Search Bar */}
           <div className="mb-8">
@@ -127,7 +134,12 @@ export default function SearchPage() {
 
         {/* Explore Section */}
         <div className="bg-white p-8 rounded-lg shadow-md">
-          <h2 className="text-2xl font-bold mb-6">Explore Recent Articles</h2>
+          <h2
+            className="text-2xl font-bold mb-6"
+            style={{ color: theme === "dark" ? "black" : "inherit" }}
+          >
+            Explore Recent Articles
+          </h2>
 
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -244,14 +256,7 @@ export default function SearchPage() {
           )}
 
           {!loading && !error && recentArticles.length > 0 && (
-            <div className="mt-8 text-center">
-              <Link
-                href="/feed"
-                className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                View All Articles
-              </Link>
-            </div>
+            <div className="mt-8 text-center"></div>
           )}
         </div>
       </div>

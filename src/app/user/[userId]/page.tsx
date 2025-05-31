@@ -12,6 +12,7 @@ import FollowButton from "@/components/FollowButton";
 import MessageButton from "@/components/MessageButton";
 import PinnedPosts from "@/components/PinnedPosts";
 import SocialLinks from "@/components/SocialLinks";
+import { useTheme } from "@/context/ThemeContext";
 
 interface Profile {
   id: string;
@@ -47,6 +48,7 @@ export default function PublicUserProfilePage() {
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [articles, setArticles] = useState<any[]>([]);
+  const { theme: currentTheme } = useTheme();
 
   // NEW: Modal state for followers/following
   const [showFollowModal, setShowFollowModal] = useState<
@@ -397,14 +399,14 @@ export default function PublicUserProfilePage() {
             <div className="md:w-2/3 md:pl-8">
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <h2 className="text-2xl font-bold">
+                  {profile?.username && (
+                    <p style={{ color: "black" }}>@{profile.username}</p>
+                  )}
+                  <h2 className="text-2xl font-bold" style={{ color: "black" }}>
                     {profile?.full_name ||
                       profile?.username ||
                       "Anonymous User"}
                   </h2>
-                  {profile?.username && (
-                    <p className="text-gray-600">@{profile.username}</p>
-                  )}
                 </div>
 
                 {isCurrentUser && (
@@ -437,10 +439,15 @@ export default function PublicUserProfilePage() {
               {/* UPDATED: Posts/Followers/Following counts with clickable functionality */}
               <div className="flex space-x-6 mb-4">
                 <div className="flex flex-col items-center">
-                  <span className="font-bold text-lg">
+                  <span
+                    className="font-bold text-lg"
+                    style={{ color: "black" }}
+                  >
                     {articles?.length || 0}
                   </span>
-                  <span className="text-gray-600 text-sm">Posts</span>
+                  <span className="text-sm" style={{ color: "black" }}>
+                    Posts
+                  </span>
                 </div>
 
                 {/* CLICKABLE FOLLOWERS - Only for current user */}
@@ -454,8 +461,15 @@ export default function PublicUserProfilePage() {
                   disabled={!isCurrentUser}
                   title={isCurrentUser ? "Click to view followers" : ""}
                 >
-                  <span className="font-bold text-lg">{followerCount}</span>
-                  <span className="text-gray-600 text-sm">Followers</span>
+                  <span
+                    className="font-bold text-lg"
+                    style={{ color: "black" }}
+                  >
+                    {followerCount}
+                  </span>
+                  <span className="text-sm" style={{ color: "black" }}>
+                    Followers
+                  </span>
                 </button>
 
                 {/* CLICKABLE FOLLOWING - Only for current user */}
@@ -469,14 +483,23 @@ export default function PublicUserProfilePage() {
                   disabled={!isCurrentUser}
                   title={isCurrentUser ? "Click to view following" : ""}
                 >
-                  <span className="font-bold text-lg">{followingCount}</span>
-                  <span className="text-gray-600 text-sm">Following</span>
+                  <span
+                    className="font-bold text-lg"
+                    style={{ color: "black" }}
+                  >
+                    {followingCount}
+                  </span>
+                  <span className="text-sm" style={{ color: "black" }}>
+                    Following
+                  </span>
                 </button>
               </div>
 
               {bio && (
                 <div className="mb-4">
-                  <p className="text-gray-700 whitespace-pre-line">{bio}</p>
+                  <p className="whitespace-pre-line" style={{ color: "black" }}>
+                    {bio}
+                  </p>
                 </div>
               )}
 
@@ -496,7 +519,12 @@ export default function PublicUserProfilePage() {
         {profile && (
           <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-2xl font-bold">Pinned Posts</h2>
+              <h2
+                className="text-2xl font-bold"
+                style={{ color: currentTheme === "dark" ? "black" : "black" }}
+              >
+                Pinned Posts
+              </h2>
             </div>
             <div className="p-6">
               <PinnedPosts userId={profile.id} isCurrentUser={isCurrentUser} />
@@ -510,7 +538,12 @@ export default function PublicUserProfilePage() {
         {/* Published Articles Section */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-2xl font-bold">Published Articles</h2>
+            <h2
+              className="text-2xl font-bold"
+              style={{ color: currentTheme === "dark" ? "black" : "black" }}
+            >
+              Published Articles
+            </h2>
           </div>
           <div className="p-6">
             {profile && (

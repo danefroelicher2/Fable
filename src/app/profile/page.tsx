@@ -11,6 +11,7 @@ import ManageFavorites from "@/components/ManageFavorites";
 import ManagePinnedPosts from "@/components/ManagePinnedPosts";
 import PinnedPosts from "@/components/PinnedPosts";
 import { getFromStorage, setToStorage } from "@/lib/localStorageUtils";
+import { useTheme } from "@/context/ThemeContext";
 
 interface Profile {
   id: string;
@@ -84,6 +85,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [username, setUsername] = useState<string>("");
   const [fullName, setFullName] = useState<string>("");
+  const { theme: currentTheme } = useTheme();
   // Keep bio in state only (not in DB)
   const [bio, setBio] = useState<string>("");
   const [avatarUrl, setAvatarUrl] = useState<string>("");
@@ -590,24 +592,43 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label
-                  className="block text-gray-700 font-bold mb-2"
-                  htmlFor="bio"
-                >
-                  Bio (Stored locally in your browser)
-                </label>
+                <div className="flex justify-between items-center mb-2">
+                  <label
+                    className="block text-gray-700 font-bold"
+                    htmlFor="bio"
+                  >
+                    Bio
+                  </label>
+                  <div
+                    className={`text-sm ${
+                      bio.length > 225
+                        ? "text-red-600 font-bold"
+                        : bio.length > 200
+                        ? "text-orange-500"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {bio.length}/225
+                  </div>
+                </div>
                 <textarea
                   id="bio"
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className={`w-full p-2 border rounded focus:outline-none focus:ring-2 ${
+                    bio.length > 225
+                      ? "border-red-500 focus:ring-red-400"
+                      : "border-gray-300 focus:ring-blue-400"
+                  }`}
                   rows={4}
                   placeholder="Tell us about yourself"
+                  maxLength={250} // Allow typing but we'll validate at 225
                 />
-                <p className="text-sm text-gray-500 mt-1">
-                  Your bio will be stored locally in your browser, not in the
-                  database
-                </p>
+                {bio.length > 225 && (
+                  <p className="text-red-600 text-sm mt-1">
+                    Bio must be 225 characters or fewer
+                  </p>
+                )}
               </div>
 
               {/* Social Links Section */}
@@ -615,10 +636,6 @@ export default function ProfilePage() {
                 <h3 className="block text-gray-700 font-bold mb-2">
                   Social Links
                 </h3>
-                <p className="text-sm text-gray-500 mb-3">
-                  Add your social media profiles (stored locally in your
-                  browser)
-                </p>
 
                 <div className="space-y-3">
                   <div>
@@ -712,10 +729,6 @@ export default function ProfilePage() {
                     />
                   </div>
                 </div>
-                <p className="text-sm text-gray-500 mt-3">
-                  Social links will be stored locally in your browser until
-                  database is updated
-                </p>
               </div>
 
               <div>
@@ -1042,7 +1055,12 @@ export default function ProfilePage() {
 
             {activeTab === "pinned" && (
               <div>
-                <h2 className="text-2xl font-bold mb-6">Manage Pinned Posts</h2>
+                <h2
+                  className="text-2xl font-bold mb-6"
+                  style={{ color: currentTheme === "dark" ? "black" : "black" }}
+                >
+                  Manage Pinned Posts
+                </h2>
                 <ManagePinnedPosts />
               </div>
             )}
@@ -1050,9 +1068,13 @@ export default function ProfilePage() {
             {activeTab === "articles" && (
               <div>
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold">
+                  <h2
+                    className="text-2xl font-bold"
+                    style={{ color: "black !important" }}
+                  >
                     Your Published Articles
                   </h2>
+                  4
                 </div>
 
                 {isLoadingArticles ? (
