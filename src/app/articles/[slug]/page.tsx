@@ -1,4 +1,4 @@
-// src/app/articles/[slug]/page.tsx - UPDATED WITH TWITTER CARD METADATA
+// src/app/articles/[slug]/page.tsx - UPDATED WITH NEW LAYOUT
 "use client";
 
 import { useState, useEffect } from "react";
@@ -217,42 +217,50 @@ export default function ArticlePage() {
             {article.title}
           </h1>
 
-          {/* Cover Image */}
+          {/* Cover Image - THEME-AWARE SIDE BARS */}
           {article.image_url && (
             <div className="mb-8">
-              <img
-                src={article.image_url}
-                alt={article.title}
-                className="w-full rounded-lg"
-              />
+              <div className="relative w-full max-h-96 overflow-hidden rounded-lg bg-white dark:bg-gray-900">
+                <img
+                  src={article.image_url}
+                  alt={article.title}
+                  className="w-full h-auto max-h-96 object-contain rounded-lg"
+                  style={{
+                    maxHeight: "24rem", // 384px (same as max-h-96)
+                    width: "100%",
+                    height: "auto",
+                  }}
+                  onLoad={(e) => {
+                    // Optional: Add fade-in effect when image loads
+                    e.currentTarget.style.opacity = "1";
+                  }}
+                  onError={(e) => {
+                    // Hide the container if image fails to load
+                    const container =
+                      e.currentTarget.parentElement?.parentElement;
+                    if (container) {
+                      container.style.display = "none";
+                    }
+                  }}
+                />
+              </div>
             </div>
           )}
-
           {/* Article content - with whitespace preserved */}
           <div className="prose dark:prose-invert max-w-none mb-8">
             <div className="whitespace-pre-line dark:text-gray-300">
               {article.content}
             </div>
           </div>
-
-          {/* NEW: Author, Date, and Category Section - MOVED HERE */}
+          {/* UPDATED: Author, Date, and Category Section - NEW LAYOUT */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
-            {/* Category Badge */}
-            {article.category && (
-              <div className="mb-4">
-                <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-2 py-1 rounded text-sm">
-                  {article.category}
-                </span>
-              </div>
-            )}
-
-            {/* Author and Date Section */}
-            <div className="flex items-center mb-6">
+            {/* Author Section - Now first */}
+            <div className="flex items-center mb-4">
               {/* Author Avatar and Info */}
               {authorProfile && (
                 <Link
                   href={`/user/${authorProfile.id}`}
-                  className="flex items-center hover:opacity-80 mr-4"
+                  className="flex items-center hover:opacity-80"
                 >
                   <div className="h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden mr-3">
                     {authorProfile.avatar_url ? (
@@ -287,8 +295,18 @@ export default function ArticlePage() {
                   </div>
                 </Link>
               )}
+            </div>
 
-              {/* Date */}
+            {/* Category Badge and Date Section - Now below author */}
+            <div className="flex items-center gap-4">
+              {/* Category Badge */}
+              {article.category && (
+                <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-2 py-1 rounded text-sm">
+                  {article.category}
+                </span>
+              )}
+
+              {/* Date - Now to the right of the badge */}
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 {new Date(article.published_at).toLocaleDateString(undefined, {
                   year: "numeric",
@@ -298,10 +316,8 @@ export default function ArticlePage() {
               </div>
             </div>
           </div>
-
           {/* Bottom Action Bar with Views, Pin, and Share */}
           <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
-            {/* Rest of your action bar code stays the same */}
             {/* Left side - Views, Pin (if author), Share */}
             <div className="flex items-center space-x-6">
               {/* View count */}
@@ -358,7 +374,6 @@ export default function ArticlePage() {
               )}
             </div>
           </div>
-
           {/* Feature Article Button - Admin only */}
           {article.id && <FeatureArticleButton articleId={article.id} />}
         </div>
