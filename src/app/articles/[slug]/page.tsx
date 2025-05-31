@@ -217,58 +217,6 @@ export default function ArticlePage() {
             {article.title}
           </h1>
 
-          {/* Author and Date Section */}
-          <div className="flex items-center mb-6">
-            {/* Author Avatar and Info */}
-            {authorProfile && (
-              <Link
-                href={`/user/${authorProfile.id}`}
-                className="flex items-center hover:opacity-80 mr-4"
-              >
-                <div className="h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden mr-3">
-                  {authorProfile.avatar_url ? (
-                    <img
-                      src={authorProfile.avatar_url}
-                      alt={authorProfile.username || "Author"}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-sm font-semibold">
-                      {(
-                        authorProfile.full_name ||
-                        authorProfile.username ||
-                        "U"
-                      )
-                        .charAt(0)
-                        .toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <div className="font-medium text-gray-900 dark:text-white">
-                    {authorProfile.full_name ||
-                      authorProfile.username ||
-                      "Anonymous"}
-                  </div>
-                  {authorProfile.username && (
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      @{authorProfile.username}
-                    </div>
-                  )}
-                </div>
-              </Link>
-            )}
-
-            {/* Date */}
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              {new Date(article.published_at).toLocaleDateString(undefined, {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </div>
-          </div>
-
           {/* Cover Image */}
           {article.image_url && (
             <div className="mb-8">
@@ -280,24 +228,80 @@ export default function ArticlePage() {
             </div>
           )}
 
-          {/* Category Badge */}
-          {article.category && (
-            <div className="mb-4">
-              <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-2 py-1 rounded text-sm">
-                {article.category}
-              </span>
-            </div>
-          )}
-
           {/* Article content - with whitespace preserved */}
-          <div className="prose dark:prose-invert max-w-none mb-10">
+          <div className="prose dark:prose-invert max-w-none mb-8">
             <div className="whitespace-pre-line dark:text-gray-300">
               {article.content}
             </div>
           </div>
 
+          {/* NEW: Author, Date, and Category Section - MOVED HERE */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
+            {/* Category Badge */}
+            {article.category && (
+              <div className="mb-4">
+                <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-2 py-1 rounded text-sm">
+                  {article.category}
+                </span>
+              </div>
+            )}
+
+            {/* Author and Date Section */}
+            <div className="flex items-center mb-6">
+              {/* Author Avatar and Info */}
+              {authorProfile && (
+                <Link
+                  href={`/user/${authorProfile.id}`}
+                  className="flex items-center hover:opacity-80 mr-4"
+                >
+                  <div className="h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden mr-3">
+                    {authorProfile.avatar_url ? (
+                      <img
+                        src={authorProfile.avatar_url}
+                        alt={authorProfile.username || "Author"}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-sm font-semibold">
+                        {(
+                          authorProfile.full_name ||
+                          authorProfile.username ||
+                          "U"
+                        )
+                          .charAt(0)
+                          .toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-white">
+                      {authorProfile.full_name ||
+                        authorProfile.username ||
+                        "Anonymous"}
+                    </div>
+                    {authorProfile.username && (
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        @{authorProfile.username}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              )}
+
+              {/* Date */}
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                {new Date(article.published_at).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </div>
+            </div>
+          </div>
+
           {/* Bottom Action Bar with Views, Pin, and Share */}
           <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
+            {/* Rest of your action bar code stays the same */}
             {/* Left side - Views, Pin (if author), Share */}
             <div className="flex items-center space-x-6">
               {/* View count */}
