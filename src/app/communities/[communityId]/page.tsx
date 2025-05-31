@@ -43,6 +43,18 @@ interface CommunityPost {
   } | null;
 }
 
+interface CommunityMember {
+  id: string;
+  user_id: string;
+  is_admin: boolean;
+  joined_at: string;
+  user?: {
+    username: string | null;
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+}
+
 export default function CommunityDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -52,7 +64,7 @@ export default function CommunityDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"posts" | "members">("posts");
-  const [members, setMembers] = useState<any[]>([]);
+  const [members, setMembers] = useState<CommunityMember[]>([]);
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
   const [communityBanner, setCommunityBanner] = useState<string | null>(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -1057,13 +1069,13 @@ export default function CommunityDetailPage() {
                 </button>
               </div>
 
-              {/* Right Side - Post Tab (only show if user is a member) */}
+              {/* Right Side - Create Post Button (only show if user is a member) */}
               {community.is_member && (
                 <button
                   onClick={() =>
                     router.push(`/communities/${communityId}/create-post`)
                   }
-                  className="px-6 py-3 text-lg font-semibold transition-all duration-300 flex items-center space-x-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                  className="px-6 py-3 text-lg font-semibold transition-all duration-300 flex items-center space-x-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -1085,7 +1097,7 @@ export default function CommunityDetailPage() {
             </div>
           </div>
 
-          {/* Tab Content */}
+          {/* Tab Content - FIXED: Single members tab with deduplication and sorting */}
           <div className="p-6">
             {activeTab === "posts" && (
               <div>
@@ -1241,177 +1253,143 @@ export default function CommunityDetailPage() {
               </div>
             )}
 
+            {/* FIXED: Single Members Tab with Proper Deduplication and Admin Priority */}
             {activeTab === "members" && (
               <div>
-                {members.length === 0 ? (
-                  <div className="text-center py-8 bg-gray-50 rounded-lg dark:bg-gray-700">
-                    <p className="text-gray-600 dark:text-gray-300">
-                      No members in this community yet.
-                      {!community.is_member && " Be the first to join!"}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {members.map((member) => (
-                      <div
-                        key={member.id}
-                        className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                      >
-                        <Link
-                          href={`/user/${member.user_id}`}
-                          className="flex items-center hover:text-blue-600 dark:hover:text-blue-400"
-                        >
-                          <div className="h-10 w-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 mr-3 overflow-hidden">
-                            {member.user?.avatar_url ? (
-                              <img
-                                src={member.user.avatar_url}
-                                alt={member.user.username || "User"}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-lg">
-                                {(
-                                  member.user?.username ||
-                                  member.user?.full_name ||
-                                  "U"
-                                )
-                                  .charAt(0)
-                                  .toUpperCase()}
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-800 dark:text-white">
-                              {member.user?.full_name ||
-                                member.user?.username ||
-                                "Anonymous"}
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {member.is_admin ? "Admin" : "Member"} • Joined{" "}
-                              {formatDate(member.joined_at)}
-                            </div>
-                          </div>
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                {(() => {
+                  // Process members: deduplicate by user_id and sort with admins first
+                  const uniqueMembers = members.reduce(
+                    (acc: CommunityMember[], member: CommunityMember) => {
+                      // Only add if we haven't seen this user_id before
+                      const existingMember = acc.find(
+                        (m: CommunityMember) => m.user_id === member.user_id
+                      );
+                      if (!existingMember) {
+                        acc.push(member);
+                      }
+                      return acc;
+                    },
+                    [] as CommunityMember[]
+                  );
 
-            {activeTab === "members" && (
-              <div>
-                {members.length === 0 ? (
-                  <div className="text-center py-8 bg-gray-50 rounded-lg dark:bg-gray-700">
-                    <p className="text-gray-600 dark:text-gray-300">
-                      No members in this community yet.
-                      {!community.is_member && " Be the first to join!"}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {members.map((member) => (
-                      <div
-                        key={member.id}
-                        className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                      >
-                        <Link
-                          href={`/user/${member.user_id}`}
-                          className="flex items-center hover:text-blue-600 dark:hover:text-blue-400"
-                        >
-                          <div className="h-10 w-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 mr-3 overflow-hidden">
-                            {member.user?.avatar_url ? (
-                              <img
-                                src={member.user.avatar_url}
-                                alt={member.user.username || "User"}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-lg">
-                                {(
-                                  member.user?.username ||
-                                  member.user?.full_name ||
-                                  "U"
-                                )
-                                  .charAt(0)
-                                  .toUpperCase()}
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-800 dark:text-white">
-                              {member.user?.full_name ||
-                                member.user?.username ||
-                                "Anonymous"}
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {member.is_admin ? "Admin" : "Member"} • Joined{" "}
-                              {formatDate(member.joined_at)}
-                            </div>
-                          </div>
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                  // Sort: Admins first, then by join date (newest first)
+                  const sortedMembers = uniqueMembers.sort(
+                    (a: CommunityMember, b: CommunityMember) => {
+                      // First priority: Admin status (admins first)
+                      if (a.is_admin && !b.is_admin) return -1;
+                      if (!a.is_admin && b.is_admin) return 1;
 
-            {activeTab === "members" && (
-              <div>
-                {members.length === 0 ? (
-                  <div className="text-center py-8 bg-gray-50 rounded-lg dark:bg-gray-700">
-                    <p className="text-gray-600 dark:text-gray-300">
-                      No members in this community yet.
-                      {!community.is_member && " Be the first to join!"}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {members.map((member) => (
-                      <div
-                        key={member.id}
-                        className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                      >
-                        <Link
-                          href={`/user/${member.user_id}`}
-                          className="flex items-center hover:text-blue-600 dark:hover:text-blue-400"
-                        >
-                          <div className="h-10 w-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 mr-3 overflow-hidden">
-                            {member.user?.avatar_url ? (
-                              <img
-                                src={member.user.avatar_url}
-                                alt={member.user.username || "User"}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-lg">
-                                {(
-                                  member.user?.username ||
-                                  member.user?.full_name ||
-                                  "U"
-                                )
-                                  .charAt(0)
-                                  .toUpperCase()}
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-800 dark:text-white">
-                              {member.user?.full_name ||
-                                member.user?.username ||
-                                "Anonymous"}
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {member.is_admin ? "Admin" : "Member"} • Joined{" "}
-                              {formatDate(member.joined_at)}
-                            </div>
-                          </div>
-                        </Link>
+                      // Second priority: Join date (newest first)
+                      return (
+                        new Date(b.joined_at).getTime() -
+                        new Date(a.joined_at).getTime()
+                      );
+                    }
+                  );
+
+                  return sortedMembers.length === 0 ? (
+                    <div className="text-center py-8 bg-gray-50 rounded-lg dark:bg-gray-700">
+                      <p className="text-gray-600 dark:text-gray-300">
+                        No members in this community yet.
+                        {!community.is_member && " Be the first to join!"}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      {/* Members Count Header */}
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                          Community Members ({sortedMembers.length})
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {
+                            sortedMembers.filter(
+                              (m: CommunityMember) => m.is_admin
+                            ).length
+                          }{" "}
+                          admin(s),{" "}
+                          {
+                            sortedMembers.filter(
+                              (m: CommunityMember) => !m.is_admin
+                            ).length
+                          }{" "}
+                          member(s)
+                        </p>
                       </div>
-                    ))}
-                  </div>
-                )}
+
+                      {/* Members Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {sortedMembers.map((member: CommunityMember) => (
+                          <div
+                            key={`${member.id}-${member.user_id}`} // More unique key
+                            className="flex items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                          >
+                            <Link
+                              href={`/user/${member.user_id}`}
+                              className="flex items-center flex-1"
+                            >
+                              {/* Avatar */}
+                              <div className="h-12 w-12 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 mr-3 overflow-hidden flex-shrink-0">
+                                {member.user?.avatar_url ? (
+                                  <img
+                                    src={member.user.avatar_url}
+                                    alt={member.user.username || "User"}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <span className="text-lg font-semibold">
+                                    {(
+                                      member.user?.username ||
+                                      member.user?.full_name ||
+                                      "U"
+                                    )
+                                      .charAt(0)
+                                      .toUpperCase()}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* User Info */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className="font-medium text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate">
+                                    {member.user?.full_name ||
+                                      member.user?.username ||
+                                      "Anonymous"}
+                                  </div>
+                                  {/* Admin Badge */}
+                                  {member.is_admin && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                      <svg
+                                        className="w-3 h-3 mr-1"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                      >
+                                        <path
+                                          fillRule="evenodd"
+                                          d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                                          clipRule="evenodd"
+                                        />
+                                      </svg>
+                                      Admin
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  {member.user?.username &&
+                                    `@${member.user.username}`}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  Joined {formatDate(member.joined_at)}
+                                </div>
+                              </div>
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
