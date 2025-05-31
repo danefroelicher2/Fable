@@ -106,8 +106,8 @@ export default function ThisDayInHistory() {
   const formatEventForDisplay = (event: HistoricalEvent) => {
     const cleanText = cleanEventText(event.text);
     // If the text is too long, truncate it
-    if (cleanText.length > 150) {
-      return cleanText.substring(0, 147) + "...";
+    if (cleanText.length > 230) {
+      return cleanText.substring(0, 207) + "...";
     }
     return cleanText;
   };
@@ -160,23 +160,6 @@ export default function ThisDayInHistory() {
                 <p className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed">
                   {formatEventForDisplay(event)}
                 </p>
-
-                {/* Show related links if available */}
-                {event.links && event.links.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {event.links.slice(0, 2).map((link, linkIndex) => (
-                      <a
-                        key={linkIndex}
-                        href={link.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-2 py-1 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
-                      >
-                        {link.title}
-                      </a>
-                    ))}
-                  </div>
-                )}
               </div>
             ))}
           </div>
