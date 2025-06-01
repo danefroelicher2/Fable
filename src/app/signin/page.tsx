@@ -16,6 +16,8 @@ export default function SignInPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [redirectPath, setRedirectPath] = useState("/");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   useEffect(() => {
     // Check for redirect parameter
@@ -104,6 +106,105 @@ export default function SignInPage() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setError("Please enter your email address first");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const origin = window.location.origin;
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      setResetEmailSent(true);
+      setMessage(
+        `Password reset email sent to ${email}. Check your inbox and click the reset link.`
+      );
+    } catch (err: any) {
+      setError(err.message || "An error occurred while sending reset email");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // If showing forgot password form
+  if (showForgotPassword) {
+    return (
+      <div className="container mx-auto py-10">
+        <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
+          <h1 className="text-3xl font-bold text-center mb-6">
+            Reset Password
+          </h1>
+
+          {message && (
+            <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+              <p dangerouslySetInnerHTML={{ __html: message }} />
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+              {error}
+            </div>
+          )}
+
+          {!resetEmailSent ? (
+            <form className="space-y-4" onSubmit={handleForgotPassword}>
+              <div>
+                <label className="block text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full p-2 border rounded"
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loading ? "Sending..." : "Send Reset Email"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(false)}
+                className="w-full text-gray-600 hover:text-gray-800 text-sm"
+              >
+                Back to Sign In
+              </button>
+            </form>
+          ) : (
+            <div className="text-center">
+              <p className="mb-4">
+                Check your email for the password reset link.
+              </p>
+              <button
+                onClick={() => setShowForgotPassword(false)}
+                className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+              >
+                Back to Sign In
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-10">
       <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
@@ -147,12 +248,13 @@ export default function SignInPage() {
               required
             />
             <div className="text-right mt-1">
-              <Link
-                href="/forgot-password"
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
                 Forgot Password?
-              </Link>
+              </button>
             </div>
           </div>
 
@@ -176,19 +278,7 @@ export default function SignInPage() {
           </div>
         </form>
 
-        <div className="mt-6 pt-4 border-t border-gray-200 text-center">
-          <p className="text-sm text-gray-600">
-            By continuing, you agree to our{" "}
-            <Link href="/terms" className="text-blue-600 hover:text-blue-800">
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="text-blue-600 hover:text-blue-800">
-              Privacy Policy
-            </Link>
-            .
-          </p>
-        </div>
+        {/* REMOVED: Terms and Privacy Policy section */}
       </div>
     </div>
   );
