@@ -1,4 +1,4 @@
-// src/app/articles/[slug]/page.tsx - UPDATED WITH NEW LAYOUT
+// src/app/articles/[slug]/page.tsx - USING THEME CONTEXT
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,6 +7,7 @@ import Link from "next/link";
 import Head from "next/head";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 import FeatureArticleButton from "@/components/FeatureArticleButton";
 import PinButton from "@/components/PinButton";
 import ShareButton from "@/components/ShareButton";
@@ -15,6 +16,7 @@ export default function ArticlePage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [article, setArticle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -169,7 +171,10 @@ export default function ArticlePage() {
     return (
       <div className="container mx-auto py-10 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-4xl font-bold mb-4 dark:text-white">
+          <h1
+            className="text-4xl font-bold mb-4"
+            style={{ color: theme === "dark" ? "white" : "black" }}
+          >
             Article Not Found
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
@@ -189,7 +194,10 @@ export default function ArticlePage() {
     return (
       <div className="container mx-auto py-10 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-4xl font-bold mb-4 dark:text-white">
+          <h1
+            className="text-4xl font-bold mb-4"
+            style={{ color: theme === "dark" ? "white" : "black" }}
+          >
             Article Not Found
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
@@ -213,14 +221,24 @@ export default function ArticlePage() {
 
       <div className="container mx-auto py-10 px-4">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-4xl font-bold mb-4 dark:text-white">
+          {/* FIXED: Article Title using ThemeContext */}
+          <h1
+            className="text-4xl font-bold mb-4"
+            style={{ color: theme === "dark" ? "white" : "black" }}
+          >
             {article.title}
           </h1>
-
-          {/* Cover Image - THEME-AWARE SIDE BARS */}
+          // In src/app/articles/[slug]/page.tsx // Find the Cover Image section
+          (around line 190-210) and replace it with this:
+          {/* Cover Image - FIXED THEME-AWARE SIDEBARS */}
           {article.image_url && (
             <div className="mb-8">
-              <div className="relative w-full max-h-96 overflow-hidden rounded-lg bg-white dark:bg-gray-900">
+              <div
+                className="relative w-full max-h-96 overflow-hidden rounded-lg"
+                style={{
+                  backgroundColor: theme === "dark" ? "#000000" : "#ffffff", // Pure black : Pure white
+                }}
+              >
                 <img
                   src={article.image_url}
                   alt={article.title}
@@ -246,9 +264,12 @@ export default function ArticlePage() {
               </div>
             </div>
           )}
-          {/* Article content - with whitespace preserved */}
+          {/* FIXED: Article content using ThemeContext */}
           <div className="prose dark:prose-invert max-w-none mb-8">
-            <div className="whitespace-pre-line dark:text-gray-300">
+            <div
+              className="whitespace-pre-line leading-relaxed text-base"
+              style={{ color: theme === "dark" ? "white" : "black" }}
+            >
               {article.content}
             </div>
           </div>
