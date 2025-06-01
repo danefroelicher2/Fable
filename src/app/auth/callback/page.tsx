@@ -4,10 +4,12 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function AuthCallback() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,7 +96,10 @@ export default function AuthCallback() {
     <div className="container mx-auto py-10">
       <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-        <p className="mt-4">
+        <p
+          className="mt-4"
+          style={{ color: theme === "dark" ? "black" : "black" }}
+        >
           {loading ? "Processing authentication..." : "Redirecting..."}
         </p>
       </div>

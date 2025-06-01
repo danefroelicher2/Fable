@@ -4,10 +4,12 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { theme } = useTheme();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -222,7 +224,10 @@ export default function ResetPasswordPage() {
     return (
       <div className="container mx-auto py-10">
         <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
-          <h1 className="text-3xl font-bold text-center mb-6">
+          <h1
+            className="text-3xl font-bold text-center mb-6"
+            style={{ color: theme === "dark" ? "black" : "black" }}
+          >
             Reset Password
           </h1>
 
@@ -246,7 +251,10 @@ export default function ResetPasswordPage() {
   return (
     <div className="container mx-auto py-10">
       <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-3xl font-bold text-center mb-6">
+        <h1
+          className="text-3xl font-bold text-center mb-6"
+          style={{ color: theme === "dark" ? "black" : "black" }}
+        >
           Set New Password
         </h1>
 

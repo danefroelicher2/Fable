@@ -6,10 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getStoredAccounts } from "@/lib/accountManager";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function SignInPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { theme } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -147,7 +149,15 @@ export default function SignInPage() {
     return (
       <div className="container mx-auto py-10">
         <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
-          <h1 className="text-3xl font-bold text-center mb-6">
+          <h1
+            className="font-bold text-center mb-6 text-black dark:text-black"
+            style={{
+              color: "#000000",
+              fontSize: "1.875rem",
+              lineHeight: "2.25rem",
+              WebkitTextFillColor: "#000000",
+            }}
+          >
             Reset Password
           </h1>
 
@@ -195,7 +205,13 @@ export default function SignInPage() {
             </form>
           ) : (
             <div className="text-center">
-              <p className="mb-4">
+              <p
+                className="mb-4 text-black dark:text-black"
+                style={{
+                  color: "#000000",
+                  WebkitTextFillColor: "#000000",
+                }}
+              >
                 Check your email for the password reset link.
               </p>
               <button

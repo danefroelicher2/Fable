@@ -1,4 +1,4 @@
-// src/app/communities/posts/[postId]/page.tsx
+// src/app/communities/posts/[postId]/page.tsx - FIXED VERSION
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,6 +7,8 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import BookmarkButton from "@/components/BookmarkButton";
+import LikeButton from "@/components/LikeButton";
+import CommunityCommentSection from "@/components/CommunityCommentSection";
 
 interface Post {
   id: string;
@@ -27,31 +29,15 @@ interface Post {
   };
 }
 
-interface Comment {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-  post_id: string;
-  parent_id: string | null;
-  user?: {
-    username: string | null;
-    full_name: string | null;
-    avatar_url: string | null;
-  };
-}
-
 export default function CommunityPostPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
   const [post, setPost] = useState<Post | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [commentText, setCommentText] = useState("");
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMember, setIsMember] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
 
   const communityId = Array.isArray(params?.communityId)
     ? params.communityId[0]
@@ -67,12 +53,32 @@ export default function CommunityPostPage() {
     }
   }, [communityId, postId, user]);
 
+  // Fetch like count for community posts
+  async function fetchPostLikeCount(postId: string) {
+    try {
+      // Using the same likes table with post_id field
+      const { count, error } = await (supabase as any)
+        .from("likes")
+        .select("id", { count: "exact" })
+        .eq("post_id", postId);
+
+      if (error) {
+        console.warn("Error fetching post like count:", error);
+        setLikeCount(0);
+      } else {
+        setLikeCount(count || 0);
+      }
+    } catch (err) {
+      console.error("Error fetching post like count:", err);
+      setLikeCount(0);
+    }
+  }
+
   async function handleDeletePost() {
     if (!user || !post || user.id !== post.user_id) {
-      return; // Only post authors can delete posts
+      return;
     }
 
-    // Confirm deletion
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this post? This action cannot be undone and will remove all comments."
     );
@@ -93,12 +99,40 @@ export default function CommunityPostPage() {
         throw commentsError;
       }
 
-      // Then, delete the post itself
+      // Delete any likes for this post
+      try {
+        const { error: likesError } = await (supabase as any)
+          .from("likes")
+          .delete()
+          .eq("post_id", postId);
+
+        if (likesError) {
+          console.warn("Error deleting post likes:", likesError);
+        }
+      } catch (likesErr) {
+        console.warn("Error with likes deletion:", likesErr);
+      }
+
+      // Delete any bookmarks for this post
+      try {
+        const { error: bookmarksError } = await (supabase as any)
+          .from("bookmarks")
+          .delete()
+          .eq("post_id", postId);
+
+        if (bookmarksError) {
+          console.warn("Error deleting post bookmarks:", bookmarksError);
+        }
+      } catch (bookmarkErr) {
+        console.warn("Error with bookmarks deletion:", bookmarkErr);
+      }
+
+      // Finally, delete the post itself
       const { error: postError } = await (supabase as any)
         .from("community_posts")
         .delete()
         .eq("id", postId)
-        .eq("user_id", user.id); // Extra safety check
+        .eq("user_id", user.id);
 
       if (postError) {
         console.error("Error deleting post:", postError);
@@ -119,32 +153,59 @@ export default function CommunityPostPage() {
       setLoading(true);
       setError(null);
 
-      // Fetch the post details
-      const { data, error } = await (supabase as any)
+      // Fetch the post details without using join syntax to avoid issues
+      const { data: postData, error: postError } = await (supabase as any)
         .from("community_posts")
-        .select(
-          `
-          *,
-          user:profiles!community_posts_user_id_fkey(username, full_name, avatar_url),
-          community:communities!community_posts_community_id_fkey(name, image_url)
-        `
-        )
+        .select("*")
         .eq("id", postId)
         .eq("community_id", communityId)
         .single();
 
-      if (error) throw error;
+      if (postError) throw postError;
 
-      if (!data) {
+      if (!postData) {
         setError("Post not found");
         setLoading(false);
         return;
       }
 
-      setPost(data);
+      // Fetch user profile separately
+      const { data: userData, error: userError } = await supabase
+        .from("profiles")
+        .select("username, full_name, avatar_url")
+        .eq("id", postData.user_id)
+        .single();
 
-      // Fetch comments for this post
-      fetchComments();
+      if (userError) {
+        console.warn("Error fetching user profile:", userError);
+      }
+
+      // Fetch community data separately
+      const { data: communityData, error: communityError } = await (
+        supabase as any
+      )
+        .from("communities")
+        .select("name, image_url")
+        .eq("id", communityId)
+        .single();
+
+      if (communityError) {
+        console.warn("Error fetching community data:", communityError);
+      }
+
+      // Combine the data
+      const combinedPost = {
+        ...postData,
+        user: userData || null,
+        community: communityData || null,
+      };
+
+      setPost(combinedPost);
+
+      // Fetch like count for this post
+      if (postData.id) {
+        await fetchPostLikeCount(postData.id);
+      }
 
       // Check if current user is a community member
       if (user) {
@@ -164,83 +225,6 @@ export default function CommunityPostPage() {
       setError("Failed to load post. Please try again.");
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function fetchComments() {
-    try {
-      if (!postId) return;
-
-      const { data, error } = await (supabase as any)
-        .from("community_post_comments")
-        .select(
-          `
-          *,
-          user:profiles!community_post_comments_user_id_fkey(username, full_name, avatar_url)
-        `
-        )
-        .eq("post_id", postId)
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-
-      setComments(data || []);
-    } catch (err) {
-      console.error("Error fetching comments:", err);
-    }
-  }
-
-  async function handleSubmitComment(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (!user) {
-      router.push(
-        `/signin?redirect=${encodeURIComponent(window.location.pathname)}`
-      );
-      return;
-    }
-
-    if (!commentText.trim() || !postId) return;
-
-    setSubmitting(true);
-    try {
-      // Insert the comment
-      const { data, error } = await (supabase as any)
-        .from("community_post_comments")
-        .insert({
-          content: commentText.trim(),
-          post_id: postId,
-          user_id: user.id,
-        })
-        .select();
-
-      if (error) throw error;
-
-      // Then get the complete data with profiles joined
-      const { data: commentWithProfile, error: fetchError } = await (
-        supabase as any
-      )
-        .from("community_post_comments")
-        .select(
-          `
-          *,
-          user:profiles!community_post_comments_user_id_fkey(username, full_name, avatar_url)
-        `
-        )
-        .eq("id", data[0].id)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Add the new comment to the list
-      setComments((prev) => [...prev, commentWithProfile]);
-
-      // Clear the comment form
-      setCommentText("");
-    } catch (error: any) {
-      console.error("Error submitting comment:", error.message || error);
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -351,7 +335,7 @@ export default function CommunityPostPage() {
               </Link>
             </div>
 
-            {/* FIXED: Delete button section - only show for post author */}
+            {/* Delete button section - only show for post author */}
             {user && post.user_id === user.id && (
               <div className="mt-4 mb-6 flex justify-end">
                 <button
@@ -371,10 +355,21 @@ export default function CommunityPostPage() {
               </p>
             </div>
 
-            {/* FIXED: Post actions with bookmark button */}
+            {/* Like Button Integration for Community Posts */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
+              <div className="flex justify-center">
+                <LikeButton
+                  postId={post.id}
+                  initialLikeCount={likeCount}
+                  className="text-lg"
+                />
+              </div>
+            </div>
+
+            {/* Post actions with bookmark button */}
             <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-4">
-                {/* Bookmark Button - CRITICAL FIX: Added preventNavigation prop */}
+                {/* Bookmark Button */}
                 <BookmarkButton
                   postId={post.id}
                   size="md"
@@ -385,120 +380,20 @@ export default function CommunityPostPage() {
               </div>
 
               <div className="text-sm text-gray-500 dark:text-gray-400">
-                {comments.length}{" "}
-                {comments.length === 1 ? "comment" : "comments"}
+                {likeCount} {likeCount === 1 ? "like" : "likes"}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Comments Section */}
+        {/* Comment Section for Community Posts */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6 dark:bg-gray-800">
           <div className="p-6">
-            <h2 className="text-xl font-bold mb-6 dark:text-white">
-              Comments ({comments.length})
-            </h2>
-
-            {isMember ? (
-              <form onSubmit={handleSubmitComment} className="mb-8">
-                <div className="flex items-start">
-                  <div className="mr-3 flex-shrink-0">
-                    <div className="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-400 overflow-hidden">
-                      {user?.email?.charAt(0).toUpperCase() || "U"}
-                    </div>
-                  </div>
-                  <div className="flex-grow">
-                    <textarea
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      placeholder="Add a comment..."
-                      rows={3}
-                      required
-                    />
-                    <div className="mt-2 flex justify-end">
-                      <button
-                        type="submit"
-                        disabled={submitting}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800"
-                      >
-                        {submitting ? "Posting..." : "Post Comment"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </form>
-            ) : (
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-8 text-center">
-                <p className="text-gray-700 dark:text-gray-300 mb-2">
-                  Join this community to comment on posts
-                </p>
-                <Link
-                  href={`/communities/${communityId}`}
-                  className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
-                >
-                  Join Community
-                </Link>
-              </div>
-            )}
-
-            {comments.length === 0 ? (
-              <div className="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <p className="text-gray-600 dark:text-gray-300">
-                  No comments yet. Be the first to comment!
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {comments.map((comment) => (
-                  <div
-                    key={comment.id}
-                    className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4"
-                  >
-                    <div className="flex">
-                      <div className="mr-3 flex-shrink-0">
-                        <Link href={`/user/${comment.user_id}`}>
-                          <div className="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-400 overflow-hidden">
-                            {comment.user?.avatar_url ? (
-                              <img
-                                src={comment.user.avatar_url}
-                                alt={comment.user.username || "User"}
-                                className="h-8 w-8 rounded-full object-cover"
-                              />
-                            ) : (
-                              (
-                                comment.user?.username ||
-                                comment.user?.full_name ||
-                                "U"
-                              )
-                                .charAt(0)
-                                .toUpperCase()
-                            )}
-                          </div>
-                        </Link>
-                      </div>
-                      <div className="flex-grow">
-                        <div className="flex items-center mb-1">
-                          <Link href={`/user/${comment.user_id}`}>
-                            <span className="font-medium mr-2 text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
-                              {comment.user?.full_name ||
-                                comment.user?.username ||
-                                "Anonymous"}
-                            </span>
-                          </Link>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatDate(comment.created_at)}
-                          </span>
-                        </div>
-                        <p className="text-gray-700 dark:text-gray-300">
-                          {comment.content}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <CommunityCommentSection
+              postId={post.id}
+              communityId={communityId || ""}
+              isMember={isMember}
+            />
           </div>
         </div>
       </div>

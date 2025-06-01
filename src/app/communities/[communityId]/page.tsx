@@ -1,4 +1,4 @@
-// src/app/communities/[communityId]/page.tsx
+// src/app/communities/[communityId]/page.tsx - UPDATED WITH INLINE LIKE/COMMENT
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -9,6 +9,8 @@ import { useAuth } from "@/context/AuthContext";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import BookmarkButton from "@/components/BookmarkButton";
 import ShareButton from "@/components/ShareButton";
+import LikeButton from "@/components/LikeButton";
+import PostComments from "@/components/PostComments";
 
 interface Community {
   id: string;
@@ -41,6 +43,8 @@ interface CommunityPost {
     full_name: string | null;
     avatar_url: string | null;
   } | null;
+  like_count?: number;
+  comment_count?: number;
 }
 
 interface CommunityMember {
@@ -53,6 +57,126 @@ interface CommunityMember {
     full_name: string | null;
     avatar_url: string | null;
   } | null;
+}
+
+// 🔥 NEW: Quick Comment Component for inline commenting
+interface QuickCommentProps {
+  postId: string;
+  isVisible: boolean;
+  onClose: () => void;
+  onCommentAdded: () => void;
+}
+
+function QuickComment({
+  postId,
+  isVisible,
+  onClose,
+  onCommentAdded,
+}: QuickCommentProps) {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [commentText, setCommentText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  if (!isVisible) return null;
+
+  async function handleSubmitComment(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!user) {
+      router.push(
+        "/signin?redirect=" + encodeURIComponent(window.location.pathname)
+      );
+      return;
+    }
+
+    if (!commentText.trim()) return;
+
+    setSubmitting(true);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("community_post_comments")
+        .insert({
+          post_id: postId,
+          user_id: user.id,
+          content: commentText.trim(),
+          parent_id: null,
+        })
+        .select();
+
+      if (error) throw error;
+
+      // Create notification for post owner
+      try {
+        const { data: postData, error: postError } = await (supabase as any)
+          .from("community_posts")
+          .select("user_id")
+          .eq("id", postId)
+          .single();
+
+        if (!postError && postData && postData.user_id !== user.id) {
+          await (supabase as any).from("notifications").insert({
+            user_id: postData.user_id,
+            action_type: "comment",
+            action_user_id: user.id,
+            post_id: postId,
+            comment_id: data[0].id,
+            created_at: new Date().toISOString(),
+            is_read: false,
+          });
+        }
+      } catch (notifyError) {
+        console.error("Error with notification:", notifyError);
+      }
+
+      setCommentText("");
+      onCommentAdded();
+      onClose();
+    } catch (error: any) {
+      console.error("Error submitting comment:", error);
+      alert("Failed to post comment. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 border-t border-gray-200 dark:border-gray-700 pt-3">
+      <form onSubmit={handleSubmitComment}>
+        <div className="flex items-start space-x-3">
+          <div className="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-400 overflow-hidden flex-shrink-0">
+            {user?.email?.charAt(0).toUpperCase() || "U"}
+          </div>
+          <div className="flex-1">
+            <textarea
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none"
+              placeholder="Add a comment..."
+              rows={2}
+              required
+            />
+            <div className="mt-2 flex justify-between">
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting || !commentText.trim()}
+                className="bg-blue-600 text-white text-sm px-3 py-1 rounded hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800"
+              >
+                {submitting ? "Posting..." : "Comment"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  );
 }
 
 export default function CommunityDetailPage() {
@@ -68,6 +192,11 @@ export default function CommunityDetailPage() {
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
   const [communityBanner, setCommunityBanner] = useState<string | null>(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
+
+  // 🔥 NEW: State for inline commenting
+  const [activeCommentPost, setActiveCommentPost] = useState<string | null>(
+    null
+  );
 
   // State for community editing
   const [isEditingDescription, setIsEditingDescription] = useState(false);
@@ -101,13 +230,39 @@ export default function CommunityDetailPage() {
   }, [communityId, user]);
 
   useEffect(() => {
-    // When tab changes, fetch the relevant data
     if (communityId && activeTab === "posts") {
       fetchCommunityPosts();
     } else if (communityId && activeTab === "members") {
       fetchCommunityMembers();
     }
   }, [activeTab, communityId]);
+
+  // 🔥 NEW: Function to fetch post stats (likes and comments)
+  async function fetchPostStats(postId: string) {
+    try {
+      // Get like count
+      const { count: likeCount, error: likeError } = await (supabase as any)
+        .from("likes")
+        .select("id", { count: "exact" })
+        .eq("post_id", postId);
+
+      // Get comment count
+      const { count: commentCount, error: commentError } = await (
+        supabase as any
+      )
+        .from("community_post_comments")
+        .select("id", { count: "exact" })
+        .eq("post_id", postId);
+
+      return {
+        like_count: likeError ? 0 : likeCount || 0,
+        comment_count: commentError ? 0 : commentCount || 0,
+      };
+    } catch (err) {
+      console.error("Error fetching post stats:", err);
+      return { like_count: 0, comment_count: 0 };
+    }
+  }
 
   async function fetchCommunityData() {
     try {
@@ -120,7 +275,7 @@ export default function CommunityDetailPage() {
         return;
       }
 
-      // Fetch the community details without using the join syntax
+      // Fetch the community details
       const { data: communityData, error: communityError } = await (
         supabase as any
       )
@@ -140,7 +295,6 @@ export default function CommunityDetailPage() {
         return;
       }
 
-      // Set banner URL state
       setCommunityBanner(communityData.banner_url);
 
       // Fetch the creator's profile separately
@@ -196,7 +350,6 @@ export default function CommunityDetailPage() {
         }
       }
 
-      // Set the community data with the additional information
       const updatedCommunity = {
         ...communityData,
         creator: creatorData || null,
@@ -210,13 +363,10 @@ export default function CommunityDetailPage() {
       setDescriptionText(communityData.description || "");
       setDescriptionCharCount(communityData.description?.length || 0);
       setCommunityName(communityData.name || "");
-
-      // Set banner and image URLs
       setCommunityBanner(communityData.banner_url);
       setUploadedBannerUrl(communityData.banner_url);
       setUploadedImageUrl(communityData.image_url);
 
-      // Fetch initial posts
       await fetchCommunityPosts();
     } catch (err) {
       console.error("Error fetching community data:", err);
@@ -230,7 +380,7 @@ export default function CommunityDetailPage() {
     try {
       if (!communityId) return;
 
-      // Fetch posts without using the join syntax
+      // Fetch posts
       const { data: postsData, error: postsError } = await (supabase as any)
         .from("community_posts")
         .select("*")
@@ -242,10 +392,11 @@ export default function CommunityDetailPage() {
         throw postsError;
       }
 
-      // Fetch user profiles for each post separately
-      const postsWithUsers = await Promise.all(
+      // 🔥 UPDATED: Fetch user profiles and post stats for each post
+      const postsWithData = await Promise.all(
         (postsData || []).map(async (post: any) => {
           try {
+            // Fetch user profile
             const { data: userData, error: userError } = await supabase
               .from("profiles")
               .select("username, full_name, avatar_url")
@@ -257,30 +408,32 @@ export default function CommunityDetailPage() {
                 `Error fetching user for post ${post.id}:`,
                 userError
               );
-              return {
-                ...post,
-                user: null,
-              };
             }
+
+            // Fetch post stats (likes and comments)
+            const stats = await fetchPostStats(post.id);
 
             return {
               ...post,
-              user: userData,
+              user: userData || null,
+              like_count: stats.like_count,
+              comment_count: stats.comment_count,
             };
           } catch (err) {
             console.error(`Error processing post ${post.id}:`, err);
             return {
               ...post,
               user: null,
+              like_count: 0,
+              comment_count: 0,
             };
           }
         })
       );
 
-      setPosts(postsWithUsers);
+      setPosts(postsWithData);
     } catch (err) {
       console.error("Error fetching community posts:", err);
-      // Not setting global error since it shouldn't prevent viewing the community
     }
   }
 
@@ -288,7 +441,6 @@ export default function CommunityDetailPage() {
     try {
       if (!communityId) return;
 
-      // Fetch community members without using the join syntax
       const { data: membersData, error: membersError } = await (supabase as any)
         .from("community_members")
         .select("id, user_id, is_admin, joined_at")
@@ -300,7 +452,6 @@ export default function CommunityDetailPage() {
         throw membersError;
       }
 
-      // Fetch user profiles for each member separately
       const membersWithProfiles = await Promise.all(
         (membersData || []).map(async (member: any) => {
           try {
@@ -341,6 +492,29 @@ export default function CommunityDetailPage() {
     }
   }
 
+  // 🔥 NEW: Handle comment refresh after adding a comment
+  async function handleCommentAdded() {
+    // Refresh posts to update comment counts
+    await fetchCommunityPosts();
+  }
+
+  // 🔥 NEW: Toggle quick comment
+  function toggleQuickComment(postId: string) {
+    if (!user) {
+      router.push(
+        "/signin?redirect=" + encodeURIComponent(window.location.pathname)
+      );
+      return;
+    }
+
+    if (!community?.is_member) {
+      alert("You must be a member of this community to comment.");
+      return;
+    }
+
+    setActiveCommentPost(activeCommentPost === postId ? null : postId);
+  }
+
   // Function to update community
   async function updateCommunity() {
     if (!community || !user || user.id !== community.creator_id) return;
@@ -350,7 +524,6 @@ export default function CommunityDetailPage() {
 
       const updates: any = {};
 
-      // Only include fields that have changed
       if (communityName !== community.name) {
         updates.name = communityName;
       }
@@ -367,7 +540,6 @@ export default function CommunityDetailPage() {
         updates.image_url = uploadedImageUrl;
       }
 
-      // Only update if there are changes
       if (Object.keys(updates).length > 0) {
         updates.updated_at = new Date().toISOString();
 
@@ -375,11 +547,10 @@ export default function CommunityDetailPage() {
           .from("communities")
           .update(updates)
           .eq("id", community.id)
-          .eq("creator_id", user.id); // Extra safety check
+          .eq("creator_id", user.id);
 
         if (error) throw error;
 
-        // Update local state
         setCommunity({
           ...community,
           ...updates,
@@ -402,28 +573,20 @@ export default function CommunityDetailPage() {
     if (!file || !user || !community) return;
 
     try {
-      // Check file size - data URLs can be large
       const fileSizeMB = file.size / (1024 * 1024);
       if (fileSizeMB > 1) {
-        // Limit to 1MB for data URLs
         throw new Error("File size exceeds 1MB limit for data URL storage");
       }
 
-      // Convert file to data URL
       const reader = new FileReader();
-
-      // Create a promise to handle the FileReader
       const dataUrlPromise = new Promise<string>((resolve, reject) => {
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = () => reject(new Error("Failed to read file"));
       });
 
       reader.readAsDataURL(file);
-
-      // Wait for data URL
       const dataUrl = await dataUrlPromise;
 
-      // Set the data URL as the banner
       setUploadedBannerUrl(dataUrl);
       setCommunityBanner(dataUrl);
 
@@ -449,7 +612,6 @@ export default function CommunityDetailPage() {
     if (!communityId) return;
 
     try {
-      // Add user to community members
       const { error } = await (supabase as any)
         .from("community_members")
         .insert({
@@ -461,7 +623,6 @@ export default function CommunityDetailPage() {
 
       if (error) throw error;
 
-      // Update local state
       setCommunity((prev) => {
         if (!prev) return null;
         return {
@@ -480,7 +641,6 @@ export default function CommunityDetailPage() {
     if (!user || !communityId) return;
 
     try {
-      // Remove user from community members
       const { error } = await (supabase as any)
         .from("community_members")
         .delete()
@@ -489,7 +649,6 @@ export default function CommunityDetailPage() {
 
       if (error) throw error;
 
-      // Update local state
       setCommunity((prev) => {
         if (!prev) return null;
         return {
@@ -505,32 +664,27 @@ export default function CommunityDetailPage() {
     }
   }
 
-  // Handle post deletion from the community page
   function handleDeletePost(
     postId: string,
     userId: string,
     event: React.MouseEvent
   ) {
-    // Stop propagation to prevent navigating to the post page
     event.stopPropagation();
 
     if (!user || user.id !== userId) {
-      return; // Only post authors can delete posts
+      return;
     }
 
-    // Show the delete confirmation modal
     setPostToDelete({ id: postId, userId });
     setShowDeleteModal(true);
   }
 
-  // Function to execute the actual post deletion
   async function executePostDeletion() {
     if (!postToDelete) return;
 
     const { id: postId, userId } = postToDelete;
 
     try {
-      // First, delete all comments on this post
       const { error: commentsError } = await (supabase as any)
         .from("community_post_comments")
         .delete()
@@ -541,7 +695,6 @@ export default function CommunityDetailPage() {
         throw commentsError;
       }
 
-      // Delete any bookmarks for this post
       try {
         const { error: bookmarksError } = await (supabase as any)
           .from("bookmarks")
@@ -550,29 +703,23 @@ export default function CommunityDetailPage() {
 
         if (bookmarksError) {
           console.error("Error deleting post bookmarks:", bookmarksError);
-          // Continue even if bookmarks deletion fails
         }
       } catch (bookmarkErr) {
         console.error("Error with bookmarks deletion:", bookmarkErr);
-        // Continue with post deletion even if bookmarks deletion fails
       }
 
-      // Then, delete the post itself
       const { error: postError } = await (supabase as any)
         .from("community_posts")
         .delete()
         .eq("id", postId)
-        .eq("user_id", userId); // Extra safety check
+        .eq("user_id", userId);
 
       if (postError) {
         console.error("Error deleting post:", postError);
         throw postError;
       }
 
-      // Update the posts list by filtering out the deleted post
       setPosts(posts.filter((post) => post.id !== postId));
-
-      // Reset the state
       setPostToDelete(null);
       setShowDeleteModal(false);
     } catch (err) {
@@ -582,24 +729,18 @@ export default function CommunityDetailPage() {
     }
   }
 
-  // Handle community deletion
   function handleDeleteCommunity() {
-    // Security check - only community creator can delete
     if (!user || !community || user.id !== community.creator_id) {
       return;
     }
-
-    // Show the delete community confirmation modal
     setShowDeleteCommunityModal(true);
   }
 
-  // Function to execute the actual community deletion
   async function executeCommunityDeletion() {
     try {
       setLoading(true);
       setShowDeleteCommunityModal(false);
 
-      // Safety check to ensure user exists
       if (!user || !communityId) {
         console.error("User or community ID is null");
         setLoading(false);
@@ -608,7 +749,6 @@ export default function CommunityDetailPage() {
 
       console.log("Starting community deletion process for:", communityId);
 
-      // 1. First, get all post IDs in this community
       const { data: postsData, error: postsQueryError } = await (
         supabase as any
       )
@@ -623,11 +763,9 @@ export default function CommunityDetailPage() {
 
       console.log(`Found ${postsData?.length || 0} posts to delete`);
 
-      // If there are posts, delete their comments first
       if (postsData && postsData.length > 0) {
         const postIds = postsData.map((post: any) => post.id);
 
-        // 2. Delete all bookmarks for these posts
         try {
           console.log("Deleting bookmarks for posts...");
           const { error: bookmarksError } = await (supabase as any)
@@ -637,14 +775,11 @@ export default function CommunityDetailPage() {
 
           if (bookmarksError) {
             console.warn("Error deleting post bookmarks:", bookmarksError);
-            // Continue even if bookmark deletion fails
           }
         } catch (err) {
           console.warn("Error with bookmark deletion:", err);
-          // Continue with deletion even if bookmarks deletion fails
         }
 
-        // 3. Delete all comments on these posts
         console.log("Deleting comments for posts...");
         const { error: commentsError } = await (supabase as any)
           .from("community_post_comments")
@@ -657,7 +792,6 @@ export default function CommunityDetailPage() {
         }
       }
 
-      // 4. Now delete all community posts
       console.log("Deleting all community posts...");
       const { error: postsError } = await (supabase as any)
         .from("community_posts")
@@ -669,7 +803,6 @@ export default function CommunityDetailPage() {
         throw postsError;
       }
 
-      // 5. Delete all community members
       console.log("Deleting community members...");
       const { error: membersError } = await (supabase as any)
         .from("community_members")
@@ -681,13 +814,12 @@ export default function CommunityDetailPage() {
         throw membersError;
       }
 
-      // 6. Finally, delete the community itself
       console.log("Deleting the community...");
       const { error: communityError } = await (supabase as any)
         .from("communities")
         .delete()
         .eq("id", communityId)
-        .eq("creator_id", user.id); // Additional security check
+        .eq("creator_id", user.id);
 
       if (communityError) {
         console.error("Error deleting community:", communityError);
@@ -695,7 +827,6 @@ export default function CommunityDetailPage() {
       }
 
       console.log("Community deletion successful!");
-      // Redirect to communities page
       router.push("/communities");
     } catch (err) {
       console.error("Error deleting community:", err);
@@ -704,7 +835,6 @@ export default function CommunityDetailPage() {
     }
   }
 
-  // Format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
@@ -713,13 +843,11 @@ export default function CommunityDetailPage() {
     });
   };
 
-  // Format content preview
   const formatPreview = (content: string, maxLength: number = 150) => {
     if (content.length <= maxLength) return content;
     return content.substring(0, maxLength) + "...";
   };
 
-  // Format description with character limit
   const formatDescription = (description: string, maxLength: number = 500) => {
     if (description.length <= maxLength || showFullDescription)
       return description;
@@ -732,7 +860,6 @@ export default function CommunityDetailPage() {
       <div className="container mx-auto py-6 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="animate-pulse">
-            {/* Reduced banner height in loading state */}
             <div className="h-60 bg-gray-300 rounded-lg mb-4 dark:bg-gray-700"></div>
             <div className="h-8 bg-gray-300 rounded w-1/2 mb-2 dark:bg-gray-700"></div>
             <div className="h-4 bg-gray-200 rounded w-1/4 mb-2 dark:bg-gray-700"></div>
@@ -768,7 +895,7 @@ export default function CommunityDetailPage() {
   return (
     <div className="container mx-auto py-6 px-4 relative">
       <div className="max-w-6xl mx-auto">
-        {/* Back button - positioned on the far left */}
+        {/* Back button */}
         <div className="absolute left-4 top-6 z-10">
           <Link
             href="/communities"
@@ -790,9 +917,8 @@ export default function CommunityDetailPage() {
           </Link>
         </div>
 
-        {/* Community Header - REDUCED HEIGHT */}
+        {/* Community Header */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4 dark:bg-gray-800">
-          {/* Banner Image  */}
           <div
             className={
               communityBanner
@@ -814,7 +940,7 @@ export default function CommunityDetailPage() {
               </div>
             )}
 
-            {/* Banner edit overlay - IMPROVED WITH DESCRIPTIVE MESSAGE */}
+            {/* Banner edit overlay */}
             {isEditingCommunity && user && community.creator_id === user.id && (
               <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                 <label className="cursor-pointer bg-white text-gray-800 px-4 py-2 rounded-md hover:bg-gray-100 flex items-center gap-2">
@@ -844,10 +970,9 @@ export default function CommunityDetailPage() {
             )}
           </div>
 
-          {/* Content with reduced padding and spacing */}
+          {/* Content */}
           <div className="p-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-              {/* Title moved to the left */}
               <div>
                 {isEditingCommunity &&
                 user &&
@@ -868,7 +993,6 @@ export default function CommunityDetailPage() {
               </div>
 
               <div className="flex flex-col space-y-1 mt-2 md:mt-0">
-                {/* Only show Edit Community for creators */}
                 {user && community.creator_id === user.id ? (
                   <>
                     {!isEditingCommunity ? (
@@ -888,7 +1012,6 @@ export default function CommunityDetailPage() {
                       </button>
                     )}
 
-                    {/* DELETE COMMUNITY BUTTON - Only visible to creator */}
                     <button
                       onClick={handleDeleteCommunity}
                       className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition w-full"
@@ -897,8 +1020,7 @@ export default function CommunityDetailPage() {
                       {loading ? "Processing..." : "Delete Community"}
                     </button>
                   </>
-                ) : /* Show Leave/Join button for non-creators */
-                community.is_member ? (
+                ) : community.is_member ? (
                   <button
                     onClick={handleLeaveCommunity}
                     className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 px-4 py-2 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition"
@@ -916,7 +1038,7 @@ export default function CommunityDetailPage() {
               </div>
             </div>
 
-            {/* Community stats - cleaned up and made more prominent */}
+            {/* Community stats */}
             <div className="flex items-center space-x-6 mt-4 text-sm font-medium">
               <div className="bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-1">
                 {community.member_count} members
@@ -1032,11 +1154,10 @@ export default function CommunityDetailPage() {
           </div>
         </div>
 
-        {/* UPDATED: Enhanced Tabs Section with Create Post as Right Tab */}
+        {/* Enhanced Tabs Section */}
         <div className="bg-white rounded-lg shadow-md mb-6 dark:bg-gray-800">
           <div className="border-b border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center px-6 py-4">
-              {/* Left Side - Main Navigation Tabs */}
               <div className="flex space-x-8">
                 <button
                   onClick={() => setActiveTab("posts")}
@@ -1047,7 +1168,6 @@ export default function CommunityDetailPage() {
                   }`}
                 >
                   Posts
-                  {/* Active indicator */}
                   {activeTab === "posts" && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
                   )}
@@ -1062,14 +1182,12 @@ export default function CommunityDetailPage() {
                   }`}
                 >
                   Members
-                  {/* Active indicator */}
                   {activeTab === "members" && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
                   )}
                 </button>
               </div>
 
-              {/* Right Side - Create Post Button (only show if user is a member) */}
               {community.is_member && (
                 <button
                   onClick={() =>
@@ -1097,7 +1215,7 @@ export default function CommunityDetailPage() {
             </div>
           </div>
 
-          {/* Tab Content - FIXED: Single members tab with deduplication and sorting */}
+          {/* 🔥 UPDATED: Tab Content with Inline Like and Comment */}
           <div className="p-6">
             {activeTab === "posts" && (
               <div>
@@ -1160,7 +1278,6 @@ export default function CommunityDetailPage() {
                               {displayContent}
                             </p>
 
-                            {/* Read More/Less Button */}
                             {needsTruncation && (
                               <button
                                 onClick={(e) => toggleExpanded(post.id, e)}
@@ -1171,79 +1288,144 @@ export default function CommunityDetailPage() {
                             )}
                           </div>
 
-                          {/* Bottom row with user info on left and actions on right */}
-                          <div className="flex justify-between items-center">
-                            {/* Left: User info with proper alignment */}
-                            <div className="flex items-center text-sm">
-                              <Link
-                                href={`/user/${post.user_id}`}
-                                className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <div className="h-6 w-6 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 mr-3 overflow-hidden">
-                                  {post.user?.avatar_url ? (
-                                    <img
-                                      src={post.user.avatar_url}
-                                      alt={post.user.username || "User"}
-                                      className="h-full w-full object-cover"
-                                    />
-                                  ) : (
-                                    <span className="text-xs">
-                                      {(
-                                        post.user?.username ||
-                                        post.user?.full_name ||
-                                        "U"
-                                      )
-                                        .charAt(0)
-                                        .toUpperCase()}
-                                    </span>
-                                  )}
-                                </div>
-
-                                {/* User name and date grouped together */}
-                                <div className="flex flex-col">
-                                  <span className="text-gray-700 dark:text-gray-300 font-medium">
-                                    {post.user?.full_name ||
+                          {/* User info and date */}
+                          <div className="flex items-center text-sm mb-4">
+                            <Link
+                              href={`/user/${post.user_id}`}
+                              className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="h-6 w-6 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 mr-3 overflow-hidden">
+                                {post.user?.avatar_url ? (
+                                  <img
+                                    src={post.user.avatar_url}
+                                    alt={post.user.username || "User"}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <span className="text-xs">
+                                    {(
                                       post.user?.username ||
-                                      "Anonymous"}
+                                      post.user?.full_name ||
+                                      "U"
+                                    )
+                                      .charAt(0)
+                                      .toUpperCase()}
                                   </span>
-                                  <span className="text-gray-500 dark:text-gray-400 text-xs">
-                                    {formatDate(post.created_at)}
-                                  </span>
-                                </div>
-                              </Link>
-                            </div>
+                                )}
+                              </div>
 
-                            {/* Right: Action buttons with improved visibility */}
-                            <div className="flex items-center space-x-3">
-                              {/* Share Button with better visibility */}
-                              <div onClick={(e) => e.stopPropagation()}>
-                                <div className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                              <div className="flex flex-col">
+                                <span className="text-gray-700 dark:text-gray-300 font-medium">
+                                  {post.user?.full_name ||
+                                    post.user?.username ||
+                                    "Anonymous"}
+                                </span>
+                                <span className="text-gray-500 dark:text-gray-400 text-xs">
+                                  {formatDate(post.created_at)}
+                                </span>
+                              </div>
+                            </Link>
+                          </div>
+
+                          {/* Action Bar with Like and Comment */}
+                          <div className="border-t border-gray-200 dark:border-gray-600 pt-3">
+                            <div className="flex items-center justify-between">
+                              {/* Left side: Like and Comment buttons */}
+                              <div className="flex items-center space-x-4">
+                                {/* Like Button */}
+                                <div onClick={(e) => e.stopPropagation()}>
+                                  <LikeButton
+                                    postId={post.id}
+                                    initialLikeCount={post.like_count || 0}
+                                    className="text-sm"
+                                  />
+                                </div>
+
+                                {/* Comment Button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleQuickComment(post.id);
+                                  }}
+                                  className="flex items-center space-x-1 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-5 w-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                                    />
+                                  </svg>
+                                  <span>Comment</span>
+                                </button>
+                              </div>
+
+                              {/* Right side: Other actions */}
+                              <div className="flex items-center space-x-3">
+                                {/* Share Button */}
+                                <div onClick={(e) => e.stopPropagation()}>
                                   <ShareButton
                                     postId={post.id}
                                     title={post.title}
                                     size="sm"
                                   />
                                 </div>
-                              </div>
 
-                              {/* Bookmark Button with better visibility */}
-                              <div className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                <BookmarkButton postId={post.id} />
-                              </div>
+                                {/* Bookmark Button */}
+                                <div className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                  <BookmarkButton postId={post.id} />
+                                </div>
 
-                              {/* Delete Button (Only visible to post author) */}
-                              {user && user.id === post.user_id && (
-                                <button
-                                  onClick={(e) =>
-                                    handleDeletePost(post.id, post.user_id, e)
-                                  }
-                                  className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium"
-                                >
-                                  Delete
-                                </button>
-                              )}
+                                {/* Delete Button (Only visible to post author) */}
+                                {user && user.id === post.user_id && (
+                                  <button
+                                    onClick={(e) =>
+                                      handleDeletePost(post.id, post.user_id, e)
+                                    }
+                                    className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium"
+                                  >
+                                    Delete
+                                  </button>
+                                )}
+                              </div>
                             </div>
+
+                            {/* Quick Comment Section */}
+                            <QuickComment
+                              postId={post.id}
+                              isVisible={activeCommentPost === post.id}
+                              onClose={() => setActiveCommentPost(null)}
+                              onCommentAdded={handleCommentAdded}
+                            />
+
+                            {/* NEW: Comments Display Section */}
+                            <PostComments
+                              postId={post.id}
+                              isExpanded={expandedPosts.has(
+                                `comments-${post.id}`
+                              )}
+                              onToggle={() => {
+                                setExpandedPosts((prev) => {
+                                  const newSet = new Set(prev);
+                                  const key = `comments-${post.id}`;
+                                  if (newSet.has(key)) {
+                                    newSet.delete(key);
+                                  } else {
+                                    newSet.add(key);
+                                  }
+                                  return newSet;
+                                });
+                              }}
+                              commentCount={post.comment_count || 0}
+                            />
                           </div>
                         </div>
                       );
@@ -1253,14 +1435,12 @@ export default function CommunityDetailPage() {
               </div>
             )}
 
-            {/* FIXED: Single Members Tab with Proper Deduplication and Admin Priority */}
+            {/* Members Tab (unchanged) */}
             {activeTab === "members" && (
               <div>
                 {(() => {
-                  // Process members: deduplicate by user_id and sort with admins first
                   const uniqueMembers = members.reduce(
                     (acc: CommunityMember[], member: CommunityMember) => {
-                      // Only add if we haven't seen this user_id before
                       const existingMember = acc.find(
                         (m: CommunityMember) => m.user_id === member.user_id
                       );
@@ -1272,14 +1452,11 @@ export default function CommunityDetailPage() {
                     [] as CommunityMember[]
                   );
 
-                  // Sort: Admins first, then by join date (newest first)
                   const sortedMembers = uniqueMembers.sort(
                     (a: CommunityMember, b: CommunityMember) => {
-                      // First priority: Admin status (admins first)
                       if (a.is_admin && !b.is_admin) return -1;
                       if (!a.is_admin && b.is_admin) return 1;
 
-                      // Second priority: Join date (newest first)
                       return (
                         new Date(b.joined_at).getTime() -
                         new Date(a.joined_at).getTime()
@@ -1296,7 +1473,6 @@ export default function CommunityDetailPage() {
                     </div>
                   ) : (
                     <div>
-                      {/* Members Count Header */}
                       <div className="mb-6">
                         <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
                           Community Members ({sortedMembers.length})
@@ -1317,18 +1493,16 @@ export default function CommunityDetailPage() {
                         </p>
                       </div>
 
-                      {/* Members Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {sortedMembers.map((member: CommunityMember) => (
                           <div
-                            key={`${member.id}-${member.user_id}`} // More unique key
+                            key={`${member.id}-${member.user_id}`}
                             className="flex items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
                           >
                             <Link
                               href={`/user/${member.user_id}`}
                               className="flex items-center flex-1"
                             >
-                              {/* Avatar */}
                               <div className="h-12 w-12 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 mr-3 overflow-hidden flex-shrink-0">
                                 {member.user?.avatar_url ? (
                                   <img
@@ -1349,7 +1523,6 @@ export default function CommunityDetailPage() {
                                 )}
                               </div>
 
-                              {/* User Info */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
                                   <div className="font-medium text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate">
@@ -1357,7 +1530,6 @@ export default function CommunityDetailPage() {
                                       member.user?.username ||
                                       "Anonymous"}
                                   </div>
-                                  {/* Admin Badge */}
                                   {member.is_admin && (
                                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                                       <svg

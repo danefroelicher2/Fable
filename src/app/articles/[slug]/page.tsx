@@ -1,4 +1,4 @@
-// src/app/articles/[slug]/page.tsx - USING THEME CONTEXT
+// src/app/articles/[slug]/page.tsx - UPDATED WITH COMMENTS AND LIKES
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,6 +11,9 @@ import { useTheme } from "@/context/ThemeContext";
 import FeatureArticleButton from "@/components/FeatureArticleButton";
 import PinButton from "@/components/PinButton";
 import ShareButton from "@/components/ShareButton";
+// 🔥 NEW IMPORTS: Adding comment section and like button
+import CommentSection from "@/components/CommentSection";
+import LikeButton from "@/components/LikeButton";
 
 export default function ArticlePage() {
   const params = useParams();
@@ -21,6 +24,8 @@ export default function ArticlePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authorProfile, setAuthorProfile] = useState<any>(null);
+  // 🔥 NEW STATE: Track like count for real-time updates
+  const [likeCount, setLikeCount] = useState(0);
 
   // Extract slug from params
   const slugParam = params.slug;
@@ -31,6 +36,22 @@ export default function ArticlePage() {
       fetchArticle();
     }
   }, [slug]);
+
+  // 🔥 NEW FUNCTION: Fetch like count separately for real-time updates
+  async function fetchLikeCount(articleId: string) {
+    try {
+      const { count, error } = await (supabase as any)
+        .from("likes")
+        .select("id", { count: "exact" })
+        .eq("article_id", articleId);
+
+      if (error) throw error;
+      setLikeCount(count || 0);
+    } catch (err) {
+      console.error("Error fetching like count:", err);
+      setLikeCount(0);
+    }
+  }
 
   async function fetchArticle() {
     setLoading(true);
@@ -52,6 +73,11 @@ export default function ArticlePage() {
 
       console.log("Article found:", data);
       setArticle(data);
+
+      // 🔥 NEW: Fetch like count after article is loaded
+      if (data?.id) {
+        await fetchLikeCount(data.id);
+      }
 
       // Fetch author profile information
       if (data.user_id) {
@@ -221,8 +247,7 @@ export default function ArticlePage() {
 
       <div className="container mx-auto py-10 px-4">
         <div className="max-w-3xl mx-auto">
-          {/* FIXED: Article Title using ThemeContext */}
-
+          {/* Article Title using ThemeContext */}
           <h1
             className="text-4xl font-bold mb-4 text-center"
             style={{ color: theme === "dark" ? "white" : "black" }}
@@ -236,7 +261,7 @@ export default function ArticlePage() {
               <div
                 className="relative w-full max-h-96 overflow-hidden rounded-lg"
                 style={{
-                  backgroundColor: theme === "dark" ? "#121212" : "#ffffff", // gray-800 : white
+                  backgroundColor: theme === "dark" ? "#121212" : "#ffffff",
                 }}
               >
                 <img
@@ -244,16 +269,14 @@ export default function ArticlePage() {
                   alt={article.title}
                   className="w-full h-auto max-h-96 object-contain rounded-lg"
                   style={{
-                    maxHeight: "24rem", // 384px (same as max-h-96)
+                    maxHeight: "24rem",
                     width: "100%",
                     height: "auto",
                   }}
                   onLoad={(e) => {
-                    // Optional: Add fade-in effect when image loads
                     e.currentTarget.style.opacity = "1";
                   }}
                   onError={(e) => {
-                    // Hide the container if image fails to load
                     const container =
                       e.currentTarget.parentElement?.parentElement;
                     if (container) {
@@ -265,7 +288,7 @@ export default function ArticlePage() {
             </div>
           )}
 
-          {/* FIXED: Article content using ThemeContext */}
+          {/* Article content using ThemeContext */}
           <div className="prose dark:prose-invert max-w-none mb-8">
             <div
               className="whitespace-pre-line leading-relaxed text-base"
@@ -275,7 +298,18 @@ export default function ArticlePage() {
             </div>
           </div>
 
-          {/* UPDATED: Author, Date, and Category Section - NEW LAYOUT */}
+          {/* 🔥 NEW SECTION: Like Button Integration */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
+            <div className="flex justify-center">
+              <LikeButton
+                articleId={article.id}
+                initialLikeCount={likeCount}
+                className="text-lg"
+              />
+            </div>
+          </div>
+
+          {/* Author, Date, and Category Section */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
             {/* Author Section - Now first */}
             <div className="flex items-center mb-4">
@@ -401,6 +435,11 @@ export default function ArticlePage() {
 
           {/* Feature Article Button - Admin only */}
           {article.id && <FeatureArticleButton articleId={article.id} />}
+
+          {/* 🔥 NEW SECTION: Comment Section Integration */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-8 mt-8">
+            <CommentSection articleId={article.id} />
+          </div>
         </div>
       </div>
     </>
