@@ -221,7 +221,7 @@ export default function WritePage() {
                 htmlFor="title"
                 className="block text-gray-700 font-medium"
               >
-                Title
+                Title *
               </label>
               <div
                 className={`text-sm ${
@@ -258,8 +258,9 @@ export default function WritePage() {
           </div>
           {/* 2. Cover Image - Second */}
           <div className="mb-6">
+            // REPLACE WITH:
             <label className="block text-gray-700 font-medium mb-2">
-              Cover Image
+              Cover Image (optional)
             </label>
             <div className="flex flex-col md:flex-row md:items-start">
               {coverImage && (
@@ -328,7 +329,7 @@ export default function WritePage() {
                 htmlFor="content"
                 className="block text-gray-700 font-medium"
               >
-                Content
+                Content *
               </label>
             </div>
 
