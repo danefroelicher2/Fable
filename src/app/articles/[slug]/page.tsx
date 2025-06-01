@@ -228,15 +228,14 @@ export default function ArticlePage() {
           >
             {article.title}
           </h1>
-          // In src/app/articles/[slug]/page.tsx // Find the Cover Image section
-          (around line 190-210) and replace it with this:
-          {/* Cover Image - FIXED THEME-AWARE SIDEBARS */}
+
+          {/* Cover Image - THEME-AWARE SIDEBARS */}
           {article.image_url && (
             <div className="mb-8">
               <div
                 className="relative w-full max-h-96 overflow-hidden rounded-lg"
                 style={{
-                  backgroundColor: theme === "dark" ? "#000000" : "#ffffff", // Pure black : Pure white
+                  backgroundColor: theme === "dark" ? "#111827" : "#ffffff",
                 }}
               >
                 <img
@@ -264,6 +263,7 @@ export default function ArticlePage() {
               </div>
             </div>
           )}
+
           {/* FIXED: Article content using ThemeContext */}
           <div className="prose dark:prose-invert max-w-none mb-8">
             <div
@@ -273,6 +273,7 @@ export default function ArticlePage() {
               {article.content}
             </div>
           </div>
+
           {/* UPDATED: Author, Date, and Category Section - NEW LAYOUT */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
             {/* Author Section - Now first */}
@@ -337,6 +338,7 @@ export default function ArticlePage() {
               </div>
             </div>
           </div>
+
           {/* Bottom Action Bar with Views, Pin, and Share */}
           <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
             {/* Left side - Views, Pin (if author), Share */}
@@ -395,6 +397,7 @@ export default function ArticlePage() {
               )}
             </div>
           </div>
+
           {/* Feature Article Button - Admin only */}
           {article.id && <FeatureArticleButton articleId={article.id} />}
         </div>
