@@ -7,12 +7,14 @@ import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { saveDraft, Draft, publishDraft } from "@/lib/draftUtils";
 import ImageUpload from "@/components/ImageUpload";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function WritePage() {
   const { user } = useAuth();
   const router = useRouter();
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const messageRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -310,7 +312,11 @@ export default function WritePage() {
               id="category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              style={{
+                color: theme === "dark" ? "black" : "black",
+                backgroundColor: theme === "dark" ? "white" : "white",
+              }}
               required
               disabled={isRedirecting}
             >

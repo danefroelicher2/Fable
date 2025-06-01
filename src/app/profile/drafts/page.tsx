@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 import {
   getUserDrafts,
   deleteDraft,
@@ -21,6 +22,7 @@ export default function DraftsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const { theme } = useTheme();
 
   // Protected route check - improved redirect logic
   useEffect(() => {
@@ -178,7 +180,8 @@ export default function DraftsPage() {
           <h1 className="text-3xl font-bold">Your Saved Drafts</h1>
           <Link
             href="/write"
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+            style={{ color: theme === "dark" ? "white" : "white" }}
           >
             Write New Article
           </Link>

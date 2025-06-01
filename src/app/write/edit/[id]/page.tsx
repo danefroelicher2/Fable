@@ -347,11 +347,31 @@ export default function EditDraftPage() {
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              style={{
+                color: "black",
+                backgroundColor: "white",
+              }}
               required
+              disabled={isSaving}
             >
-              <option value="">Select a category</option>
-              <option value="fiction">Fiction</option>
-              <option value="non-fiction">Non-Fiction</option>
+              <option
+                value=""
+                style={{ color: "black", backgroundColor: "white" }}
+              >
+                Select a category
+              </option>
+              <option
+                value="fiction"
+                style={{ color: "black", backgroundColor: "white" }}
+              >
+                Fiction
+              </option>
+              <option
+                value="non-fiction"
+                style={{ color: "black", backgroundColor: "white" }}
+              >
+                Non-Fiction
+              </option>
             </select>
           </div>
 
@@ -371,10 +391,6 @@ export default function EditDraftPage() {
               placeholder="Write your article here..."
               required
             />
-            <p className="text-gray-500 text-sm mt-2">
-              Tip: Use Markdown for formatting. *italic* for italics, **bold**
-              for bold, # for headings.
-            </p>
           </div>
 
           <div className="flex justify-end space-x-4">
