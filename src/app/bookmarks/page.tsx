@@ -7,6 +7,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import BookmarkButton from "@/components/BookmarkButton";
+import { useTheme } from "@/context/ThemeContext";
 
 interface BookmarkedItem {
   id: string;
@@ -36,6 +37,7 @@ export default function BookmarksPage() {
   const [activeFilter, setActiveFilter] = useState<
     "all" | "articles" | "community"
   >("all");
+  const { theme } = useTheme();
 
   // FIXED: Use useCallback to prevent function recreation on every render
   const loadBookmarks = useCallback(async () => {
@@ -307,7 +309,12 @@ export default function BookmarksPage() {
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold dark:text-white">Bookmarks</h1>
+          <h1
+            className="text-3xl font-bold"
+            style={{ color: theme === "dark" ? "white" : "black" }}
+          >
+            Bookmarks
+          </h1>
 
           <div className="flex space-x-2">
             <button
