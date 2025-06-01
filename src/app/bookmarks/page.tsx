@@ -418,7 +418,10 @@ export default function BookmarksPage() {
                     </div>
 
                     {/* Title */}
-                    <h3 className="text-xl font-bold mb-3 text-gray-800 dark:text-white">
+                    <h3
+                      className="text-xl font-bold mb-3"
+                      style={{ color: theme === "dark" ? "white" : "black" }}
+                    >
                       <Link
                         href={getItemPath(item)}
                         className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
@@ -428,7 +431,12 @@ export default function BookmarksPage() {
                     </h3>
 
                     {/* Content preview */}
-                    <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+                    <p
+                      className="mb-4 leading-relaxed"
+                      style={{
+                        color: theme === "dark" ? "#9ca3af" : "#6b7280",
+                      }}
+                    >
                       {preview}
                     </p>
 
@@ -446,7 +454,7 @@ export default function BookmarksPage() {
                     <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-100 dark:border-gray-700">
                       <Link
                         href={`/user/${item.user_id}`}
-                        className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors mr-4"
+                        className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                       >
                         <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 mr-2 overflow-hidden">
                           {item.user_info?.avatar_url ? (
@@ -467,15 +475,18 @@ export default function BookmarksPage() {
                             </span>
                           )}
                         </div>
-                        <span className="font-medium leading-none">
+                        <span className="font-medium">
                           {item.user_info?.full_name ||
                             item.user_info?.username ||
                             "Anonymous"}
                         </span>
                       </Link>
 
-                      {/* FIXED: Date now appears horizontally next to the user with proper alignment */}
-                      <span className="text-gray-400 dark:text-gray-500 leading-none">
+                      {/* Date moved to same line, positioned directly after username */}
+                      <span className="text-gray-400 dark:text-gray-500 ml-2">
+                        •
+                      </span>
+                      <span className="text-gray-400 dark:text-gray-500 ml-2">
                         {formatDate(
                           item.type === "article"
                             ? (item as any).published_at || item.created_at
