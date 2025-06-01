@@ -492,7 +492,10 @@ export default function PublicFeed() {
         <div>
           {/* Category Filter - only shown for "For You" tab */}
           <div className="mb-8">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              className="block text-sm font-medium mb-2"
+              style={{ color: theme === "dark" ? "#d1d5db" : "black" }}
+            >
               Filter by Category
             </label>
             <select
