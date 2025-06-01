@@ -222,20 +222,21 @@ export default function ArticlePage() {
       <div className="container mx-auto py-10 px-4">
         <div className="max-w-3xl mx-auto">
           {/* FIXED: Article Title using ThemeContext */}
+
           <h1
-            className="text-4xl font-bold mb-4"
+            className="text-4xl font-bold mb-4 text-center"
             style={{ color: theme === "dark" ? "white" : "black" }}
           >
             {article.title}
           </h1>
 
-          {/* Cover Image - THEME-AWARE SIDEBARS */}
+          {/* Cover Image - MATCHED TO DARK MODE BACKGROUND */}
           {article.image_url && (
             <div className="mb-8">
               <div
                 className="relative w-full max-h-96 overflow-hidden rounded-lg"
                 style={{
-                  backgroundColor: theme === "dark" ? "#111827" : "#ffffff",
+                  backgroundColor: theme === "dark" ? "#121212" : "#ffffff", // gray-800 : white
                 }}
               >
                 <img
