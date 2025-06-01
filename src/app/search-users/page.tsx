@@ -6,6 +6,7 @@ import UserSearch from "@/components/UserSearch";
 import Link from "next/link";
 import FollowButton from "@/components/FollowButton";
 import { supabase } from "@/lib/supabase";
+import { useTheme } from "@/context/ThemeContext"; // ADD THIS
 
 interface SuggestedUser {
   id: string;
@@ -19,6 +20,7 @@ export default function SearchUsersPage() {
   const { user } = useAuth();
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const { theme } = useTheme();
 
   useEffect(() => {
     // Fetch some suggested users to follow
@@ -130,19 +132,33 @@ export default function SearchUsersPage() {
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Find Users to Follow</h1>
+          <h1
+            className="text-3xl font-bold mb-2"
+            style={{ color: theme === "dark" ? "white" : "black" }}
+          >
+            Find Users to Follow
+          </h1>
           <p className="text-gray-600">
             Search for users by name or username, or check out our suggestions
           </p>
         </div>
-
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-xl font-bold mb-4">Search Users</h2>
+          <h2
+            className="text-xl font-bold mb-4"
+            style={{ color: theme === "dark" ? "black" : "black" }}
+          >
+            Search Users
+          </h2>
           <UserSearch />
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-bold mb-6">Suggested Users to Follow</h2>
+          <h2
+            className="text-xl font-bold mb-6"
+            style={{ color: theme === "dark" ? "black" : "black" }}
+          >
+            Suggested Users to Follow
+          </h2>
 
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -167,9 +183,6 @@ export default function SearchUsersPage() {
               <p className="text-gray-600 mb-4">
                 No suggested users available at the moment
               </p>
-              <Link href="/feed" className="text-blue-600 hover:text-blue-800">
-                Browse Community Feed
-              </Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

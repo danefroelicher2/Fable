@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import BookmarkButton from "@/components/BookmarkButton";
+import { useTheme } from "@/context/ThemeContext";
 
 interface Article {
   id: string;
@@ -36,6 +37,7 @@ export default function PublicFeed() {
   const [page, setPage] = useState(1);
   const articlesPerPage = 6;
   const [error, setError] = useState<string | null>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (activeTab === "forYou") {
@@ -265,7 +267,10 @@ export default function PublicFeed() {
           <div className="flex justify-between items-start">
             <div className="flex-1">
               <Link href={`/articles/${article.slug}`}>
-                <h2 className="text-xl font-bold mb-2 hover:text-blue-600">
+                <h2
+                  className="text-xl font-bold mb-2 hover:text-blue-600"
+                  style={{ color: theme === "dark" ? "black" : "black" }}
+                >
                   {article.title}
                 </h2>
               </Link>
@@ -430,7 +435,12 @@ export default function PublicFeed() {
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Community Feed</h1>
+          <h1
+            className="text-3xl font-bold mb-2"
+            style={{ color: theme === "dark" ? "white" : "black" }}
+          >
+            Community Feed
+          </h1>
         </div>
 
         <div className="mt-4 md:mt-0 flex space-x-4 items-center">
