@@ -258,7 +258,6 @@ export default function WritePage() {
           </div>
           {/* 2. Cover Image - Second */}
           <div className="mb-6">
-            // REPLACE WITH:
             <label className="block text-gray-700 font-medium mb-2">
               Cover Image (optional)
             </label>
@@ -293,8 +292,7 @@ export default function WritePage() {
                   </button>
                 )}
                 <p className="text-gray-500 text-sm mt-2">
-                  Upload an eye-catching cover image for your article (max 2MB,
-                  JPEG or PNG)
+                  (max 2MB, JPEG or PNG)
                 </p>
               </div>
             </div>
