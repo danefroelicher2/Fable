@@ -14,23 +14,30 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        // Check what type of callback this is
+        console.log("Auth callback triggered");
+
+        // Get all URL parameters
+        const allParams = Object.fromEntries(searchParams?.entries() || []);
+        console.log("All URL params:", allParams);
+
         const type = searchParams?.get("type");
+        console.log("Auth type detected:", type);
 
+        // If this is a password recovery, redirect immediately to reset page
         if (type === "recovery") {
-          // This is a password reset, redirect to reset password page with tokens
-          const accessToken = searchParams?.get("access_token");
-          const refreshToken = searchParams?.get("refresh_token");
-
-          if (accessToken && refreshToken) {
-            // Redirect to reset password page with the tokens
-            const resetUrl = `/reset-password?access_token=${accessToken}&refresh_token=${refreshToken}&type=recovery`;
-            router.replace(resetUrl);
-            return;
-          }
+          console.log(
+            "Password recovery detected, redirecting to reset password page"
+          );
+          // Pass all current URL params to the reset page
+          const currentUrl = new URL(window.location.href);
+          const resetUrl = `/reset-password${currentUrl.search}`;
+          console.log("Redirecting to:", resetUrl);
+          router.replace(resetUrl);
+          return;
         }
 
-        // For other auth callbacks (like email confirmation)
+        // For other types of auth (like email confirmation)
+        console.log("Non-recovery auth, checking session...");
         const { data, error } = await supabase.auth.getSession();
 
         if (error) {
@@ -40,10 +47,10 @@ export default function AuthCallback() {
         }
 
         if (data.session) {
-          // User is authenticated, redirect to home
+          console.log("Valid session found, redirecting to home");
           router.replace("/");
         } else {
-          // No session, redirect to signin
+          console.log("No session found, redirecting to signin");
           router.replace(
             "/signin?message=Please check your email and click the confirmation link."
           );
@@ -52,11 +59,17 @@ export default function AuthCallback() {
         console.error("Auth callback error:", err);
         setError("An error occurred during authentication.");
       } finally {
+        console.log("Setting loading to false");
         setLoading(false);
       }
     };
 
-    handleAuthCallback();
+    // Add small delay to ensure page is ready
+    const timer = setTimeout(() => {
+      handleAuthCallback();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [searchParams, router]);
 
   if (error) {

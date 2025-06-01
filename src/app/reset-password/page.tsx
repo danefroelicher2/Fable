@@ -16,39 +16,107 @@ export default function ResetPasswordPage() {
   const [isValidToken, setIsValidToken] = useState(false);
   const [checkingToken, setCheckingToken] = useState(true);
 
+  // EXACT WORKING VERIFICATION LOGIC - DO NOT TOUCH
   useEffect(() => {
-    // Check if we have the necessary tokens from the email link
-    const accessToken = searchParams?.get("access_token");
-    const refreshToken = searchParams?.get("refresh_token");
-    const type = searchParams?.get("type");
+    const checkSession = async () => {
+      console.log("Checking reset password session");
+      console.log(
+        "URL search params:",
+        Object.fromEntries(searchParams?.entries() || [])
+      );
 
-    if (type === "recovery" && accessToken && refreshToken) {
-      // Set the session using the tokens from the email
-      supabase.auth
-        .setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        })
-        .then(({ error }) => {
-          if (error) {
-            console.error("Error setting session:", error);
+      try {
+        // Check if we have access token and refresh token in URL
+        const accessToken = searchParams?.get("access_token");
+        const refreshToken = searchParams?.get("refresh_token");
+        const type = searchParams?.get("type");
+
+        console.log(
+          "URL params - Type:",
+          type,
+          "Has access token:",
+          !!accessToken,
+          "Has refresh token:",
+          !!refreshToken
+        );
+
+        if (accessToken && refreshToken) {
+          console.log("Found tokens in URL, setting session...");
+
+          // Set the session using the tokens from the URL
+          const { data: sessionData, error: sessionError } =
+            await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+
+          console.log(
+            "Session set result:",
+            sessionData?.session ? "Success" : "Failed",
+            sessionError?.message || "No error"
+          );
+
+          if (sessionError) {
+            console.error("Error setting session:", sessionError);
             setError(
               "Invalid or expired reset link. Please request a new password reset."
             );
-          } else {
+          } else if (sessionData.session) {
+            console.log(
+              "Session successfully set, enabling password reset form"
+            );
             setIsValidToken(true);
+          } else {
+            console.log("No session returned after setting tokens");
+            setError(
+              "Invalid or expired reset link. Please request a new password reset."
+            );
           }
-          setCheckingToken(false);
-        });
-    } else {
-      setError("Invalid reset link. Please request a new password reset.");
-      setCheckingToken(false);
-    }
+        } else {
+          console.log("No tokens found in URL, checking existing session...");
+
+          // Check if we already have a valid session
+          const { data: authData, error: authError } =
+            await supabase.auth.getSession();
+
+          console.log(
+            "Existing session check:",
+            authData?.session ? "Has session" : "No session",
+            authError?.message || "No error"
+          );
+
+          if (authData.session && authData.session.user) {
+            console.log("Found existing valid session");
+            setIsValidToken(true);
+          } else {
+            console.log("No valid session found");
+            setError(
+              "Invalid reset link. Please request a new password reset from the sign-in page."
+            );
+          }
+        }
+      } catch (err) {
+        console.error("Error in checkSession:", err);
+        setError("An error occurred while validating the reset link.");
+      } finally {
+        console.log("Setting checkingToken to false");
+        setCheckingToken(false);
+      }
+    };
+
+    // Add a small delay to ensure page is fully loaded
+    const timer = setTimeout(() => {
+      checkSession();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [searchParams]);
 
+  // FIXED PASSWORD UPDATE WITH TIMEOUT PROTECTION
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setMessage("");
 
     // Validation
     if (newPassword.length < 6) {
@@ -62,27 +130,78 @@ export default function ResetPasswordPage() {
     }
 
     setLoading(true);
+    console.log("Starting password update...");
+
+    // Set a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.log("Password update timed out");
+      setLoading(false);
+      setError(
+        "Password update is taking too long. Please try again or contact support."
+      );
+    }, 10000); // 10 second timeout
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      console.log("Calling supabase.auth.updateUser...");
+
+      // Create a race between the API call and a timeout
+      const updatePromise = supabase.auth.updateUser({
         password: newPassword,
       });
 
-      if (error) throw error;
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Request timeout")), 8000);
+      });
 
-      setMessage("Password updated successfully! Redirecting to sign in...");
+      const result = (await Promise.race([
+        updatePromise,
+        timeoutPromise,
+      ])) as any;
 
-      // Sign out the user and redirect to sign in page
-      setTimeout(async () => {
-        await supabase.auth.signOut();
-        router.push(
-          "/signin?message=Password updated successfully. Please sign in with your new password."
-        );
+      // Clear the timeout since we got a response
+      clearTimeout(timeoutId);
+
+      if (result?.error) {
+        console.error("Password update error:", result.error);
+        throw result.error;
+      }
+
+      console.log("Password updated successfully!");
+      setLoading(false);
+      setMessage("✅ Password updated successfully! Redirecting to sign in...");
+
+      // Force redirect after short delay
+      setTimeout(() => {
+        console.log("Forcing redirect to sign in...");
+        try {
+          window.location.replace(
+            "/signin?message=" +
+              encodeURIComponent(
+                "Password updated successfully! Please sign in with your new password."
+              )
+          );
+        } catch (redirectError) {
+          console.error("Redirect failed, trying alternative:", redirectError);
+          // Fallback redirect method
+          window.location.href = "/signin";
+        }
       }, 2000);
     } catch (err: any) {
-      setError(err.message || "An error occurred while updating password");
-    } finally {
+      clearTimeout(timeoutId);
+      console.error("Error updating password:", err);
       setLoading(false);
+
+      if (err.message === "Request timeout") {
+        setError(
+          "The request is taking too long. Your password may have been updated. Please try signing in, or request another reset if needed."
+        );
+        // Show manual redirect option
+        setTimeout(() => {
+          setMessage("Click here to go to sign in: ");
+        }, 3000);
+      } else {
+        setError(err.message || "Failed to update password. Please try again.");
+      }
     }
   };
 
@@ -154,6 +273,7 @@ export default function ResetPasswordPage() {
               placeholder="Enter your new password"
               required
               minLength={6}
+              disabled={loading}
             />
             <p className="text-sm text-gray-500 mt-1">
               Password must be at least 6 characters long
@@ -172,6 +292,7 @@ export default function ResetPasswordPage() {
               placeholder="Confirm your new password"
               required
               minLength={6}
+              disabled={loading}
             />
           </div>
 
@@ -180,8 +301,45 @@ export default function ResetPasswordPage() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? "Updating Password..." : "Update Password"}
+            {loading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
+                Updating Password...
+              </div>
+            ) : (
+              "Update Password"
+            )}
           </button>
+
+          {loading && (
+            <div className="mt-4 text-center">
+              <p className="text-sm text-gray-600">
+                If this takes too long, you can{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoading(false);
+                    window.location.href = "/signin";
+                  }}
+                  className="text-blue-600 hover:text-blue-800 underline"
+                >
+                  return to sign in
+                </button>{" "}
+                and try again.
+              </p>
+            </div>
+          )}
+
+          {message && message.includes("Click here") && (
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => (window.location.href = "/signin")}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Go to Sign In
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>

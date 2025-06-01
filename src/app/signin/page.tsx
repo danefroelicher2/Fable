@@ -26,6 +26,12 @@ export default function SignInPage() {
       setRedirectPath(redirect);
     }
 
+    // Check for success message parameter
+    const successMessage = searchParams?.get("message");
+    if (successMessage) {
+      setMessage(decodeURIComponent(successMessage));
+    }
+
     // Check if there's an accountSwitch parameter
     const accountId = searchParams?.get("accountSwitch");
     if (accountId) {
