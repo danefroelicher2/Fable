@@ -13,6 +13,7 @@ import PinButton from "@/components/PinButton";
 import ShareButton from "@/components/ShareButton";
 import BookmarkButton from "@/components/BookmarkButton";
 import LikeButton from "@/components/LikeButton";
+import CommentSection from "@/components/CommentSection";
 
 export default function ArticlePage() {
   const params = useParams();
@@ -264,13 +265,24 @@ export default function ArticlePage() {
             </div>
           )}
 
-          {/* Article content */}
+          {/* Article content with proper text wrapping */}
           <div className="prose dark:prose-invert max-w-none mb-8">
             <div
-              className="whitespace-pre-line leading-relaxed text-base"
-              style={{ color: theme === "dark" ? "white" : "black" }}
+              className="leading-relaxed text-base break-words overflow-wrap-anywhere"
+              style={{
+                color: theme === "dark" ? "white" : "black",
+                wordBreak: "break-word",
+                overflowWrap: "break-word",
+                hyphens: "auto",
+              }}
             >
-              {article.content}
+              {article.content
+                .split("\n")
+                .map((paragraph: string, index: number) => (
+                  <p key={index} className="mb-4 whitespace-pre-wrap">
+                    {paragraph}
+                  </p>
+                ))}
             </div>
           </div>
 
@@ -408,6 +420,11 @@ export default function ArticlePage() {
 
           {/* Feature Article Button - Admin only */}
           {article.id && <FeatureArticleButton articleId={article.id} />}
+
+          {/* Comment Section */}
+          <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
+            <CommentSection articleId={article.id} />
+          </div>
         </div>
       </div>
     </>
