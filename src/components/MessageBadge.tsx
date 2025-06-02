@@ -1,11 +1,11 @@
-// src/components/MessageBadge.tsx
+// src/components/MessageBadge.tsx - COMPLETE FIX
 "use client";
 
 import { useState, useEffect } from "react";
-import { getUnreadCount, markAllMessagesAsRead } from "@/lib/messageUtils";
+import { getUnreadCount } from "@/lib/messageUtils";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 interface MessageBadgeProps {
   className?: string;
@@ -15,16 +15,32 @@ export default function MessageBadge({ className = "" }: MessageBadgeProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const { user } = useAuth();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
+  // Function to fetch unread count
+  const fetchUnreadCount = async () => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+
+    const count = await getUnreadCount();
+    setUnreadCount(count);
+  };
+
+  // Initial setup and real-time subscriptions
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
 
-    // Fetch unread message count on component mount
+    // Fetch initial unread count
     fetchUnreadCount();
 
-    // Subscribe to new messages
+    // Subscribe to new messages (when someone sends TO this user)
     const messagesSubscription = supabase
-      .channel("messages-channel")
+      .channel(`messages-new-${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -33,15 +49,16 @@ export default function MessageBadge({ className = "" }: MessageBadgeProps) {
           table: "messages",
           filter: `recipient_id=eq.${user.id}`,
         },
-        () => {
+        (payload) => {
+          console.log("New message received:", payload);
           fetchUnreadCount();
         }
       )
       .subscribe();
 
-    // Subscribe to message updates (mark as read)
+    // Subscribe to message updates (when messages are marked as read)
     const messagesUpdateSubscription = supabase
-      .channel("messages-update-channel")
+      .channel(`messages-update-${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -50,7 +67,8 @@ export default function MessageBadge({ className = "" }: MessageBadgeProps) {
           table: "messages",
           filter: `recipient_id=eq.${user.id}`,
         },
-        () => {
+        (payload) => {
+          console.log("Message updated (likely marked as read):", payload);
           fetchUnreadCount();
         }
       )
@@ -62,20 +80,51 @@ export default function MessageBadge({ className = "" }: MessageBadgeProps) {
     };
   }, [user]);
 
-  // Clear badge when user visits the messages page
+  // Listen for custom events from the messages page
   useEffect(() => {
-    if (pathname?.startsWith("/messages") && user && unreadCount > 0) {
-      markAllMessagesAsRead().then(() => {
-        setUnreadCount(0);
-      });
+    const handleMessagesRead = () => {
+      console.log("Custom messagesRead event received");
+      fetchUnreadCount();
+    };
+
+    const handleConversationOpened = () => {
+      console.log("Custom conversationOpened event received");
+      // Add a small delay to allow the database update to complete
+      setTimeout(() => {
+        fetchUnreadCount();
+      }, 500);
+    };
+
+    window.addEventListener("messagesRead", handleMessagesRead);
+    window.addEventListener("conversationOpened", handleConversationOpened);
+
+    return () => {
+      window.removeEventListener("messagesRead", handleMessagesRead);
+      window.removeEventListener(
+        "conversationOpened",
+        handleConversationOpened
+      );
+    };
+  }, []);
+
+  // Monitor URL changes to detect when user opens specific conversations
+  useEffect(() => {
+    if (pathname?.startsWith("/messages") && user) {
+      const selectedUserId = searchParams?.get("user");
+
+      if (selectedUserId) {
+        // User opened a specific conversation
+        console.log(`User opened conversation with: ${selectedUserId}`);
+
+        // Refresh badge after a delay to allow messages page to mark messages as read
+        setTimeout(() => {
+          fetchUnreadCount();
+        }, 1000);
+      }
     }
-  }, [pathname, user, unreadCount]);
+  }, [pathname, searchParams, user]);
 
-  const fetchUnreadCount = async () => {
-    const count = await getUnreadCount();
-    setUnreadCount(count);
-  };
-
+  // Don't show badge if count is 0
   if (unreadCount === 0) return null;
 
   return (

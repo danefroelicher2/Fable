@@ -129,7 +129,6 @@ export default function MessagesPage() {
     }
   }, [user, selectedUserId]);
 
-  // FIXED: Separate function for fetching messages with FORCED scroll to bottom
   const fetchMessages = useCallback(
     async (userId: string) => {
       if (!user || !userId) return;
@@ -145,23 +144,35 @@ export default function MessagesPage() {
             const container = messagesContainerRef.current;
             container.scrollTop = container.scrollHeight;
           }
-        }, 200); // Longer delay to ensure messages are rendered
+        }, 200);
 
-        // Mark messages as read
-        await markMessagesAsRead(userId);
+        // FIXED: Mark messages as read and ensure the operation completes
+        try {
+          await markMessagesAsRead(userId);
+          console.log(`Marked messages as read for user: ${userId}`);
 
-        // Update unread count in conversations list
-        setConversations((prevConversations) => {
-          return prevConversations.map((conv) => {
-            if (conv.user_id === userId) {
-              return {
-                ...conv,
-                unread_count: 0,
-              };
-            }
-            return conv;
+          // Update unread count in conversations list immediately
+          setConversations((prevConversations) => {
+            return prevConversations.map((conv) => {
+              if (conv.user_id === userId) {
+                return {
+                  ...conv,
+                  unread_count: 0,
+                };
+              }
+              return conv;
+            });
           });
-        });
+
+          // ADDED: Trigger a refresh of the badge by dispatching a custom event
+          window.dispatchEvent(
+            new CustomEvent("messagesRead", {
+              detail: { userId },
+            })
+          );
+        } catch (readError) {
+          console.error("Error marking messages as read:", readError);
+        }
       } catch (error) {
         console.error("Error fetching messages:", error);
       } finally {
