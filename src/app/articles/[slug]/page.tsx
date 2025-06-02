@@ -1,4 +1,4 @@
-// src/app/articles/[slug]/page.tsx - UPDATED WITH COMMENTS AND LIKES
+// src/app/articles/[slug]/page.tsx - UPDATED LAYOUT
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,8 +11,7 @@ import { useTheme } from "@/context/ThemeContext";
 import FeatureArticleButton from "@/components/FeatureArticleButton";
 import PinButton from "@/components/PinButton";
 import ShareButton from "@/components/ShareButton";
-// 🔥 NEW IMPORTS: Adding comment section and like button
-import CommentSection from "@/components/CommentSection";
+import BookmarkButton from "@/components/BookmarkButton";
 import LikeButton from "@/components/LikeButton";
 
 export default function ArticlePage() {
@@ -24,8 +23,6 @@ export default function ArticlePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authorProfile, setAuthorProfile] = useState<any>(null);
-  // 🔥 NEW STATE: Track like count for real-time updates
-  const [likeCount, setLikeCount] = useState(0);
 
   // Extract slug from params
   const slugParam = params.slug;
@@ -36,22 +33,6 @@ export default function ArticlePage() {
       fetchArticle();
     }
   }, [slug]);
-
-  // 🔥 NEW FUNCTION: Fetch like count separately for real-time updates
-  async function fetchLikeCount(articleId: string) {
-    try {
-      const { count, error } = await (supabase as any)
-        .from("likes")
-        .select("id", { count: "exact" })
-        .eq("article_id", articleId);
-
-      if (error) throw error;
-      setLikeCount(count || 0);
-    } catch (err) {
-      console.error("Error fetching like count:", err);
-      setLikeCount(0);
-    }
-  }
 
   async function fetchArticle() {
     setLoading(true);
@@ -73,11 +54,6 @@ export default function ArticlePage() {
 
       console.log("Article found:", data);
       setArticle(data);
-
-      // 🔥 NEW: Fetch like count after article is loaded
-      if (data?.id) {
-        await fetchLikeCount(data.id);
-      }
 
       // Fetch author profile information
       if (data.user_id) {
@@ -247,7 +223,7 @@ export default function ArticlePage() {
 
       <div className="container mx-auto py-10 px-4">
         <div className="max-w-3xl mx-auto">
-          {/* Article Title using ThemeContext */}
+          {/* Article Title */}
           <h1
             className="text-4xl font-bold mb-4 text-center"
             style={{ color: theme === "dark" ? "white" : "black" }}
@@ -288,7 +264,7 @@ export default function ArticlePage() {
             </div>
           )}
 
-          {/* Article content using ThemeContext */}
+          {/* Article content */}
           <div className="prose dark:prose-invert max-w-none mb-8">
             <div
               className="whitespace-pre-line leading-relaxed text-base"
@@ -298,85 +274,79 @@ export default function ArticlePage() {
             </div>
           </div>
 
-          {/* 🔥 NEW SECTION: Like Button Integration */}
+          {/* UPDATED: Author, Date, and Edit Section */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
-            <div className="flex justify-center">
-              <LikeButton
-                articleId={article.id}
-                initialLikeCount={likeCount}
-                className="text-lg"
-              />
-            </div>
-          </div>
-
-          {/* Author, Date, and Category Section */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
-            {/* Author Section - Now first */}
-            <div className="flex items-center mb-4">
-              {/* Author Avatar and Info */}
-              {authorProfile && (
-                <Link
-                  href={`/user/${authorProfile.id}`}
-                  className="flex items-center hover:opacity-80"
-                >
-                  <div className="h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden mr-3">
-                    {authorProfile.avatar_url ? (
-                      <img
-                        src={authorProfile.avatar_url}
-                        alt={authorProfile.username || "Author"}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-sm font-semibold">
-                        {(
-                          authorProfile.full_name ||
-                          authorProfile.username ||
-                          "U"
-                        )
-                          .charAt(0)
-                          .toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900 dark:text-white">
-                      {authorProfile.full_name ||
-                        authorProfile.username ||
-                        "Anonymous"}
+            {/* Author Section with Edit Button */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                {/* Author Avatar and Info with Date */}
+                {authorProfile && (
+                  <Link
+                    href={`/user/${authorProfile.id}`}
+                    className="flex items-center hover:opacity-80"
+                  >
+                    <div className="h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden mr-3">
+                      {authorProfile.avatar_url ? (
+                        <img
+                          src={authorProfile.avatar_url}
+                          alt={authorProfile.username || "Author"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-sm font-semibold">
+                          {(
+                            authorProfile.full_name ||
+                            authorProfile.username ||
+                            "U"
+                          )
+                            .charAt(0)
+                            .toUpperCase()}
+                        </span>
+                      )}
                     </div>
-                    {authorProfile.username && (
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        @{authorProfile.username}
+                    <div>
+                      <div className="font-medium text-gray-900 dark:text-white">
+                        {authorProfile.full_name ||
+                          authorProfile.username ||
+                          "Anonymous"}
                       </div>
-                    )}
-                  </div>
+                      {authorProfile.username && (
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          @{authorProfile.username}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                )}
+
+                {/* Date right next to author info */}
+                <div className="text-sm text-gray-500 dark:text-gray-400 ml-4">
+                  {new Date(article.published_at).toLocaleDateString(
+                    undefined,
+                    {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    }
+                  )}
+                </div>
+              </div>
+
+              {/* SIMPLIFIED: Edit button without box styling - only show for author */}
+              {isAuthor && (
+                <Link
+                  href={`/articles/${article.slug}/edit`}
+                  className="text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 text-sm font-medium transition-colors"
+                >
+                  Edit
                 </Link>
               )}
             </div>
-
-            {/* Category Badge and Date Section - Now below author */}
-            <div className="flex items-center gap-4">
-              {/* Category Badge */}
-              {article.category && (
-                <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-2 py-1 rounded text-sm">
-                  {article.category}
-                </span>
-              )}
-
-              {/* Date - Now to the right of the badge */}
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                {new Date(article.published_at).toLocaleDateString(undefined, {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </div>
-            </div>
           </div>
 
-          {/* Bottom Action Bar with Views, Pin, and Share */}
+          {/* UPDATED: Bottom Action Bar with reorganized buttons */}
           <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
-            {/* Left side - Views, Pin (if author), Share */}
+            {/* Left side - Views, Likes, and Pin (if author) */}
             <div className="flex items-center space-x-6">
               {/* View count */}
               <div className="flex items-center text-gray-600 dark:text-gray-400">
@@ -405,41 +375,39 @@ export default function ArticlePage() {
                 </span>
               </div>
 
+              {/* MOVED: Like Button next to views */}
+              <LikeButton
+                articleId={article.id}
+                className="text-gray-600 dark:text-gray-400"
+              />
+
               {/* Pin Button - Only show for article author */}
               {isAuthor && (
                 <PinButton articleId={article.id} showLabel={true} />
               )}
+            </div>
 
-              {/* Share Button - Show for everyone */}
+            {/* UPDATED: Right side - Share and Bookmark buttons */}
+            <div className="flex items-center space-x-4">
+              {/* Share Button */}
               <ShareButton
                 articleId={article.id}
                 articleSlug={article.slug}
                 title={article.title}
                 showLabel={true}
               />
-            </div>
 
-            {/* Right side - Author Actions */}
-            <div className="flex items-center space-x-4">
-              {/* Edit link for author */}
-              {isAuthor && (
-                <Link
-                  href={`/articles/${article.slug}/edit`}
-                  className="text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 text-sm"
-                >
-                  Edit
-                </Link>
-              )}
+              {/* Bookmark Button */}
+              <BookmarkButton
+                articleId={article.id}
+                showText={true}
+                className="text-gray-600 dark:text-gray-400"
+              />
             </div>
           </div>
 
           {/* Feature Article Button - Admin only */}
           {article.id && <FeatureArticleButton articleId={article.id} />}
-
-          {/* 🔥 NEW SECTION: Comment Section Integration */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-8 mt-8">
-            <CommentSection articleId={article.id} />
-          </div>
         </div>
       </div>
     </>
