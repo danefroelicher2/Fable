@@ -283,9 +283,29 @@ export default function SidebarNav() {
 
           {/* FIXED: Messages link - Handle auth requirement client-side */}
           {user ? (
-            <Link
-              href="/messages"
-              className={`flex items-center px-4 py-3 relative ${
+            <button
+              onClick={() => {
+                // Mark all messages as read when clicking the messages sidebar item
+                import("@/lib/messageUtils").then(
+                  ({ markAllMessagesAsRead }) => {
+                    markAllMessagesAsRead()
+                      .then(() => {
+                        // Trigger badge refresh after marking all messages as read
+                        window.dispatchEvent(new CustomEvent("messagesRead"));
+                      })
+                      .catch((err) => {
+                        console.error(
+                          "Error marking all messages as read:",
+                          err
+                        );
+                      });
+                  }
+                );
+
+                // Navigate to messages page
+                router.push("/messages");
+              }}
+              className={`flex items-center px-4 py-3 relative w-full text-left ${
                 pathname === "/messages" ? "bg-gray-800" : "hover:bg-gray-800"
               }`}
             >
@@ -308,7 +328,7 @@ export default function SidebarNav() {
               <div className="absolute top-2 left-5">
                 <MessageBadge className="h-5 w-5 flex items-center justify-center" />
               </div>
-            </Link>
+            </button>
           ) : (
             <button
               onClick={() => handleAuthRequiredNavigation("/messages")}
