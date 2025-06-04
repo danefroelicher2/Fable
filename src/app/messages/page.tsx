@@ -164,9 +164,16 @@ export default function MessagesPage() {
             });
           });
 
-          // ADDED: Trigger a refresh of the badge by dispatching a custom event
+          // ENHANCED: Trigger multiple events to ensure badge updates
           window.dispatchEvent(
             new CustomEvent("messagesRead", {
+              detail: { userId },
+            })
+          );
+
+          // Additional event for conversation opening
+          window.dispatchEvent(
+            new CustomEvent("conversationOpened", {
               detail: { userId },
             })
           );
@@ -191,14 +198,18 @@ export default function MessagesPage() {
       return;
     }
 
-    // Mark all messages as read when visiting this page
-    markAllMessagesAsRead().catch((err) => {
-      console.error("Error marking all messages as read:", err);
-    });
+    // Mark all messages as read when visiting this page and trigger badge update
+    markAllMessagesAsRead()
+      .then(() => {
+        // Trigger badge refresh after marking all messages as read
+        window.dispatchEvent(new CustomEvent("messagesRead"));
+      })
+      .catch((err) => {
+        console.error("Error marking all messages as read:", err);
+      });
 
     fetchConversations();
   }, [user, router, mounted, fetchConversations]);
-
   // Load specific conversation when selectedUserId changes
   useEffect(() => {
     if (selectedUserId && user && initialLoadComplete && mounted) {
@@ -278,12 +289,20 @@ export default function MessagesPage() {
     scrollToBottom,
   ]);
 
-  // FIXED: Improve conversation selection with immediate scroll
+  // FIXED: Improve conversation selection with immediate scroll and badge update
   const selectConversation = useCallback(
     (conversation: ConversationSummary) => {
       setSelectedConversation(conversation);
       setSelectedUserId(conversation.user_id);
       router.push(`/messages?user=${conversation.user_id}`, { scroll: false });
+
+      // Immediately trigger badge update when selecting conversation
+      window.dispatchEvent(
+        new CustomEvent("conversationOpened", {
+          detail: { userId: conversation.user_id },
+        })
+      );
+
       fetchMessages(conversation.user_id);
     },
     [router, fetchMessages]
