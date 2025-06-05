@@ -1,4 +1,4 @@
-// src/app/messages/page.tsx - FIXED VERSION WITH PROPER SCROLLING
+// src/app/messages/page.tsx - FIXED WITH USER SEARCH PLUS BUTTON
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -36,8 +36,15 @@ export default function MessagesPage() {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  // User search states
+  const [showUserSearch, setShowUserSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // FIXED: Handle searchParams safely after component mounts
   useEffect(() => {
@@ -47,6 +54,142 @@ export default function MessagesPage() {
       setSelectedUserId(userParam);
     }
   }, [searchParams]);
+
+  // AGGRESSIVE: Function to trigger all badge refresh events
+  const triggerBadgeRefresh = useCallback(() => {
+    console.log("Triggering aggressive badge refresh");
+
+    // Dispatch multiple events immediately
+    window.dispatchEvent(new CustomEvent("messagesRead"));
+    window.dispatchEvent(new CustomEvent("conversationOpened"));
+    window.dispatchEvent(new CustomEvent("forceRefreshBadge"));
+
+    // Dispatch with delays
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("messagesRead"));
+      window.dispatchEvent(new CustomEvent("forceRefreshBadge"));
+    }, 50);
+
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("messagesRead"));
+      window.dispatchEvent(new CustomEvent("forceRefreshBadge"));
+    }, 200);
+
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("messagesRead"));
+      window.dispatchEvent(new CustomEvent("forceRefreshBadge"));
+    }, 500);
+
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("forceRefreshBadge"));
+    }, 1000);
+
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("forceRefreshBadge"));
+    }, 2000);
+  }, []);
+
+  // User search function
+  const searchUsers = useCallback(
+    async (query: string) => {
+      if (!query.trim() || query.length < 2) {
+        setSearchResults([]);
+        return;
+      }
+
+      setSearchLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, username, full_name, avatar_url")
+          .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
+          .limit(10);
+
+        if (!error && data) {
+          // Filter out current user
+          const filteredResults = data.filter(
+            (profile) => profile.id !== user?.id
+          );
+          setSearchResults(filteredResults);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (error) {
+        console.error("Error searching users:", error);
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    },
+    [user?.id]
+  );
+
+  // Debounced search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      searchUsers(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, searchUsers]);
+
+  // Handle user selection from search
+  const handleUserSelect = useCallback(
+    async (selectedUser: any) => {
+      setShowUserSearch(false);
+      setSearchQuery("");
+      setSearchResults([]);
+
+      // Check if conversation already exists
+      const existingConvo = conversations.find(
+        (c) => c.user_id === selectedUser.id
+      );
+
+      if (existingConvo) {
+        // Use existing conversation
+        selectConversation(existingConvo);
+      } else {
+        // Create new conversation object
+        const newConvo: ConversationSummary = {
+          user_id: selectedUser.id,
+          username: selectedUser.username,
+          full_name: selectedUser.full_name,
+          avatar_url: selectedUser.avatar_url,
+          last_message: "",
+          last_message_date: new Date().toISOString(),
+          unread_count: 0,
+        };
+
+        setSelectedConversation(newConvo);
+        setSelectedUserId(selectedUser.id);
+        setMessages([]);
+        router.push(`/messages?user=${selectedUser.id}`, { scroll: false });
+      }
+    },
+    [conversations, router]
+  );
+
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (showUserSearch && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [showUserSearch]);
+
+  // Close search dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (showUserSearch && !target.closest(".user-search-container")) {
+        setShowUserSearch(false);
+        setSearchQuery("");
+        setSearchResults([]);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [showUserSearch]);
 
   // FIXED: Enhanced scroll function that reliably scrolls to bottom
   const scrollToBottom = useCallback(
@@ -146,7 +289,7 @@ export default function MessagesPage() {
           }
         }, 200);
 
-        // FIXED: Mark messages as read and ensure the operation completes
+        // AGGRESSIVE: Mark messages as read and trigger badge refresh
         try {
           await markMessagesAsRead(userId);
           console.log(`Marked messages as read for user: ${userId}`);
@@ -164,19 +307,8 @@ export default function MessagesPage() {
             });
           });
 
-          // ENHANCED: Trigger multiple events to ensure badge updates
-          window.dispatchEvent(
-            new CustomEvent("messagesRead", {
-              detail: { userId },
-            })
-          );
-
-          // Additional event for conversation opening
-          window.dispatchEvent(
-            new CustomEvent("conversationOpened", {
-              detail: { userId },
-            })
-          );
+          // AGGRESSIVE: Trigger badge refresh immediately and with delays
+          triggerBadgeRefresh();
         } catch (readError) {
           console.error("Error marking messages as read:", readError);
         }
@@ -186,7 +318,7 @@ export default function MessagesPage() {
         setMessageLoading(false);
       }
     },
-    [user]
+    [user, triggerBadgeRefresh]
   );
 
   // Main effect for authentication and initial setup
@@ -198,18 +330,19 @@ export default function MessagesPage() {
       return;
     }
 
-    // Mark all messages as read when visiting this page and trigger badge update
+    // AGGRESSIVE: Mark all messages as read when visiting this page and trigger badge update
     markAllMessagesAsRead()
       .then(() => {
-        // Trigger badge refresh after marking all messages as read
-        window.dispatchEvent(new CustomEvent("messagesRead"));
+        console.log("Marked all messages as read on page visit");
+        triggerBadgeRefresh();
       })
       .catch((err) => {
         console.error("Error marking all messages as read:", err);
       });
 
     fetchConversations();
-  }, [user, router, mounted, fetchConversations]);
+  }, [user, router, mounted, fetchConversations, triggerBadgeRefresh]);
+
   // Load specific conversation when selectedUserId changes
   useEffect(() => {
     if (selectedUserId && user && initialLoadComplete && mounted) {
@@ -289,23 +422,19 @@ export default function MessagesPage() {
     scrollToBottom,
   ]);
 
-  // FIXED: Improve conversation selection with immediate scroll and badge update
+  // AGGRESSIVE: Improve conversation selection with immediate badge update
   const selectConversation = useCallback(
     (conversation: ConversationSummary) => {
       setSelectedConversation(conversation);
       setSelectedUserId(conversation.user_id);
       router.push(`/messages?user=${conversation.user_id}`, { scroll: false });
 
-      // Immediately trigger badge update when selecting conversation
-      window.dispatchEvent(
-        new CustomEvent("conversationOpened", {
-          detail: { userId: conversation.user_id },
-        })
-      );
+      // AGGRESSIVE: Immediately trigger badge update when selecting conversation
+      triggerBadgeRefresh();
 
       fetchMessages(conversation.user_id);
     },
-    [router, fetchMessages]
+    [router, fetchMessages, triggerBadgeRefresh]
   );
 
   // FIXED: Memoize date formatting to prevent unnecessary calculations
@@ -351,8 +480,101 @@ export default function MessagesPage() {
         <div className="flex h-[80vh]">
           {/* Conversations sidebar */}
           <div className="w-1/3 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <h2 className="text-xl font-bold dark:text-white">Messages</h2>
+
+              {/* Plus button for user search */}
+              <div className="relative user-search-container">
+                <button
+                  onClick={() => setShowUserSearch(!showUserSearch)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                  title="Start new conversation"
+                >
+                  <svg
+                    className="w-5 h-5 text-gray-600 dark:text-gray-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                </button>
+
+                {/* User search dropdown */}
+                {showUserSearch && (
+                  <div className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                    <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                      <input
+                        ref={searchInputRef}
+                        type="text"
+                        placeholder="Search users..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      />
+                    </div>
+
+                    <div className="max-h-60 overflow-y-auto">
+                      {searchLoading ? (
+                        <div className="flex items-center justify-center p-4">
+                          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+                        </div>
+                      ) : searchResults.length > 0 ? (
+                        <div className="py-1">
+                          {searchResults.map((user) => (
+                            <button
+                              key={user.id}
+                              onClick={() => handleUserSelect(user)}
+                              className="w-full flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
+                              <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 overflow-hidden mr-3">
+                                {user.avatar_url ? (
+                                  <img
+                                    src={user.avatar_url}
+                                    alt={user.username || "User"}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <span className="text-sm font-semibold">
+                                    {(user.full_name || user.username || "U")
+                                      .charAt(0)
+                                      .toUpperCase()}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex-grow text-left">
+                                <p className="font-medium dark:text-white">
+                                  {user.full_name ||
+                                    user.username ||
+                                    "Anonymous User"}
+                                </p>
+                                {user.username && (
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    @{user.username}
+                                  </p>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : searchQuery.length >= 2 ? (
+                        <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                          No users found
+                        </div>
+                      ) : (
+                        <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                          Type to search for users
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="overflow-y-auto flex-grow">
@@ -364,7 +586,7 @@ export default function MessagesPage() {
                 <div className="text-center p-6 text-gray-500 dark:text-gray-400">
                   <p>No conversations yet.</p>
                   <p className="mt-2">
-                    Start messaging people from their profiles!
+                    Use the + button above to start a conversation!
                   </p>
                 </div>
               ) : (
@@ -679,15 +901,14 @@ export default function MessagesPage() {
                   Your Messages
                 </h3>
                 <p className="mb-4">
-                  Select a conversation or start a new one from a user&apos;s
-                  profile.
+                  Select a conversation or start a new one using the + button.
                 </p>
-                <Link
-                  href="/search-users"
+                <button
+                  onClick={() => setShowUserSearch(true)}
                   className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                 >
-                  Find Users to Message
-                </Link>
+                  Start New Conversation
+                </button>
               </div>
             )}
           </div>

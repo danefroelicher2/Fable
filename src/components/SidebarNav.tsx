@@ -281,7 +281,7 @@ export default function SidebarNav() {
             </button>
           )}
 
-          {/* FIXED: Messages link - Handle auth requirement client-side */}
+          {/* FIXED: Messages link - Handle auth requirement client-side with badge clearing */}
           {user ? (
             <button
               onClick={() => {
@@ -292,6 +292,9 @@ export default function SidebarNav() {
                       .then(() => {
                         // Trigger badge refresh after marking all messages as read
                         window.dispatchEvent(new CustomEvent("messagesRead"));
+                        window.dispatchEvent(
+                          new CustomEvent("forceRefreshBadge")
+                        );
                       })
                       .catch((err) => {
                         console.error(

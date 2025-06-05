@@ -95,8 +95,21 @@ export default function MessageBadge({ className = "" }: MessageBadgeProps) {
       }, 500);
     };
 
+    const handleForceRefresh = () => {
+      console.log("Force refresh badge event received");
+      // Immediate refresh and delayed refresh for reliability
+      fetchUnreadCount();
+      setTimeout(() => {
+        fetchUnreadCount();
+      }, 200);
+      setTimeout(() => {
+        fetchUnreadCount();
+      }, 1000);
+    };
+
     window.addEventListener("messagesRead", handleMessagesRead);
     window.addEventListener("conversationOpened", handleConversationOpened);
+    window.addEventListener("forceRefreshBadge", handleForceRefresh);
 
     return () => {
       window.removeEventListener("messagesRead", handleMessagesRead);
@@ -104,6 +117,7 @@ export default function MessageBadge({ className = "" }: MessageBadgeProps) {
         "conversationOpened",
         handleConversationOpened
       );
+      window.removeEventListener("forceRefreshBadge", handleForceRefresh);
     };
   }, []);
 
