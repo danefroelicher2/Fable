@@ -1,4 +1,4 @@
-// src/context/MessageBadgeContext.tsx - SMARTER VERSION
+// src/context/MessageBadgeContext.tsx - FIXED VERSION
 "use client";
 
 import React, {
@@ -19,7 +19,7 @@ interface MessageBadgeContextType {
   clearBadge: () => void;
   setBadgeCount: (count: number) => void;
   isLoading: boolean;
-  markAsReadAndClear: () => void; // NEW: Intelligent clear that prevents refresh
+  markAsReadAndClear: () => void;
 }
 
 const MessageBadgeContext = createContext<MessageBadgeContextType | undefined>(
@@ -35,11 +35,11 @@ export function MessageBadgeProvider({
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
 
-  // Use refs to prevent race conditions and excessive API calls
+  // Use refs to prevent race conditions and track state
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastRefreshRef = useRef<number>(0);
   const isRefreshingRef = useRef(false);
-  const recentlyMarkedAsReadRef = useRef(false); // NEW: Track if recently marked as read
+  const lastClearedAtRef = useRef<number>(0); // FIXED: Track when badge was last cleared
 
   const refreshBadge = useCallback(async () => {
     if (!user || isRefreshingRef.current) {
@@ -49,22 +49,20 @@ export function MessageBadgeProvider({
       return;
     }
 
-    // NEW: If we recently marked messages as read, wait a bit longer
-    if (recentlyMarkedAsReadRef.current) {
+    // FIXED: Check if badge was recently cleared (within last 5 seconds)
+    const now = Date.now();
+    const timeSinceCleared = now - lastClearedAtRef.current;
+    if (timeSinceCleared < 5000) {
+      // 5 seconds
       console.log(
-        "MessageBadgeContext: Recently marked as read, waiting longer before refresh"
+        "MessageBadgeContext: Skipping refresh - badge was recently cleared"
       );
-      setTimeout(() => {
-        recentlyMarkedAsReadRef.current = false;
-        refreshBadge();
-      }, 1500);
       return;
     }
 
     // Prevent multiple rapid refreshes
-    const now = Date.now();
-    if (now - lastRefreshRef.current < 800) {
-      // Increased from 500ms to 800ms
+    if (now - lastRefreshRef.current < 1000) {
+      // Increased to 1 second
       console.log(
         "MessageBadgeContext: Skipping refresh - too soon since last refresh"
       );
@@ -76,10 +74,23 @@ export function MessageBadgeProvider({
       setIsLoading(true);
       console.log("MessageBadgeContext: Fetching unread count...");
 
+      // FIXED: Add small delay to ensure database consistency
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
       const count = await getUnreadCount();
       console.log("MessageBadgeContext: New unread count:", count);
 
-      setUnreadCount(count);
+      // FIXED: Only update if we actually got a valid count and it's not immediately after a clear
+      const timeSinceClearedNow = Date.now() - lastClearedAtRef.current;
+      if (timeSinceClearedNow > 3000) {
+        // Only update if more than 3 seconds since last clear
+        setUnreadCount(count);
+      } else {
+        console.log(
+          "MessageBadgeContext: Ignoring count update - too soon after clear"
+        );
+      }
+
       lastRefreshRef.current = now;
     } catch (error) {
       console.error("MessageBadgeContext: Error refreshing badge:", error);
@@ -93,6 +104,7 @@ export function MessageBadgeProvider({
   const clearBadge = useCallback(() => {
     console.log("MessageBadgeContext: Clearing badge immediately");
     setUnreadCount(0);
+    lastClearedAtRef.current = Date.now(); // FIXED: Track when cleared
 
     // Clear any pending refresh timeouts
     if (refreshTimeoutRef.current) {
@@ -101,31 +113,62 @@ export function MessageBadgeProvider({
     }
   }, []);
 
-  // NEW: Intelligent clear that prevents immediate refresh
-  const markAsReadAndClear = useCallback(() => {
-    console.log("MessageBadgeContext: Marking as read and clearing badge");
-    setUnreadCount(0);
-    recentlyMarkedAsReadRef.current = true;
+  const markAsReadAndClear = useCallback(async () => {
+    if (!user) return;
 
-    // Clear any pending refresh timeouts
+    console.log("Marking messages as read in DB...");
+
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .update({ is_read: true })
+        .eq("recipient_id", user.id)
+        .eq("is_read", false);
+
+      if (error) {
+        console.error("Error updating messages read status:", error);
+      } else {
+        console.log("Messages marked as read:", data?.length);
+        setUnreadCount(0);
+        lastClearedAtRef.current = Date.now();
+        sessionStorage.setItem("messageBadgeCleared", Date.now().toString());
+      }
+    } catch (e) {
+      console.error("Exception marking messages as read:", e);
+    }
+
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
       refreshTimeoutRef.current = null;
     }
-
-    // Reset the flag after a longer delay
-    setTimeout(() => {
-      recentlyMarkedAsReadRef.current = false;
-    }, 3000);
-  }, []);
+  }, [user]);
 
   const setBadgeCount = useCallback((count: number) => {
     console.log("MessageBadgeContext: Setting badge count to:", count);
+
+    // FIXED: Check if badge was recently cleared before setting count
+    const timeSinceCleared = Date.now() - lastClearedAtRef.current;
+    if (timeSinceCleared < 3000) {
+      console.log(
+        "MessageBadgeContext: Ignoring setBadgeCount - badge was recently cleared"
+      );
+      return;
+    }
+
     setUnreadCount(Math.max(0, count));
   }, []);
 
-  // Debounced refresh function
+  // FIXED: Enhanced debounced refresh function with clear check
   const debouncedRefresh = useCallback(() => {
+    // Check if badge was recently cleared
+    const timeSinceCleared = Date.now() - lastClearedAtRef.current;
+    if (timeSinceCleared < 3000) {
+      console.log(
+        "MessageBadgeContext: Skipping debouncedRefresh - badge was recently cleared"
+      );
+      return;
+    }
+
     // Clear any existing timeout
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
@@ -134,21 +177,45 @@ export function MessageBadgeProvider({
     // Set a new timeout
     refreshTimeoutRef.current = setTimeout(() => {
       refreshBadge();
-    }, 500); // Increased from 300ms to 500ms
+    }, 1000); // Increased delay
   }, [refreshBadge]);
 
-  // Initial load when user changes
+  // FIXED: Initial load with session storage check
   useEffect(() => {
     if (user) {
+      console.log(
+        "MessageBadgeContext: User changed, checking for recent clears"
+      );
+
+      // FIXED: Check sessionStorage for recent clear
+      if (typeof window !== "undefined") {
+        const clearedTime = sessionStorage.getItem("messageBadgeCleared");
+        if (clearedTime) {
+          const timeSinceCleared = Date.now() - parseInt(clearedTime);
+          if (timeSinceCleared < 10000) {
+            // 10 seconds
+            console.log(
+              "MessageBadgeContext: Badge was recently cleared, not refreshing"
+            );
+            lastClearedAtRef.current = parseInt(clearedTime);
+            setUnreadCount(0);
+            return;
+          }
+        }
+      }
+
       console.log("MessageBadgeContext: User changed, refreshing badge");
-      refreshBadge();
+      // Add delay before initial refresh to let page settle
+      setTimeout(() => {
+        refreshBadge();
+      }, 500);
     } else {
       console.log("MessageBadgeContext: No user, clearing badge");
       setUnreadCount(0);
     }
   }, [user, refreshBadge]);
 
-  // Set up real-time subscription for new messages
+  // FIXED: Enhanced real-time subscription
   useEffect(() => {
     if (!user) return;
 
@@ -166,10 +233,17 @@ export function MessageBadgeProvider({
         },
         (payload) => {
           console.log("MessageBadgeContext: New message received:", payload);
-          // Only refresh if we haven't recently marked messages as read
-          if (!recentlyMarkedAsReadRef.current) {
-            debouncedRefresh();
+
+          // FIXED: Check if badge was recently cleared before updating
+          const timeSinceCleared = Date.now() - lastClearedAtRef.current;
+          if (timeSinceCleared < 3000) {
+            console.log(
+              "MessageBadgeContext: Ignoring new message - badge was recently cleared"
+            );
+            return;
           }
+
+          debouncedRefresh();
         }
       )
       .on(
@@ -182,11 +256,19 @@ export function MessageBadgeProvider({
         },
         (payload) => {
           console.log("MessageBadgeContext: Message updated:", payload);
-          // Messages being updated usually means they're being marked as read
-          // So we should refresh after a delay
-          setTimeout(() => {
-            debouncedRefresh();
-          }, 1000);
+
+          // FIXED: If message was marked as read, clear the badge
+          if (payload.new && payload.new.is_read === true) {
+            console.log(
+              "MessageBadgeContext: Message marked as read, clearing badge"
+            );
+            markAsReadAndClear();
+          } else {
+            // Otherwise refresh after a delay
+            setTimeout(() => {
+              debouncedRefresh();
+            }, 1000);
+          }
         }
       )
       .subscribe();
@@ -198,9 +280,9 @@ export function MessageBadgeProvider({
         clearTimeout(refreshTimeoutRef.current);
       }
     };
-  }, [user, debouncedRefresh]);
+  }, [user, debouncedRefresh, markAsReadAndClear]);
 
-  // Listen for custom events with smarter handling
+  // FIXED: Enhanced custom event listeners
   useEffect(() => {
     const handleClear = () => {
       console.log("MessageBadgeContext: Received clear event");
@@ -209,8 +291,10 @@ export function MessageBadgeProvider({
 
     const handleRefresh = () => {
       console.log("MessageBadgeContext: Received refresh event");
-      // Only refresh if we haven't recently marked as read
-      if (!recentlyMarkedAsReadRef.current) {
+
+      // FIXED: Check if badge was recently cleared
+      const timeSinceCleared = Date.now() - lastClearedAtRef.current;
+      if (timeSinceCleared > 3000) {
         debouncedRefresh();
       }
     };
@@ -248,6 +332,23 @@ export function MessageBadgeProvider({
       }
     };
   }, [clearBadge, debouncedRefresh, markAsReadAndClear]);
+
+  // FIXED: Cleanup session storage on component unmount
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined") {
+        // Clean up old session storage entries (older than 1 hour)
+        const clearedTime = sessionStorage.getItem("messageBadgeCleared");
+        if (clearedTime) {
+          const timeSinceCleared = Date.now() - parseInt(clearedTime);
+          if (timeSinceCleared > 3600000) {
+            // 1 hour
+            sessionStorage.removeItem("messageBadgeCleared");
+          }
+        }
+      }
+    };
+  }, []);
 
   const value = {
     unreadCount,
