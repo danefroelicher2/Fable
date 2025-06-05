@@ -260,8 +260,7 @@ export default function Home() {
               About Fable
             </h2>
             <p className="text-xl text-gray-700 max-w-3xl mx-auto">
-              Where every story matters, every voice is heard, and every
-              imagination finds its home.
+              Contact Information: writefable@gmail.com
             </p>
           </div>
 

@@ -113,35 +113,23 @@ export function MessageBadgeProvider({
     }
   }, []);
 
-  const markAsReadAndClear = useCallback(async () => {
-    if (!user) return;
+  // FIXED: Enhanced intelligent clear that persists across page reloads
+  const markAsReadAndClear = useCallback(() => {
+    console.log("MessageBadgeContext: Marking as read and clearing badge");
+    setUnreadCount(0);
+    lastClearedAtRef.current = Date.now();
 
-    console.log("Marking messages as read in DB...");
-
-    try {
-      const { data, error } = await supabase
-        .from("messages")
-        .update({ is_read: true })
-        .eq("recipient_id", user.id)
-        .eq("is_read", false);
-
-      if (error) {
-        console.error("Error updating messages read status:", error);
-      } else {
-        console.log("Messages marked as read:", data?.length);
-        setUnreadCount(0);
-        lastClearedAtRef.current = Date.now();
-        sessionStorage.setItem("messageBadgeCleared", Date.now().toString());
-      }
-    } catch (e) {
-      console.error("Exception marking messages as read:", e);
+    // FIXED: Store the clear timestamp in sessionStorage to persist across reloads
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("messageBadgeCleared", Date.now().toString());
     }
 
+    // Clear any pending refresh timeouts
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
       refreshTimeoutRef.current = null;
     }
-  }, [user]);
+  }, []);
 
   const setBadgeCount = useCallback((count: number) => {
     console.log("MessageBadgeContext: Setting badge count to:", count);
