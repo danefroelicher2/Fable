@@ -1,9 +1,10 @@
-// src/app/messages/page.tsx - FIXED WITH USER SEARCH PLUS BUTTON
+// src/app/messages/page.tsx - JSX SYNTAX FIXED VERSION
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useMessageBadge } from "@/context/MessageBadgeContext";
 import Link from "next/link";
 import SharedContentMessage from "@/components/SharedContentMessage";
 import {
@@ -21,10 +22,9 @@ export default function MessagesPage() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { clearBadge, refreshBadge } = useMessageBadge();
 
-  // Fix: Safely handle searchParams
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedConversation, setSelectedConversation] =
@@ -46,7 +46,7 @@ export default function MessagesPage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // FIXED: Handle searchParams safely after component mounts
+  // Handle searchParams safely after component mounts
   useEffect(() => {
     setMounted(true);
     if (searchParams) {
@@ -55,39 +55,14 @@ export default function MessagesPage() {
     }
   }, [searchParams]);
 
-  // AGGRESSIVE: Function to trigger all badge refresh events
+  // Function to trigger badge refresh using context
   const triggerBadgeRefresh = useCallback(() => {
-    console.log("Triggering aggressive badge refresh");
-
-    // Dispatch multiple events immediately
-    window.dispatchEvent(new CustomEvent("messagesRead"));
-    window.dispatchEvent(new CustomEvent("conversationOpened"));
-    window.dispatchEvent(new CustomEvent("forceRefreshBadge"));
-
-    // Dispatch with delays
+    console.log("Messages page: Clearing badge and scheduling refresh");
+    clearBadge();
     setTimeout(() => {
-      window.dispatchEvent(new CustomEvent("messagesRead"));
-      window.dispatchEvent(new CustomEvent("forceRefreshBadge"));
-    }, 50);
-
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent("messagesRead"));
-      window.dispatchEvent(new CustomEvent("forceRefreshBadge"));
-    }, 200);
-
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent("messagesRead"));
-      window.dispatchEvent(new CustomEvent("forceRefreshBadge"));
-    }, 500);
-
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent("forceRefreshBadge"));
+      refreshBadge();
     }, 1000);
-
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent("forceRefreshBadge"));
-    }, 2000);
-  }, []);
+  }, [clearBadge, refreshBadge]);
 
   // User search function
   const searchUsers = useCallback(
@@ -106,7 +81,6 @@ export default function MessagesPage() {
           .limit(10);
 
         if (!error && data) {
-          // Filter out current user
           const filteredResults = data.filter(
             (profile) => profile.id !== user?.id
           );
@@ -129,7 +103,6 @@ export default function MessagesPage() {
     const timeoutId = setTimeout(() => {
       searchUsers(searchQuery);
     }, 300);
-
     return () => clearTimeout(timeoutId);
   }, [searchQuery, searchUsers]);
 
@@ -140,16 +113,13 @@ export default function MessagesPage() {
       setSearchQuery("");
       setSearchResults([]);
 
-      // Check if conversation already exists
       const existingConvo = conversations.find(
         (c) => c.user_id === selectedUser.id
       );
 
       if (existingConvo) {
-        // Use existing conversation
         selectConversation(existingConvo);
       } else {
-        // Create new conversation object
         const newConvo: ConversationSummary = {
           user_id: selectedUser.id,
           username: selectedUser.username,
@@ -191,12 +161,11 @@ export default function MessagesPage() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, [showUserSearch]);
 
-  // FIXED: Enhanced scroll function that reliably scrolls to bottom
+  // Enhanced scroll function that reliably scrolls to bottom
   const scrollToBottom = useCallback(
     (behavior: "auto" | "smooth" = "smooth") => {
       if (messagesContainerRef.current) {
         const container = messagesContainerRef.current;
-        // Force scroll to the very bottom
         if (behavior === "auto") {
           container.scrollTop = container.scrollHeight;
         } else {
@@ -210,17 +179,16 @@ export default function MessagesPage() {
     []
   );
 
-  // FIXED: Auto-scroll to bottom when messages load - with longer delay
+  // Auto-scroll to bottom when messages load
   useEffect(() => {
     if (messages.length > 0) {
-      // Always scroll to bottom when messages change with proper delay
       setTimeout(() => {
         scrollToBottom("auto");
-      }, 150); // Increased delay to ensure DOM is fully rendered
+      }, 150);
     }
   }, [messages, scrollToBottom]);
 
-  // FIXED: Separate function for fetching conversations with proper error handling
+  // Function for fetching conversations
   const fetchConversations = useCallback(async () => {
     if (!user) return;
 
@@ -229,7 +197,6 @@ export default function MessagesPage() {
       const conversationsList = await getConversations();
       setConversations(conversationsList);
 
-      // Handle selected user from URL params
       if (selectedUserId && conversationsList.length > 0) {
         const selectedConvo = conversationsList.find(
           (c) => c.user_id === selectedUserId
@@ -238,7 +205,6 @@ export default function MessagesPage() {
         if (selectedConvo) {
           setSelectedConversation(selectedConvo);
         } else {
-          // Try to fetch user profile for new conversation
           try {
             const { data: profileData, error } = await supabase
               .from("profiles")
@@ -281,7 +247,6 @@ export default function MessagesPage() {
         const conversation = await getConversation(userId);
         setMessages(conversation);
 
-        // IMPORTANT: Force scroll to bottom after messages load
         setTimeout(() => {
           if (messagesContainerRef.current) {
             const container = messagesContainerRef.current;
@@ -289,25 +254,19 @@ export default function MessagesPage() {
           }
         }, 200);
 
-        // AGGRESSIVE: Mark messages as read and trigger badge refresh
         try {
           await markMessagesAsRead(userId);
           console.log(`Marked messages as read for user: ${userId}`);
 
-          // Update unread count in conversations list immediately
           setConversations((prevConversations) => {
             return prevConversations.map((conv) => {
               if (conv.user_id === userId) {
-                return {
-                  ...conv,
-                  unread_count: 0,
-                };
+                return { ...conv, unread_count: 0 };
               }
               return conv;
             });
           });
 
-          // AGGRESSIVE: Trigger badge refresh immediately and with delays
           triggerBadgeRefresh();
         } catch (readError) {
           console.error("Error marking messages as read:", readError);
@@ -330,18 +289,17 @@ export default function MessagesPage() {
       return;
     }
 
-    // AGGRESSIVE: Mark all messages as read when visiting this page and trigger badge update
     markAllMessagesAsRead()
       .then(() => {
         console.log("Marked all messages as read on page visit");
-        triggerBadgeRefresh();
+        clearBadge();
       })
       .catch((err) => {
         console.error("Error marking all messages as read:", err);
       });
 
     fetchConversations();
-  }, [user, router, mounted, fetchConversations, triggerBadgeRefresh]);
+  }, [user, router, mounted, fetchConversations, clearBadge]);
 
   // Load specific conversation when selectedUserId changes
   useEffect(() => {
@@ -350,7 +308,7 @@ export default function MessagesPage() {
     }
   }, [selectedUserId, user, initialLoadComplete, mounted, fetchMessages]);
 
-  // FIXED: Set up real-time subscriptions with proper cleanup
+  // Set up real-time subscriptions
   useEffect(() => {
     if (!user || !mounted) return;
 
@@ -378,7 +336,7 @@ export default function MessagesPage() {
     };
   }, [user, selectedUserId, mounted, fetchConversations, fetchMessages]);
 
-  // FIXED: Improve message sending with auto-scroll
+  // Message sending function
   const handleSendMessage = useCallback(async () => {
     if (!newMessage.trim() || !selectedConversation || !user || sending) return;
 
@@ -391,13 +349,11 @@ export default function MessagesPage() {
 
       if (success) {
         setNewMessage("");
-        // Refresh messages and conversations
         await Promise.all([
           fetchMessages(selectedConversation.user_id),
           fetchConversations(),
         ]);
 
-        // FIXED: Force scroll to bottom after sending with longer delay
         setTimeout(() => {
           if (messagesContainerRef.current) {
             const container = messagesContainerRef.current;
@@ -419,25 +375,21 @@ export default function MessagesPage() {
     sending,
     fetchMessages,
     fetchConversations,
-    scrollToBottom,
   ]);
 
-  // AGGRESSIVE: Improve conversation selection with immediate badge update
+  // Conversation selection function
   const selectConversation = useCallback(
     (conversation: ConversationSummary) => {
       setSelectedConversation(conversation);
       setSelectedUserId(conversation.user_id);
       router.push(`/messages?user=${conversation.user_id}`, { scroll: false });
-
-      // AGGRESSIVE: Immediately trigger badge update when selecting conversation
-      triggerBadgeRefresh();
-
+      clearBadge();
       fetchMessages(conversation.user_id);
     },
-    [router, fetchMessages, triggerBadgeRefresh]
+    [router, fetchMessages, clearBadge]
   );
 
-  // FIXED: Memoize date formatting to prevent unnecessary calculations
+  // Date formatting function
   const formatDate = useCallback((dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -465,7 +417,7 @@ export default function MessagesPage() {
     }
   }, []);
 
-  // FIXED: Show loading state while mounting to prevent hydration mismatch
+  // Show loading state while mounting
   if (!mounted || !user) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -526,22 +478,26 @@ export default function MessagesPage() {
                         </div>
                       ) : searchResults.length > 0 ? (
                         <div className="py-1">
-                          {searchResults.map((user) => (
+                          {searchResults.map((searchUser) => (
                             <button
-                              key={user.id}
-                              onClick={() => handleUserSelect(user)}
+                              key={searchUser.id}
+                              onClick={() => handleUserSelect(searchUser)}
                               className="w-full flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             >
                               <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 overflow-hidden mr-3">
-                                {user.avatar_url ? (
+                                {searchUser.avatar_url ? (
                                   <img
-                                    src={user.avatar_url}
-                                    alt={user.username || "User"}
+                                    src={searchUser.avatar_url}
+                                    alt={searchUser.username || "User"}
                                     className="h-full w-full object-cover"
                                   />
                                 ) : (
                                   <span className="text-sm font-semibold">
-                                    {(user.full_name || user.username || "U")
+                                    {(
+                                      searchUser.full_name ||
+                                      searchUser.username ||
+                                      "U"
+                                    )
                                       .charAt(0)
                                       .toUpperCase()}
                                   </span>
@@ -549,13 +505,13 @@ export default function MessagesPage() {
                               </div>
                               <div className="flex-grow text-left">
                                 <p className="font-medium dark:text-white">
-                                  {user.full_name ||
-                                    user.username ||
+                                  {searchUser.full_name ||
+                                    searchUser.username ||
                                     "Anonymous User"}
                                 </p>
-                                {user.username && (
+                                {searchUser.username && (
                                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    @{user.username}
+                                    @{searchUser.username}
                                   </p>
                                 )}
                               </div>
@@ -701,7 +657,7 @@ export default function MessagesPage() {
                   </Link>
                 </div>
 
-                {/* FIXED: Chat messages with proper scrolling capability - HIDDEN SCROLLBAR */}
+                {/* Chat messages */}
                 <div
                   ref={messagesContainerRef}
                   className="flex-grow p-4 overflow-y-auto scrollbar-hide"
@@ -725,7 +681,6 @@ export default function MessagesPage() {
                           index === 0 ||
                           messages[index - 1].sender_id !== message.sender_id;
 
-                        // Check if this is a shared content message
                         const isSharedContent =
                           message.message_type === "shared_content" &&
                           message.shared_content;
@@ -762,7 +717,6 @@ export default function MessagesPage() {
                             )}
 
                             {isSharedContent ? (
-                              // Shared content message
                               <div
                                 className={`rounded-lg max-w-[70%] ${
                                   isCurrentUser ? "ml-auto" : ""
@@ -788,7 +742,6 @@ export default function MessagesPage() {
                                 </p>
                               </div>
                             ) : (
-                              // Regular text message
                               <div
                                 className={`px-4 py-2 rounded-lg max-w-[70%] ${
                                   isCurrentUser
@@ -835,7 +788,6 @@ export default function MessagesPage() {
                           </div>
                         );
                       })}
-                      {/* FIXED: This ref ensures we can scroll to the bottom */}
                       <div ref={messagesEndRef} />
                     </div>
                   )}
@@ -852,7 +804,6 @@ export default function MessagesPage() {
                       rows={2}
                       disabled={sending}
                       onKeyDown={(e) => {
-                        // Send message on Enter (but not with Shift+Enter for new line)
                         if (e.key === "Enter" && !e.shiftKey) {
                           e.preventDefault();
                           handleSendMessage();
@@ -881,7 +832,6 @@ export default function MessagesPage() {
                 </div>
               </>
             ) : (
-              // No conversation selected
               <div className="flex flex-col items-center justify-center h-full p-6 text-center text-gray-500 dark:text-gray-400">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

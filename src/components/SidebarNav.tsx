@@ -9,11 +9,13 @@ import ProfileDropdown from "./ProfileDropdown";
 import NotificationBadge from "./NotificationBadge";
 import MessageBadge from "./MessageBadge";
 import { supabase } from "@/lib/supabase";
+import { useMessageBadge } from "@/context/MessageBadgeContext";
 
 export default function SidebarNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
+  const { clearBadge } = useMessageBadge();
   const [profileData, setProfileData] = useState<any>(null);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [showMoreButton, setShowMoreButton] = useState(true);
@@ -281,32 +283,20 @@ export default function SidebarNav() {
             </button>
           )}
 
-          {/* FIXED: Messages link - Handle auth requirement client-side with badge clearing */}
+          {/* FIXED: Messages link - Simplified to prevent loops */}
           {user ? (
             <button
-              onClick={() => {
-                // Mark all messages as read when clicking the messages sidebar item
-                import("@/lib/messageUtils").then(
-                  ({ markAllMessagesAsRead }) => {
-                    markAllMessagesAsRead()
-                      .then(() => {
-                        // Trigger badge refresh after marking all messages as read
-                        window.dispatchEvent(new CustomEvent("messagesRead"));
-                        window.dispatchEvent(
-                          new CustomEvent("forceRefreshBadge")
-                        );
-                      })
-                      .catch((err) => {
-                        console.error(
-                          "Error marking all messages as read:",
-                          err
-                        );
-                      });
-                  }
-                );
+              onClick={async () => {
+                console.log("SidebarNav: Messages button clicked");
+
+                // Clear badge immediately for instant feedback
+                clearBadge();
 
                 // Navigate to messages page
                 router.push("/messages");
+
+                // Let the messages page handle marking messages as read
+                // No need to dispatch multiple events here
               }}
               className={`flex items-center px-4 py-3 relative w-full text-left ${
                 pathname === "/messages" ? "bg-gray-800" : "hover:bg-gray-800"
@@ -354,7 +344,6 @@ export default function SidebarNav() {
               <span>Messages</span>
             </button>
           )}
-
           <Link
             href="/communities"
             className={`flex items-center px-4 py-3 ${
