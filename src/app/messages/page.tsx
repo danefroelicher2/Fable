@@ -56,27 +56,11 @@ export default function MessagesPage() {
   }, [searchParams]);
 
   // Function to trigger badge refresh using context
-  const triggerBadgeRefresh = useCallback(
-    (delay: number = 2000) => {
-      console.log(
-        "Messages page: Clearing badge and scheduling refresh in",
-        delay,
-        "ms"
-      );
-
-      // Clear badge immediately for user feedback
-      clearBadge();
-
-      // Wait longer for database to be fully updated
-      setTimeout(() => {
-        console.log(
-          "Messages page: Now refreshing badge after DB should be updated"
-        );
-        refreshBadge();
-      }, delay);
-    },
-    [clearBadge, refreshBadge]
-  );
+  // Function to trigger badge refresh using context
+  const triggerBadgeRefresh = useCallback(() => {
+    console.log("Messages page: Marking messages as read and clearing badge");
+    markAsReadAndClear();
+  }, [markAsReadAndClear]);
 
   // User search function
   const searchUsers = useCallback(
@@ -296,7 +280,7 @@ export default function MessagesPage() {
         } catch (readError) {
           console.error("Error marking messages as read:", readError);
           // If marking as read fails, clear badge and refresh to get accurate count
-          clearBadge();
+          markAsReadAndClear();
           setTimeout(() => {
             refreshBadge();
           }, 1000);
@@ -322,7 +306,7 @@ export default function MessagesPage() {
     markAllMessagesAsRead()
       .then(() => {
         console.log("Marked all messages as read on page visit");
-        clearBadge();
+        markAsReadAndClear();
       })
       .catch((err) => {
         console.error("Error marking all messages as read:", err);
