@@ -1,4 +1,4 @@
-// src/context/MessageBadgeContext.tsx - FIXED VERSION
+// src/context/MessageBadgeContext.tsx - SMARTER VERSION
 "use client";
 
 import React, {
@@ -19,6 +19,7 @@ interface MessageBadgeContextType {
   clearBadge: () => void;
   setBadgeCount: (count: number) => void;
   isLoading: boolean;
+  markAsReadAndClear: () => void; // NEW: Intelligent clear that prevents refresh
 }
 
 const MessageBadgeContext = createContext<MessageBadgeContextType | undefined>(
@@ -38,6 +39,7 @@ export function MessageBadgeProvider({
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastRefreshRef = useRef<number>(0);
   const isRefreshingRef = useRef(false);
+  const recentlyMarkedAsReadRef = useRef(false); // NEW: Track if recently marked as read
 
   const refreshBadge = useCallback(async () => {
     if (!user || isRefreshingRef.current) {
@@ -47,9 +49,22 @@ export function MessageBadgeProvider({
       return;
     }
 
+    // NEW: If we recently marked messages as read, wait a bit longer
+    if (recentlyMarkedAsReadRef.current) {
+      console.log(
+        "MessageBadgeContext: Recently marked as read, waiting longer before refresh"
+      );
+      setTimeout(() => {
+        recentlyMarkedAsReadRef.current = false;
+        refreshBadge();
+      }, 1500);
+      return;
+    }
+
     // Prevent multiple rapid refreshes
     const now = Date.now();
-    if (now - lastRefreshRef.current < 500) {
+    if (now - lastRefreshRef.current < 800) {
+      // Increased from 500ms to 800ms
       console.log(
         "MessageBadgeContext: Skipping refresh - too soon since last refresh"
       );
@@ -86,6 +101,24 @@ export function MessageBadgeProvider({
     }
   }, []);
 
+  // NEW: Intelligent clear that prevents immediate refresh
+  const markAsReadAndClear = useCallback(() => {
+    console.log("MessageBadgeContext: Marking as read and clearing badge");
+    setUnreadCount(0);
+    recentlyMarkedAsReadRef.current = true;
+
+    // Clear any pending refresh timeouts
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+      refreshTimeoutRef.current = null;
+    }
+
+    // Reset the flag after a longer delay
+    setTimeout(() => {
+      recentlyMarkedAsReadRef.current = false;
+    }, 3000);
+  }, []);
+
   const setBadgeCount = useCallback((count: number) => {
     console.log("MessageBadgeContext: Setting badge count to:", count);
     setUnreadCount(Math.max(0, count));
@@ -101,7 +134,7 @@ export function MessageBadgeProvider({
     // Set a new timeout
     refreshTimeoutRef.current = setTimeout(() => {
       refreshBadge();
-    }, 300); // 300ms delay to debounce multiple calls
+    }, 500); // Increased from 300ms to 500ms
   }, [refreshBadge]);
 
   // Initial load when user changes
@@ -133,7 +166,10 @@ export function MessageBadgeProvider({
         },
         (payload) => {
           console.log("MessageBadgeContext: New message received:", payload);
-          debouncedRefresh();
+          // Only refresh if we haven't recently marked messages as read
+          if (!recentlyMarkedAsReadRef.current) {
+            debouncedRefresh();
+          }
         }
       )
       .on(
@@ -146,7 +182,11 @@ export function MessageBadgeProvider({
         },
         (payload) => {
           console.log("MessageBadgeContext: Message updated:", payload);
-          debouncedRefresh();
+          // Messages being updated usually means they're being marked as read
+          // So we should refresh after a delay
+          setTimeout(() => {
+            debouncedRefresh();
+          }, 1000);
         }
       )
       .subscribe();
@@ -160,7 +200,7 @@ export function MessageBadgeProvider({
     };
   }, [user, debouncedRefresh]);
 
-  // Listen for custom events with debouncing
+  // Listen for custom events with smarter handling
   useEffect(() => {
     const handleClear = () => {
       console.log("MessageBadgeContext: Received clear event");
@@ -169,25 +209,20 @@ export function MessageBadgeProvider({
 
     const handleRefresh = () => {
       console.log("MessageBadgeContext: Received refresh event");
-      debouncedRefresh();
+      // Only refresh if we haven't recently marked as read
+      if (!recentlyMarkedAsReadRef.current) {
+        debouncedRefresh();
+      }
     };
 
     const handleMessagesRead = () => {
       console.log("MessageBadgeContext: Messages marked as read");
-      clearBadge();
-      // Refresh after a longer delay to ensure DB is updated
-      setTimeout(() => {
-        debouncedRefresh();
-      }, 1000);
+      markAsReadAndClear();
     };
 
     const handleConversationOpened = () => {
       console.log("MessageBadgeContext: Conversation opened");
-      clearBadge();
-      // Refresh after delay to get accurate count
-      setTimeout(() => {
-        debouncedRefresh();
-      }, 800);
+      markAsReadAndClear();
     };
 
     // Register event listeners
@@ -212,7 +247,7 @@ export function MessageBadgeProvider({
         clearTimeout(refreshTimeoutRef.current);
       }
     };
-  }, [clearBadge, debouncedRefresh]);
+  }, [clearBadge, debouncedRefresh, markAsReadAndClear]);
 
   const value = {
     unreadCount,
@@ -220,6 +255,7 @@ export function MessageBadgeProvider({
     clearBadge,
     setBadgeCount,
     isLoading,
+    markAsReadAndClear,
   };
 
   return (

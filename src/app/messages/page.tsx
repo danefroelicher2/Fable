@@ -22,7 +22,7 @@ export default function MessagesPage() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { clearBadge, refreshBadge } = useMessageBadge();
+  const { clearBadge, refreshBadge, markAsReadAndClear } = useMessageBadge();
 
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
@@ -56,13 +56,27 @@ export default function MessagesPage() {
   }, [searchParams]);
 
   // Function to trigger badge refresh using context
-  const triggerBadgeRefresh = useCallback(() => {
-    console.log("Messages page: Clearing badge and scheduling refresh");
-    clearBadge();
-    setTimeout(() => {
-      refreshBadge();
-    }, 1000);
-  }, [clearBadge, refreshBadge]);
+  const triggerBadgeRefresh = useCallback(
+    (delay: number = 2000) => {
+      console.log(
+        "Messages page: Clearing badge and scheduling refresh in",
+        delay,
+        "ms"
+      );
+
+      // Clear badge immediately for user feedback
+      clearBadge();
+
+      // Wait longer for database to be fully updated
+      setTimeout(() => {
+        console.log(
+          "Messages page: Now refreshing badge after DB should be updated"
+        );
+        refreshBadge();
+      }, delay);
+    },
+    [clearBadge, refreshBadge]
+  );
 
   // User search function
   const searchUsers = useCallback(
@@ -254,10 +268,18 @@ export default function MessagesPage() {
           }
         }, 200);
 
+        // SMART: Mark messages as read and use intelligent badge clearing
         try {
-          await markMessagesAsRead(userId);
-          console.log(`Marked messages as read for user: ${userId}`);
+          console.log("Starting to mark messages as read for user:", userId);
 
+          // Use the smart clear function that prevents premature refresh
+          markAsReadAndClear();
+
+          // Mark messages as read in database
+          await markMessagesAsRead(userId);
+          console.log("Successfully marked messages as read for user:", userId);
+
+          // Update local conversation state immediately
           setConversations((prevConversations) => {
             return prevConversations.map((conv) => {
               if (conv.user_id === userId) {
@@ -267,9 +289,17 @@ export default function MessagesPage() {
             });
           });
 
-          triggerBadgeRefresh();
+          // The context will handle badge refresh intelligently after DB is updated
+          console.log(
+            "Messages marked as read, context will handle badge refresh"
+          );
         } catch (readError) {
           console.error("Error marking messages as read:", readError);
+          // If marking as read fails, clear badge and refresh to get accurate count
+          clearBadge();
+          setTimeout(() => {
+            refreshBadge();
+          }, 1000);
         }
       } catch (error) {
         console.error("Error fetching messages:", error);
@@ -277,7 +307,7 @@ export default function MessagesPage() {
         setMessageLoading(false);
       }
     },
-    [user, triggerBadgeRefresh]
+    [user, clearBadge, refreshBadge, markAsReadAndClear]
   );
 
   // Main effect for authentication and initial setup
@@ -380,13 +410,19 @@ export default function MessagesPage() {
   // Conversation selection function
   const selectConversation = useCallback(
     (conversation: ConversationSummary) => {
+      console.log("Selecting conversation with user:", conversation.user_id);
+
       setSelectedConversation(conversation);
       setSelectedUserId(conversation.user_id);
       router.push(`/messages?user=${conversation.user_id}`, { scroll: false });
-      clearBadge();
+
+      // Use smart clear that prevents premature refresh
+      markAsReadAndClear();
+
+      // Fetch messages (which will handle the database update)
       fetchMessages(conversation.user_id);
     },
-    [router, fetchMessages, clearBadge]
+    [router, fetchMessages, markAsReadAndClear]
   );
 
   // Date formatting function
