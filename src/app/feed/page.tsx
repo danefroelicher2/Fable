@@ -299,15 +299,12 @@ export default function PublicFeed() {
             href={`/user/${article.user_id}`}
             className="flex items-center mb-2 group"
           >
-            <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-2 overflow-hidden">
+            <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-2 overflow-hidden relative">
               {article.user_info?.avatar_url ? (
-                <Image
+                <img
                   src={article.user_info.avatar_url}
                   alt={article.user_info.username || "User"}
-                  fill
-                  className="object-cover"
-                  loading="lazy"
-                  sizes="32px"
+                  className="h-full w-full object-cover"
                 />
               ) : (
                 <span>
