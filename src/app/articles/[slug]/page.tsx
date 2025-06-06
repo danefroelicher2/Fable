@@ -286,15 +286,12 @@ export default function ArticlePage() {
                     href={`/user/${authorProfile.id}`}
                     className="flex items-center hover:opacity-80"
                   >
-                    <div className="h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden mr-3">
+                    <div className="h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden mr-3 relative">
                       {authorProfile.avatar_url ? (
-                        <Image
+                        <img
                           src={authorProfile.avatar_url}
                           alt={authorProfile.username || "Author"}
-                          fill
-                          className="object-cover"
-                          loading="lazy"
-                          sizes="40px"
+                          className="h-full w-full object-cover"
                         />
                       ) : (
                         <span className="text-sm font-semibold">
