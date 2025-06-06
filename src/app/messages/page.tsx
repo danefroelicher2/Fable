@@ -447,7 +447,7 @@ export default function MessagesPage() {
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-        <div className="flex h-[80vh]">
+        <div className="flex h-[calc(100vh-120px)] md:h-[80vh]">
           {/* Conversations sidebar */}
           <div className="w-1/3 border-r border-gray-200 dark:border-gray-700 flex flex-col">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">

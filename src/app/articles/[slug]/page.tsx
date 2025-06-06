@@ -237,7 +237,7 @@ export default function ArticlePage() {
           {article.image_url && (
             <div className="mb-8">
               <div
-                className="relative w-full h-96 overflow-hidden rounded-lg"
+                className="relative w-full h-64 md:h-96 overflow-hidden rounded-lg"
                 style={{
                   backgroundColor: theme === "dark" ? "#121212" : "#ffffff",
                 }}
@@ -248,7 +248,8 @@ export default function ArticlePage() {
                   fill
                   className="object-contain rounded-lg"
                   priority
-                  sizes="(max-width: 768px) 100vw, 768px"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 80vw, 768px"
+                  quality={85}
                 />
               </div>
             </div>

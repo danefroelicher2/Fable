@@ -379,7 +379,7 @@ export default function PublicUserProfilePage() {
         <div className="bg-white p-8 rounded-lg shadow-md mb-6">
           <div className="flex flex-col md:flex-row">
             <div className="md:w-1/3 mb-6 md:mb-0 flex justify-center">
-              <div className="h-48 w-48 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden">
+              <div className="h-32 w-32 md:h-48 md:w-48 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden">
                 {profile?.avatar_url ? (
                   <img
                     src={profile.avatar_url}
@@ -387,7 +387,7 @@ export default function PublicUserProfilePage() {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <span className="text-6xl">
+                  <span className="text-4xl md:text-6xl">
                     {profile?.username?.charAt(0).toUpperCase() ||
                       profile?.full_name?.charAt(0).toUpperCase() ||
                       "U"}

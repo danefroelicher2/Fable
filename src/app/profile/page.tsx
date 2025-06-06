@@ -488,7 +488,7 @@ export default function ProfilePage() {
           <div className="flex flex-col md:flex-row">
             <div className="md:w-1/3 mb-6 md:mb-0 flex flex-col items-center">
               <div
-                className="h-48 w-48 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden cursor-pointer hover:opacity-90 relative"
+                className="h-32 w-32 md:h-48 md:w-48 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden cursor-pointer hover:opacity-90 relative"
                 onClick={triggerFileInput}
               >
                 {avatarPreview ? (
@@ -819,7 +819,7 @@ export default function ProfilePage() {
 
           <div className="flex flex-col md:flex-row">
             <div className="md:w-1/3 mb-6 md:mb-0 flex justify-center">
-              <div className="h-48 w-48 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden relative">
+              <div className="h-32 w-32 md:h-48 md:w-48 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden relative">
                 {avatarUrl ? (
                   <Image
                     src={avatarUrl}
@@ -827,10 +827,10 @@ export default function ProfilePage() {
                     fill
                     className="object-cover"
                     loading="lazy"
-                    sizes="192px"
+                    sizes="(max-width: 768px) 128px, 192px"
                   />
                 ) : (
-                  <span className="text-6xl">
+                  <span className="text-4xl md:text-6xl">
                     {user?.email?.charAt(0).toUpperCase() || "U"}
                   </span>
                 )}
