@@ -55,7 +55,7 @@ export default function ClientSidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0">
+      <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0">
         <div className="flex flex-col h-full py-5 px-4 border-r border-gray-200 bg-white overflow-y-auto">
           {/* Logo */}
           <Link href="/" className="mb-8 text-center">

@@ -115,7 +115,7 @@ export default function SidebarNav() {
   };
 
   return (
-    <nav className="bg-gray-900 text-white w-64 fixed left-0 top-0 bottom-0 overflow-y-auto flex flex-col">
+    <nav className="bg-gray-900 text-white w-64 fixed left-0 top-0 bottom-0 overflow-y-auto flex flex-col hidden lg:flex">
       {/* Logo - New Improved Design */}
       <div className="p-4">
         <Link href="/" className="block">

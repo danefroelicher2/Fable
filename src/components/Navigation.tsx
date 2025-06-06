@@ -198,7 +198,7 @@ export default function Navigation() {
 
   return (
     <header
-      className={`${
+      className={`hidden lg:block ${
         isScrolled ? "shadow-md" : ""
       } transition-shadow duration-300`}
     >
