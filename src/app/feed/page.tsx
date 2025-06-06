@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import BookmarkButton from "@/components/BookmarkButton";
 import { useTheme } from "@/context/ThemeContext";
+import Image from "next/image";
 
 interface Article {
   id: string;
@@ -250,12 +251,15 @@ export default function PublicFeed() {
   const ArticleCard = ({ article }: { article: Article }) => {
     return (
       <div className="bg-white rounded-lg shadow-md overflow-hidden article-card">
-        <div className="aspect-square bg-slate-200 relative overflow-hidden flex items-center justify-center">
+        <div className="aspect-square bg-slate-200 relative overflow-hidden">
           {article.image_url ? (
-            <img
+            <Image
               src={article.image_url}
               alt={article.title}
-              className="max-w-full max-h-full object-contain"
+              fill
+              className="object-contain"
+              loading="lazy"
+              sizes="(max-width: 768px) 50vw, 25vw"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-500">
@@ -297,10 +301,13 @@ export default function PublicFeed() {
           >
             <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-2 overflow-hidden">
               {article.user_info?.avatar_url ? (
-                <img
+                <Image
                   src={article.user_info.avatar_url}
                   alt={article.user_info.username || "User"}
-                  className="h-full w-full object-cover"
+                  fill
+                  className="object-cover"
+                  loading="lazy"
+                  sizes="32px"
                 />
               ) : (
                 <span>

@@ -12,6 +12,7 @@ import ManagePinnedPosts from "@/components/ManagePinnedPosts";
 import PinnedPosts from "@/components/PinnedPosts";
 import { getFromStorage, setToStorage } from "@/lib/localStorageUtils";
 import { useTheme } from "@/context/ThemeContext";
+import Image from "next/image";
 
 interface Profile {
   id: string;
@@ -491,16 +492,22 @@ export default function ProfilePage() {
                 onClick={triggerFileInput}
               >
                 {avatarPreview ? (
-                  <img
+                  <Image
                     src={avatarPreview}
                     alt="Avatar Preview"
-                    className="h-full w-full object-cover"
+                    fill
+                    className="object-cover"
+                    loading="lazy"
+                    sizes="192px"
                   />
                 ) : avatarUrl ? (
-                  <img
+                  <Image
                     src={avatarUrl}
                     alt={username || "User"}
-                    className="h-full w-full object-cover"
+                    fill
+                    className="object-cover"
+                    loading="lazy"
+                    sizes="192px"
                   />
                 ) : (
                   <span className="text-6xl">
@@ -812,12 +819,15 @@ export default function ProfilePage() {
 
           <div className="flex flex-col md:flex-row">
             <div className="md:w-1/3 mb-6 md:mb-0 flex justify-center">
-              <div className="h-48 w-48 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden">
+              <div className="h-48 w-48 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden relative">
                 {avatarUrl ? (
-                  <img
+                  <Image
                     src={avatarUrl}
                     alt={username || "User"}
-                    className="h-full w-full object-cover"
+                    fill
+                    className="object-cover"
+                    loading="lazy"
+                    sizes="192px"
                   />
                 ) : (
                   <span className="text-6xl">
@@ -1123,10 +1133,13 @@ export default function ProfilePage() {
                           {/* Square Article Thumbnail */}
                           <div className="w-full h-full bg-slate-200 relative">
                             {article.image_url ? (
-                              <img
+                              <Image
                                 src={article.image_url}
                                 alt={article.title}
-                                className="w-full h-full object-cover"
+                                fill
+                                className="object-cover"
+                                loading="lazy"
+                                sizes="(max-width: 768px) 50vw, 33vw"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-slate-500 p-4">

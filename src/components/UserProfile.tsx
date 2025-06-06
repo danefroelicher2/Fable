@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 
 interface Profile {
   id: string;
@@ -118,12 +119,17 @@ export default function UserProfile() {
       <div className="space-y-4">
         <div className="flex justify-center">
           <div className="h-24 w-24 rounded-full bg-blue-600 flex items-center justify-center text-white text-3xl">
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt="Avatar"
-                className="h-24 w-24 rounded-full object-cover"
-              />
+             {avatarUrl ? (
+              <div className="h-24 w-24 rounded-full overflow-hidden relative">
+                <Image
+                  src={avatarUrl}
+                  alt="Avatar"
+                  fill
+                  className="object-cover"
+                  loading="lazy"
+                  sizes="96px"
+                />
+              </div>
             ) : (
               user?.email?.charAt(0).toUpperCase() || "U"
             )}

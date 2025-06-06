@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import FollowingFeed from "@/components/FollowingFeed";
+import Image from "next/image";
 
 interface Article {
   id: string;
@@ -276,12 +277,15 @@ export default function TabbedFeed() {
                   key={article.id}
                   className="bg-white rounded-lg shadow-md overflow-hidden article-card"
                 >
-                  <div className="h-48 bg-slate-200 overflow-hidden">
+                  <div className="h-48 bg-slate-200 overflow-hidden relative">
                     {article.image_url ? (
-                      <img
+                      <Image
                         src={article.image_url}
                         alt={article.title}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        loading="lazy"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-500">
@@ -300,12 +304,15 @@ export default function TabbedFeed() {
                       href={`/user/${article.user_id}`}
                       className="flex items-center mb-2 group"
                     >
-                      <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-2 overflow-hidden">
+                      <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-2 overflow-hidden relative">
                         {article.profiles?.avatar_url ? (
-                          <img
+                          <Image
                             src={article.profiles.avatar_url}
                             alt={article.profiles.username || "User"}
-                            className="h-full w-full object-cover"
+                            fill
+                            className="object-cover"
+                            loading="lazy"
+                            sizes="32px"
                           />
                         ) : (
                           <span>

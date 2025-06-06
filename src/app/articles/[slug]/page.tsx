@@ -14,6 +14,7 @@ import ShareButton from "@/components/ShareButton";
 import BookmarkButton from "@/components/BookmarkButton";
 import LikeButton from "@/components/LikeButton";
 import CommentSection from "@/components/CommentSection";
+import Image from "next/image";
 
 export default function ArticlePage() {
   const params = useParams();
@@ -236,30 +237,18 @@ export default function ArticlePage() {
           {article.image_url && (
             <div className="mb-8">
               <div
-                className="relative w-full max-h-96 overflow-hidden rounded-lg"
+                className="relative w-full h-96 overflow-hidden rounded-lg"
                 style={{
                   backgroundColor: theme === "dark" ? "#121212" : "#ffffff",
                 }}
               >
-                <img
+                <Image
                   src={article.image_url}
                   alt={article.title}
-                  className="w-full h-auto max-h-96 object-contain rounded-lg"
-                  style={{
-                    maxHeight: "24rem",
-                    width: "100%",
-                    height: "auto",
-                  }}
-                  onLoad={(e) => {
-                    e.currentTarget.style.opacity = "1";
-                  }}
-                  onError={(e) => {
-                    const container =
-                      e.currentTarget.parentElement?.parentElement;
-                    if (container) {
-                      container.style.display = "none";
-                    }
-                  }}
+                  fill
+                  className="object-contain rounded-lg"
+                  priority
+                  sizes="(max-width: 768px) 100vw, 768px"
                 />
               </div>
             </div>
@@ -299,10 +288,13 @@ export default function ArticlePage() {
                   >
                     <div className="h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 overflow-hidden mr-3">
                       {authorProfile.avatar_url ? (
-                        <img
+                        <Image
                           src={authorProfile.avatar_url}
                           alt={authorProfile.username || "Author"}
-                          className="h-full w-full object-cover"
+                          fill
+                          className="object-cover"
+                          loading="lazy"
+                          sizes="40px"
                         />
                       ) : (
                         <span className="text-sm font-semibold">

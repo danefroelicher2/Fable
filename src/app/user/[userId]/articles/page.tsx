@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import FollowButton from "@/components/FollowButton";
 import DeleteButton from "@/components/DeleteButton";
 import { useTheme } from "@/context/ThemeContext";
+import Image from "next/image";
 
 interface Profile {
   id: string;
@@ -403,10 +404,13 @@ export default function UserArticlesPage() {
                   {/* Square cover image */}
                   <div className="aspect-square bg-gray-200 relative">
                     {article.image_url ? (
-                      <img
+                      <Image
                         src={article.image_url}
                         alt={article.title}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        loading="lazy"
+                        sizes="(max-width: 768px) 50vw, 25vw"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-500 p-2">
@@ -458,11 +462,13 @@ export default function UserArticlesPage() {
                 <div className="md:flex">
                   {article.image_url && (
                     <div className="md:w-1/3">
-                      <div className="h-48 md:h-full bg-slate-200">
-                        <img
+                      <div className="h-48 md:h-full bg-slate-200 relative">
+                        <Image
                           src={article.image_url}
                           alt={article.title}
-                          className="w-full h-full object-cover"
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 33vw"
                         />
                       </div>
                     </div>

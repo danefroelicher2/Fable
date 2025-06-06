@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useMessageBadge } from "@/context/MessageBadgeContext";
 import Link from "next/link";
+import Image from "next/image";
 import SharedContentMessage from "@/components/SharedContentMessage";
 import {
   getConversations,
