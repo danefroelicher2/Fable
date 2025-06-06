@@ -8,6 +8,7 @@ import Link from "next/link";
 import { saveDraft, Draft, publishDraft } from "@/lib/draftUtils";
 import ImageUpload from "@/components/ImageUpload";
 import { useTheme } from "@/context/ThemeContext";
+import DOMPurify from "dompurify";
 
 export default function WritePage() {
   const { user } = useAuth();
