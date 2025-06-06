@@ -245,16 +245,18 @@ export default function Navigation() {
                 </svg>
               </a>
             </div>
-
             {/* Logo in center */}
             <Link
               href="/"
               className="text-white absolute left-1/2 transform -translate-x-1/2 transition-all duration-300"
             >
-              <div className="bg-red-600 px-12 py-6 hover:bg-red-700 transition-colors">
-                <span className="text-6xl font-bold tracking-wide">
-                  LOSTLIBRARY
-                </span>
+              <div className="bg-red-600 px-8 py-4 hover:bg-red-700 transition-colors flex items-center justify-center space-x-3">
+                <img
+                  src="/images/feather-quill-logo.png"
+                  alt="Fable - Where Stories Come Alive"
+                  className="h-16 w-16"
+                />
+                <span className="text-5xl font-bold tracking-wide">FABLE</span>
               </div>
             </Link>
 
