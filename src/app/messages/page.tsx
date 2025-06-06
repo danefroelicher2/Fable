@@ -1,4 +1,4 @@
-// src/app/messages/page.tsx - JSX SYNTAX FIXED VERSION
+// src/app/messages/page.tsx - UPDATED FOR FIXED BADGE LOGIC
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -55,27 +55,18 @@ export default function MessagesPage() {
     }
   }, [searchParams]);
 
-  // Function to trigger badge refresh using context
+  // FIXED: Simplified badge refresh logic
   const triggerBadgeRefresh = useCallback(
-    (delay: number = 2000) => {
-      console.log(
-        "Messages page: Clearing badge and scheduling refresh in",
-        delay,
-        "ms"
-      );
+    (delay: number = 1500) => {
+      console.log("Messages page: Scheduling badge refresh in", delay, "ms");
 
-      // Clear badge immediately for user feedback
-      clearBadge();
-
-      // Wait longer for database to be fully updated
+      // Wait for database to be updated, then refresh
       setTimeout(() => {
-        console.log(
-          "Messages page: Now refreshing badge after DB should be updated"
-        );
+        console.log("Messages page: Now refreshing badge");
         refreshBadge();
       }, delay);
     },
-    [clearBadge, refreshBadge]
+    [refreshBadge]
   );
 
   // User search function
@@ -268,11 +259,11 @@ export default function MessagesPage() {
           }
         }, 200);
 
-        // SMART: Mark messages as read and use intelligent badge clearing
+        // FIXED: Simplified badge clearing and message marking
         try {
           console.log("Starting to mark messages as read for user:", userId);
 
-          // Use the smart clear function that prevents premature refresh
+          // Clear badge immediately when viewing conversation
           markAsReadAndClear();
 
           // Mark messages as read in database
@@ -289,17 +280,12 @@ export default function MessagesPage() {
             });
           });
 
-          // The context will handle badge refresh intelligently after DB is updated
-          console.log(
-            "Messages marked as read, context will handle badge refresh"
-          );
+          // FIXED: Schedule a badge refresh to check for other unread messages
+          triggerBadgeRefresh(2000);
         } catch (readError) {
           console.error("Error marking messages as read:", readError);
-          // If marking as read fails, clear badge and refresh to get accurate count
-          clearBadge();
-          setTimeout(() => {
-            refreshBadge();
-          }, 1000);
+          // If marking as read fails, just refresh the badge to get accurate count
+          triggerBadgeRefresh(1000);
         }
       } catch (error) {
         console.error("Error fetching messages:", error);
@@ -307,7 +293,7 @@ export default function MessagesPage() {
         setMessageLoading(false);
       }
     },
-    [user, clearBadge, refreshBadge, markAsReadAndClear]
+    [user, markAsReadAndClear, triggerBadgeRefresh]
   );
 
   // Main effect for authentication and initial setup
@@ -319,14 +305,9 @@ export default function MessagesPage() {
       return;
     }
 
-    markAllMessagesAsRead()
-      .then(() => {
-        console.log("Marked all messages as read on page visit");
-        clearBadge();
-      })
-      .catch((err) => {
-        console.error("Error marking all messages as read:", err);
-      });
+    // REMOVED: markAllMessagesAsRead() on page visit - this was too aggressive
+    // Just clear the badge for immediate feedback, let individual conversations handle read status
+    clearBadge();
 
     fetchConversations();
   }, [user, router, mounted, fetchConversations, clearBadge]);
@@ -407,7 +388,7 @@ export default function MessagesPage() {
     fetchConversations,
   ]);
 
-  // Conversation selection function
+  // FIXED: Simplified conversation selection
   const selectConversation = useCallback(
     (conversation: ConversationSummary) => {
       console.log("Selecting conversation with user:", conversation.user_id);
@@ -416,10 +397,10 @@ export default function MessagesPage() {
       setSelectedUserId(conversation.user_id);
       router.push(`/messages?user=${conversation.user_id}`, { scroll: false });
 
-      // Use smart clear that prevents premature refresh
+      // Clear badge immediately for user feedback
       markAsReadAndClear();
 
-      // Fetch messages (which will handle the database update)
+      // Fetch messages (which will handle the database update and badge refresh)
       fetchMessages(conversation.user_id);
     },
     [router, fetchMessages, markAsReadAndClear]

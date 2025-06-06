@@ -475,7 +475,7 @@ export default function ProfilePage() {
 
         <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">Edit Profile</h1>
+            <h1 className="text-3xl font-bold text-black">Edit Profile</h1>
             <button
               onClick={handleCancelEdit}
               className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400 transition"
@@ -793,7 +793,7 @@ export default function ProfilePage() {
         {/* Profile Header */}
         <div className="bg-white p-8 rounded-lg shadow-md mb-6">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">Edit Profile</h1>
+            <h1 className="text-3xl font-bold text-black">Edit Profile</h1>
             <div className="flex space-x-3">
               <button
                 onClick={viewPublicProfile}

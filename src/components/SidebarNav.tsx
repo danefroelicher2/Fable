@@ -116,15 +116,34 @@ export default function SidebarNav() {
 
   return (
     <nav className="bg-gray-900 text-white w-64 fixed left-0 top-0 bottom-0 overflow-y-auto flex flex-col">
-      {/* Logo */}
+      {/* Logo - New Improved Design */}
       <div className="p-4">
         <Link href="/" className="block">
-          <div className="bg-red-600 p-4 text-center">
-            <span className="text-2xl font-bold">LOSTLIBRARY</span>
+          <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 p-6 text-center transition-all duration-300 hover:shadow-2xl hover:scale-105">
+            {/* Animated background pattern */}
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 via-transparent to-blue-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+            {/* Subtle geometric decoration */}
+            <div className="absolute -top-2 -right-2 w-16 h-16 bg-white/10 rounded-full blur-xl group-hover:bg-white/20 transition-all duration-500"></div>
+            <div className="absolute -bottom-2 -left-2 w-12 h-12 bg-white/5 rounded-full blur-lg group-hover:bg-white/15 transition-all duration-500"></div>
+
+            {/* Main logo text */}
+            <div className="relative z-10">
+              <span
+                className="text-4xl font-bold tracking-wide text-white drop-shadow-lg"
+                style={{
+                  fontFamily: "'Dancing Script', 'Brush Script MT', cursive",
+                }}
+              >
+                Fable
+              </span>
+            </div>
+
+            {/* Hover accent line */}
+            <div className="absolute bottom-0 left-0 h-1 w-0 bg-gradient-to-r from-yellow-400 to-pink-400 group-hover:w-full transition-all duration-500 ease-out"></div>
           </div>
         </Link>
       </div>
-
       {/* Main Navigation - using flex-grow to allow scrolling for overflow */}
       <div className="flex-grow overflow-y-auto">
         <div className="space-y-1 py-2">
@@ -714,7 +733,6 @@ export default function SidebarNav() {
           )}
         </div>
       </div>
-
       {/* Post Button and Profile Dropdown in a sticky footer */}
       <div className="mt-auto p-4 space-y-3">
         {/* Post button */}
